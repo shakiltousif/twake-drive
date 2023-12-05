@@ -144,33 +144,33 @@
   "applications":{
      "grid":[
         {
-           "name":"Twake",
-           "logo":"/public/img/grid/twake.png",
+           "name":"Chat",
+           "logo":"/public/img/grid/twake.svg",
            "url":"https://web.twake.app/"
         },
         {
-           "name":"TMail",
-           "logo":"/public/img/grid/tmail.png",
+           "name":"Mail",
+           "logo":"/public/img/grid/mail.svg",
            "url":"https://tmail.linagora.com/"
         },
         {
-           "name":"TDrive",
-           "logo":"/public/img/grid/drive.png",
+           "name":"Drive",
+           "logo":"/public/img/grid/drive.svg",
            "url":"https://tdrive.qa.lin-saas.com/"
         },
         {
            "name":"Calendar",
-           "logo":"/public/img/grid/calendar.png",
+           "logo":"/public/img/grid/calendar.svg",
            "url":"https://openpaas.linagora.com/calendar/"
         },
         {
            "name":"Contacts",
-           "logo":"/public/img/grid/contacts.png",
+           "logo":"/public/img/grid/contacts.svg",
            "url":"https://openpaas.linagora.com/contacts"
         },
         {
-           "name":"Telescope",
-           "logo":"/public/img/grid/jitsi.png",
+           "name":"Visio",
+           "logo":"/public/img/grid/visio.svg",
            "url":"https://jitsi.linagora.com/"
         }
      ],
