@@ -4,8 +4,7 @@ FROM node:bullseye-slim
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
-RUN apt update && apt -y dist-upgrade && \
-    apt install -y dirmngr && \
+RUN apt update && apt -y dist-upgrade && apt install -y gnupg && \
     echo "deb http://ppa.launchpad.net/nextcloud-devs/client/ubuntu zesty main" >> /etc/apt/sources.list.d/nextcloud-client.list && \
     echo "deb-src http://ppa.launchpad.net/nextcloud-devs/client/ubuntu zesty main" >> /etc/apt/sources.list.d/nextcloud-client.list && \
     apt-key adv --recv-key --keyserver keyserver.ubuntu.com AD3DD469 && \
