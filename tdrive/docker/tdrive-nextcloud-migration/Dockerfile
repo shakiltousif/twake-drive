@@ -1,8 +1,8 @@
 # Use an official Node.js runtime as the base image
-FROM node:bullseye
+FROM node:bullseye-slim
 
 RUN apt update && apt -y dist-upgrade
-RUN apt install dirmngr
+RUN apt install -y gnupg
 
 RUN echo "deb http://ppa.launchpad.net/nextcloud-devs/client/ubuntu zesty main" >> /etc/apt/sources.list.d/nextcloud-client.list
 RUN echo "deb-src http://ppa.launchpad.net/nextcloud-devs/client/ubuntu zesty main" >> /etc/apt/sources.list.d/nextcloud-client.list
@@ -13,7 +13,7 @@ RUN apt update -y
 
 RUN apt install --assume-yes nextcloud-desktop-cmd
 
-RUN apt install ldap-utils
+RUN apt install -y ldap-utils
 
 RUN apt autoremove && apt clean && rm -rf /var/lib/apt/lists/*
 
