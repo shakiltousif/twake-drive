@@ -6,7 +6,7 @@ describe.skip('Lemon LDAP User Provider', () => {
 
   test('ldap returns user info', async () => {
     const ldap = new LemonLdapUserProvider({
-      url: "https://auth.avocat.fr/_getldapentries",
+      url: "https://auth.example.com/_getldapentries",
       auth: "",
     });
     const user = await ldap.find("999248");
@@ -18,19 +18,19 @@ describe.skip('Lemon LDAP User Provider', () => {
 
   test('ldap returns user info with email', async () => {
     const ldap = new LemonLdapUserProvider({
-      url: "https://auth.avocat.fr/_getldapentries",
+      url: "https://auth.example.com/_getldapentries",
       auth: "",
     });
     const user = await ldap.find("999253");
     expect(user.firstName).toBe("Utilisateur4");
     expect(user.lastName).toBe("ONBOARDING4");
-    expect(user.email).toBe("utilisateur4.onboarding4@avocat.fr");
+    expect(user.email).toBe("utilisateur4.onboarding4@example.com");
     expect(user.uid).toBe("999253");
   });
 
   test('ldap returns nothing', async () => {
     const ldap = new LemonLdapUserProvider({
-      url: "https://auth.avocat.fr/_getldapentries",
+      url: "https://auth.example.com/_getldapentries",
       auth: "",
     });
     const user = await ldap.find("NOTHING_HERE");
