@@ -12,7 +12,7 @@ export class Loader {
       modulesPaths.map(async modulePath => {
         if (fs.existsSync(modulePath)) {
           try {
-            return await import(modulePath);
+            return await import(modulePath + "/index.js");
           } catch (err) {
             logger.debug(
               { err },
