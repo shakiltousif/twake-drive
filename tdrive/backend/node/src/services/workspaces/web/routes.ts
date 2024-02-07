@@ -161,7 +161,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "GET",
     url: `${workspacesUrl}`,
     preHandler: [accessControl, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspacesSchema,
     handler: workspacesController.list.bind(workspacesController),
   });
@@ -170,7 +170,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "GET",
     url: `${workspacesUrl}/:id`,
     preHandler: [accessControl, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspaceSchema,
     handler: workspacesController.get.bind(workspacesController),
   });
@@ -185,7 +185,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: `${workspacesUrl}`,
     preHandler: [accessControl, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: createWorkspaceSchema,
     handler: workspacesController.save.bind(workspacesController),
   });
@@ -194,7 +194,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: `${workspacesUrl}/:id`,
     preHandler: [accessControl, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: updateWorkspaceSchema,
     handler: workspacesController.save.bind(workspacesController),
   });
@@ -203,7 +203,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "DELETE",
     url: `${workspacesUrl}/:id`,
     preHandler: [accessControl, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     handler: workspacesController.delete.bind(workspacesController),
   });
 
@@ -211,7 +211,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: `${workspacesUrl}/:id/invite_domain`,
     preHandler: [validateDomain, companyCheck],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     handler: workspacesController.setInviteDomain.bind(workspacesController),
   });
 
@@ -219,7 +219,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "GET",
     url: `${workspaceUsersUrl}`,
     preHandler: [accessControl, companyCheck, checkWorkspace],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspaceUsersSchema,
     handler: workspaceUsersController.list.bind(workspaceUsersController),
   });
@@ -228,7 +228,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "GET",
     url: `${workspaceUsersUrl}/:user_id`,
     preHandler: [accessControl, companyCheck, checkWorkspace],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspaceUserSchema,
     handler: workspaceUsersController.get.bind(workspaceUsersController),
   });
@@ -237,7 +237,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: `${workspaceUsersUrl}`,
     preHandler: [accessControl, companyCheck, checkUserIsWorkspaceAdmin],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: createWorkspaceUserSchema,
     handler: workspaceUsersController.save.bind(workspaceUsersController),
   });
@@ -246,7 +246,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: `${workspaceUsersUrl}/:user_id`,
     preHandler: [accessControl, companyCheck, checkUserIsWorkspaceAdmin],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: updateWorkspaceUserSchema,
     handler: workspaceUsersController.save.bind(workspaceUsersController),
   });
@@ -255,7 +255,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "DELETE",
     url: `${workspaceUsersUrl}/:user_id`,
     preHandler: [accessControl, companyCheck, checkUserIsWorkspaceAdmin],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: deleteWorkspaceUserSchema,
     handler: workspaceUsersController.delete.bind(workspaceUsersController),
   });
@@ -269,7 +269,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserHasCompanyMemberLevel,
       checkUserIsWorkspaceMember,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: inviteWorkspaceUserSchema,
     handler: workspaceUsersController.invite.bind(workspaceUsersController),
   });
@@ -283,7 +283,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserHasCompanyMemberLevel,
       checkUserIsWorkspaceMember,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: deleteWorkspacePendingUsersSchema,
     handler: workspaceUsersController.deletePending.bind(workspaceUsersController),
   });
@@ -297,7 +297,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserHasCompanyMemberLevel,
       checkUserIsWorkspaceMember,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspacePendingUsersSchema,
     handler: workspaceUsersController.listPending.bind(workspaceUsersController),
   });
@@ -311,7 +311,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserIsWorkspaceMember,
       checkUserHasCompanyMemberLevel,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: getWorkspaceInviteTokenSchema,
     handler: workspaceInviteTokensController.list.bind(workspaceInviteTokensController),
   });
@@ -325,7 +325,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserIsWorkspaceMember,
       checkUserHasCompanyMemberLevel,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: postWorkspaceInviteTokenSchema,
     handler: workspaceInviteTokensController.save.bind(workspaceInviteTokensController),
   });
@@ -339,7 +339,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
       checkUserIsWorkspaceMember,
       checkUserHasCompanyMemberLevel,
     ],
-    preValidation: [fastify.authenticate],
+    preValidation: fastify.authenticate,
     schema: deleteWorkspaceInviteTokenSchema,
     handler: workspaceInviteTokensController.delete.bind(workspaceInviteTokensController),
   });
@@ -348,7 +348,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     method: "POST",
     url: "/join",
     preHandler: [],
-    preValidation: [fastify.authenticateOptional],
+    preValidation: fastify.authenticateOptional,
     schema: joinInviteTokenSchema,
     handler: workspaceInviteTokensController.join.bind(workspaceInviteTokensController),
   });

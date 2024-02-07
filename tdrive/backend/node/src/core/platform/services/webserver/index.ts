@@ -14,6 +14,7 @@ import swaggerPlugin, { FastifySwaggerOptions } from "@fastify/swagger";
 import { SkipCLI } from "../../framework/decorators/skip";
 import fs from "fs";
 import { ExecutionContext, executionStorage } from "../../framework/execution-storage";
+import { FastifyListenOptions } from "fastify/types/instance";
 
 export default class WebServerService extends TdriveService<WebServerAPI> implements WebServerAPI {
   name = "webserver";
@@ -140,7 +141,10 @@ export default class WebServerService extends TdriveService<WebServerAPI> implem
         res.type("text/html").send(stream);
       });
 
-      await this.server.listen(this.configuration.get<number>("port", 3000), "0.0.0.0");
+      await this.server.listen({
+        port: this.configuration.get<number>("port", 3000),
+        host: "0.0.0.0",
+      } as FastifyListenOptions);
 
       this.server.ready(err => {
         if (err) throw err;

@@ -12,7 +12,8 @@ export class Loader {
       modulesPaths.map(async modulePath => {
         if (fs.existsSync(modulePath)) {
           try {
-            return await import(modulePath + "/index.js");
+            const module = await import(modulePath + "/index.js");
+            return module.default;
           } catch (err) {
             logger.debug(
               { err },
