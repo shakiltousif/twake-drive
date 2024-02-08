@@ -128,7 +128,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
   fastify.route({
     method: "GET",
     url: "/companies/:id/users/recent",
-    preValidation: [fastify.authenticateOptional],
+    preValidation: fastify.authenticateOptional,
     handler: usersController.recent.bind(usersController),
   });
 

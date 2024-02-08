@@ -33,15 +33,15 @@ const jwtPlugin: FastifyPluginCallback = (fastify, _opts, next) => {
     request.log.debug(`Authenticated as user ${request.currentUser.id}`);
   };
 
-  fastify.decorateRequest("authenticate", async (request: FastifyRequest) => {
+  fastify.decorate("authenticate", async (request: FastifyRequest) => {
     try {
       await authenticate(request);
     } catch (err) {
-      throw fastify.httpErrors.unauthorized;
+      throw fastify.httpErrors.unauthorized(`Bad credentials ${JSON.stringify(err)}`);
     }
   });
 
-  fastify.decorateRequest("authenticateOptional", async (request: FastifyRequest) => {
+  fastify.decorate("authenticateOptional", async (request: FastifyRequest) => {
     try {
       await authenticate(request);
     } catch (err) {}
