@@ -93,7 +93,6 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
   fastify.route({
     method: "GET",
     url: "/companies/:id",
-    preValidation: fastify.authenticateOptional,
     schema: getCompanySchema, //Fixme currently not working because we don't know features in advances and so it doesn't pass
     handler: usersController.getCompany.bind(usersController),
   });
@@ -129,7 +128,6 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
   fastify.route({
     method: "GET",
     url: "/companies/:id/users/recent",
-    preValidation: fastify.authenticateOptional,
     handler: usersController.recent.bind(usersController),
   });
 

@@ -159,6 +159,7 @@ export default class StorageService extends TdriveService<StorageAPI> implements
         stream = stream.pipe(decipher);
       } catch (err) {
         logger.error("Unable to createDecipheriv: %s", err);
+        throw err;
       }
     }
     return stream;
