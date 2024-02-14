@@ -189,6 +189,8 @@ export class ConsoleRemoteClient implements ConsoleServiceClient {
 
     await gr.services.users.save(user, { user: { id: user.id, server_request: true } });
 
+    await gr.services.users.createUserRootFolder(user);
+
     return user;
   }
 

@@ -96,18 +96,7 @@ export class UserServiceImpl {
   async create(user: User, context?: ExecutionContext): Promise<CreateResult<User>> {
     user = (await this.save(user, context)).entity;
 
-    //create default directories for the user
-    const userRoot = getDefaultDriveItem(
-      {
-        id: "user_" + user.id,
-        is_directory: true,
-      },
-      {
-        ...context,
-        company: { id: config.get<string>("drive.defaultCompany") },
-      } as CompanyExecutionContext,
-    );
-    await this.driveFileRepository.save(userRoot);
+    await this.createUserRootFolder(user);
 
     return new CreateResult("user", user);
   }
@@ -395,5 +384,21 @@ export class UserServiceImpl {
     }
 
     return [user.password, null];
+  }
+
+  //create default directories for the user
+  async createUserRootFolder(user: User) {
+    //create default directories for the user
+    const userRoot = getDefaultDriveItem(
+      {
+        id: "user_" + user.id,
+        is_directory: true,
+      },
+      {
+        user: { id: user.id },
+        company: { id: config.get<string>("drive.defaultCompany") },
+      } as CompanyExecutionContext,
+    );
+    await this.driveFileRepository.save(userRoot);
   }
 }

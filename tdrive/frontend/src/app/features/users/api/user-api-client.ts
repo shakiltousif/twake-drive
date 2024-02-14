@@ -7,6 +7,7 @@ import WorkspaceAPIClient from '../../workspaces/api/workspace-api-client';
 import CurrentUser from '../../../deprecated/user/CurrentUser';
 import { setUserList } from '../hooks/use-user-list';
 import Logger from 'features/global/framework/logger-service';
+import { UserQuota } from "features/users/types/user-quota";
 
 export type SearchContextType = {
   scope: 'company' | 'workspace' | 'all';
@@ -137,6 +138,16 @@ class UserAPIClientService {
       if (!result?.resource?.id) {
         throw new Error('User not found');
       }
+      return result.resource;
+    });
+  }
+
+  async getQuota(userId: string): Promise<UserQuota> {
+    return Api.get<{ resource: UserQuota }>(
+      `/internal/services/users/v1/users/${userId}/quota`,
+      undefined,
+      false
+    ).then(result => {
       return result.resource;
     });
   }
