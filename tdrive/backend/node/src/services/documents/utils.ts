@@ -31,13 +31,11 @@ const TRASH: TrashType = "trash";
 const SHARED_WITH_ME: SharedWithMeType = "shared_with_me";
 
 export const isVirtualFolder = (id: string) => {
-  return (
-    id === ROOT ||
-    id === TRASH ||
-    id.startsWith("trash_") ||
-    id.startsWith("user_") ||
-    id == SHARED_WITH_ME
-  );
+  return id === ROOT || id === TRASH || id.startsWith("trash_") || id == SHARED_WITH_ME;
+};
+
+export const isUserRootFolder = (id: string) => {
+  return id.startsWith("user_");
 };
 
 export const isSharedWithMeFolder = (id: string) => {
@@ -237,8 +235,12 @@ export const updateItemSize = async (
   context: CompanyExecutionContext,
 ): Promise<void> => {
   if (!id || isVirtualFolder(id)) return;
-
-  const item = await repository.findOne({ id, company_id: context.company.id });
+  let item = null;
+  if (isUserRootFolder(id)) {
+    item = await repository.findOne({ id });
+  } else {
+    item = await repository.findOne({ id, company_id: context.company.id });
+  }
 
   if (!item) {
     throw Error("Drive item doesn't exist");
@@ -271,7 +273,7 @@ export const getPath = async (
   context?: DriveExecutionContext,
 ): Promise<DriveFile[]> => {
   id = id || "root";
-  if (isVirtualFolder(id))
+  if (isVirtualFolder(id) || isUserRootFolder(id))
     return !context?.user?.public_token_document_id || ignoreAccess
       ? [
           {
@@ -538,12 +540,15 @@ export const canMoveItem = async (
     company_id: context.company.id,
   });
 
-  const targetItem = isVirtualFolder(target)
+  let targetItem = isVirtualFolder(target)
     ? null
     : await repository.findOne({
         id: target,
         company_id: context.company.id,
       });
+  if (isUserRootFolder(target)) {
+    targetItem = await repository.findOne({ id: target });
+  }
 
   if (!isVirtualFolder(target) && (!targetItem || !targetItem.is_directory)) {
     throw Error("target item doesn't exist or not a directory");
@@ -597,7 +602,7 @@ export const isInTrash = async (
     return true;
   }
 
-  if (isVirtualFolder(item.parent_id)) {
+  if (isVirtualFolder(item.parent_id) || isUserRootFolder(item.parent_id)) {
     return false; // Stop condition
   }
 

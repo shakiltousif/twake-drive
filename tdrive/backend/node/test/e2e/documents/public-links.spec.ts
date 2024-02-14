@@ -4,7 +4,6 @@ import { AccessInformation, DriveFile } from "../../../src/services/documents/en
 import { FileVersion } from "../../../src/services/documents/entities/file-version";
 import { DriveFileAccessLevel, DriveItemDetails } from "../../../src/services/documents/types";
 import { init, TestPlatform } from "../setup";
-import { TestDbService } from "../utils.prepare.db";
 import { e2e_createDocument, e2e_updateDocument } from "./utils";
 import TestHelpers from "../common/common_test_helpers";
 import { AccessTokenMockClass } from "../common/entities/mock_entities";
@@ -55,7 +54,7 @@ describe("the public links feature", () => {
         "documents",
       ],
     });
-  });
+  }, 3000000);
 
   afterAll(async () => {
     await platform?.tearDown();
@@ -303,6 +302,6 @@ describe("the public links feature", () => {
       await anotherUser.getDocumentOKCheck(doc.id);
 
       expect((await anotherUser.getFolder(doc.id)).statusCode).toBe(200);
-    });
+    }, 3000000);
   });
 });

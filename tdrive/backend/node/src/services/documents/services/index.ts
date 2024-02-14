@@ -1,3 +1,5 @@
+// noinspection ExceptionCaughtLocallyJS
+
 import SearchRepository from "../../../core/platform/services/search/repository";
 import { getLogger, logger, TdriveLogger } from "../../../core/platform/framework";
 import { CrudException, ListResult } from "../../../core/platform/framework/api/crud-service";
@@ -37,17 +39,18 @@ import {
   getItemName,
   getPath,
   getVirtualFoldersNames,
+  isInTrash,
   isSharedWithMeFolder,
+  isUserRootFolder,
   isVirtualFolder,
   updateItemSize,
-  isInTrash,
 } from "../utils";
 import {
   checkAccess,
   getAccessLevel,
+  getItemScope,
   hasAccessLevel,
   makeStandaloneAccessLevel,
-  getItemScope,
 } from "./access-check";
 import { websocketEventBus } from "../../../core/platform/services/realtime/bus";
 import archiver from "archiver";
@@ -130,16 +133,12 @@ export class DocumentsService {
     id = id || this.ROOT;
 
     //Get requested entity
-    const entity = isVirtualFolder(id)
+    let entity = isVirtualFolder(id)
       ? null
-      : await this.repository.findOne(
-          {
-            company_id: context.company.id,
-            id,
-          },
-          {},
-          context,
-        );
+      : await this.repository.findOne({ company_id: context.company.id, id }, {}, context);
+    if (isUserRootFolder(id)) {
+      entity = await this.repository.findOne({ id }, {}, context);
+    }
 
     if (!entity && !isVirtualFolder(id)) {
       this.logger.error("Drive item not found");
@@ -147,15 +146,16 @@ export class DocumentsService {
     }
 
     //Check access to entity
+    let hasAccess: boolean;
     try {
-      const hasAccess = await checkAccess(id, entity, "read", this.repository, context);
-      if (!hasAccess) {
-        this.logger.error("user does not have access drive item " + id);
-        throw Error("user does not have access to this item");
-      }
+      hasAccess = await checkAccess(id, entity, "read", this.repository, context);
     } catch (error) {
       this.logger.error({ error: `${error}` }, "Failed to grant access to the drive item");
       throw new CrudException("User does not have access to this item or its children", 401);
+    }
+    if (!hasAccess) {
+      this.logger.error("user does not have access drive item " + id);
+      throw new CrudException("user does not have access to this item", 401);
     }
 
     const isDirectory = entity ? entity.is_directory : true;
@@ -328,6 +328,8 @@ export class DocumentsService {
         context,
       );
       // TODO: notify the user a document has been added to the directory shared with them
+      const all_docs = await this.repository.find({});
+      console.log(JSON.stringify(all_docs));
       try {
         if (driveItem.parent_id !== "root" && driveItem.parent_id !== "trash") {
           const parentItem = await this.repository.findOne(
@@ -472,11 +474,11 @@ export class DocumentsService {
               });
             }
 
-            item.access_info.entities.forEach(async info => {
+            for (const info of item.access_info.entities) {
               if (!info.grantor) {
                 info.grantor = context.user.id;
               }
-            });
+            }
           } else if (key === "name") {
             item.name = await getItemName(
               content.parent_id || item.parent_id,
@@ -505,13 +507,10 @@ export class DocumentsService {
 
       if (oldParent) {
         item.scope = await getItemScope(item, this.repository, context);
-        this.repository.save(item);
+        await this.repository.save(item);
 
         await updateItemSize(oldParent, this.repository, context);
-        this.notifyWebsocket(oldParent, context);
       }
-
-      this.notifyWebsocket(item.parent_id, context);
 
       if (item.parent_id === this.TRASH) {
         //When moving to trash we recompute the access level to make them flat
@@ -657,6 +656,7 @@ export class DocumentsService {
    * restore a Drive Document and its children
    *
    * @param {string} id - the item id
+   * @param item
    * @param {DriveExecutionContext} context - the execution context
    * @returns {Promise<void>}
    */
@@ -1021,12 +1021,11 @@ export class DocumentsService {
   }
 
   getTab = async (tabId: string, context: CompanyExecutionContext): Promise<DriveTdriveTab> => {
-    const tab = await this.driveTdriveTabRepository.findOne(
+    return await this.driveTdriveTabRepository.findOne(
       { company_id: context.company.id, tab_id: tabId },
       {},
       context,
     );
-    return tab;
   };
 
   setTab = async (
