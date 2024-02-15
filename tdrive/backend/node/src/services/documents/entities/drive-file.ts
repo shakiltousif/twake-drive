@@ -22,7 +22,7 @@ export class DriveFile {
   company_id: string;
 
   @Type(() => String)
-  @Column("id", "uuid", { generator: "uuid" })
+  @Column("id", "string", { generator: "uuid" })
   id: string;
 
   @Type(() => String)
