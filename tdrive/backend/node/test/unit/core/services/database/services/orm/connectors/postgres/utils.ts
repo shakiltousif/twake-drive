@@ -21,7 +21,7 @@ export class TestDbEntity {
   company_id: string;
 
   @Type(() => String)
-  @Column("id", "uuid", { generator: "uuid" })
+  @Column("id", "string", { generator: "uuid" })
     // @ts-ignore
   id: string;
 

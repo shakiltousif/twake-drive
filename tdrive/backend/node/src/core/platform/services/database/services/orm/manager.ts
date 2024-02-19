@@ -51,6 +51,9 @@ export default class EntityManager<EntityType extends Record<string, any>> {
         case "uuid":
           entity[columnsDefinition[pk].nodename] = uuidv4();
           break;
+        case "string":
+          entity[columnsDefinition[pk].nodename] = uuidv4();
+          break;
         case "timeuuid":
           entity[columnsDefinition[pk].nodename] = uuidv1();
           break;

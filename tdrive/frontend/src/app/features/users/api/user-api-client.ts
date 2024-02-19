@@ -143,12 +143,19 @@ class UserAPIClientService {
   }
 
   async getQuota(userId: string): Promise<UserQuota> {
-    return Api.get<{ resource: UserQuota }>(
+    return Api.get<UserQuota>(
       `/internal/services/users/v1/users/${userId}/quota`,
       undefined,
       false
     ).then(result => {
-      return result.resource;
+      if ((result as any).statusCode != 200) {
+        return { } as UserQuota;
+      } else {
+        return result;
+      }
+    }).catch(e => {
+      console.log(`Error getting quota:: ${e.message}`)
+      return { } as UserQuota;
     });
   }
 

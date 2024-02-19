@@ -5,7 +5,7 @@ import { DriveFileDTOBuilder } from "../../../../../../../src/services/documents
 import { ListResult } from "../../../../../../../src/core/platform/framework/api/crud-service";
 import { DriveFile } from "../../../../../../../src/services/documents/entities/drive-file";
 import { CompanyExecutionContext } from "../../../../../../../src/services/applications/web/types";
-import { UserServiceImpl } from "../../../../../../../src/services/user/services/users/service";
+import { UserServiceImpl } from "../../../../../../../src/services/user/services/users/user-service";
 
 describe("Drive File DTO Builder Test", () => {
 

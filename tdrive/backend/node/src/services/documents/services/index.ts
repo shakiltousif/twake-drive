@@ -132,12 +132,12 @@ export class DocumentsService {
 
     id = id || this.ROOT;
 
+    let entity = null;
     //Get requested entity
-    let entity = isVirtualFolder(id)
-      ? null
-      : await this.repository.findOne({ company_id: context.company.id, id }, {}, context);
     if (isUserRootFolder(id)) {
       entity = await this.repository.findOne({ id }, {}, context);
+    } else if (!isVirtualFolder(id)) {
+      entity = await this.repository.findOne({ company_id: context.company.id, id }, {}, context);
     }
 
     if (!entity && !isVirtualFolder(id)) {

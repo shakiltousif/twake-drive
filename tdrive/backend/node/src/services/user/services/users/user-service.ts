@@ -393,12 +393,14 @@ export class UserServiceImpl {
       {
         id: "user_" + user.id,
         is_directory: true,
+        parent_id: null,
       },
       {
         user: { id: user.id },
         company: { id: config.get<string>("drive.defaultCompany") },
       } as CompanyExecutionContext,
     );
+    userRoot.parent_id = null;
     await this.driveFileRepository.save(userRoot);
   }
 }

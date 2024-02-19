@@ -2,12 +2,16 @@ import { Base, Title } from '@atoms/text';
 import { useDriveItem } from '@features/drive/hooks/use-drive-item';
 import { formatBytes } from '@features/drive/utils';
 import Languages from "features/global/services/languages-service";
+import { useUserQuota } from "@features/users/hooks/use-user-quota";
+
 
 export default () => {
   const { access, item } = useDriveItem('root');
   const { item: trash } = useDriveItem('trash');
+  // const { quota } = useUserQuota()
+  // console.log("QUOTA::" + quota);
   const style = {
-    width: 5 +  '%'
+    // width: Math.round(quota.used / quota.total) * 100 +  '%'
   };
   return (
     <>

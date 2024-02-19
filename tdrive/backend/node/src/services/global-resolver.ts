@@ -30,7 +30,7 @@ import { StatisticsServiceImpl } from "./statistics/service";
 import { TagsService } from "./tags/services/tags";
 import { CompanyServiceImpl } from "./user/services/companies";
 import { UserExternalLinksServiceImpl } from "./user/services/external_links";
-import { UserServiceImpl } from "./user/services/users/service";
+import { UserServiceImpl } from "./user/services/users/user-service";
 import { WorkspaceServiceImpl } from "./workspaces/services/workspace";
 
 import { PreviewEngine } from "./previews/services/files/engine";
