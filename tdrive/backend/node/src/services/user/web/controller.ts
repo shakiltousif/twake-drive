@@ -339,7 +339,7 @@ export class UsersCrudController
 
     const doc = await gr.services.documents.documents.get("user_" + id, {
       ...context,
-      company: { id: "" },
+      company: { id: config.get("drive.defaultCompany") },
     });
     const total: number = config.has("drive.defaultUserQuota")
       ? config.get("drive.defaultUserQuota")
