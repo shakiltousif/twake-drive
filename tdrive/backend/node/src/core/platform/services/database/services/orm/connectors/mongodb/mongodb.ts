@@ -47,9 +47,7 @@ export class MongoConnector extends AbstractConnector<MongoConnectionOptions> {
 
   async drop(): Promise<this> {
     const db = await this.getDatabase();
-
     await db.dropDatabase();
-
     return this;
   }
 

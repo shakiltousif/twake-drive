@@ -47,9 +47,9 @@ describe("the Drive feature", () => {
       ],
     });
     currentUser = await TestHelpers.getInstance(platform);
-  }, 300000000);
+  });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await platform?.tearDown();
     platform = null;
   });
