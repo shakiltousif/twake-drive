@@ -45,6 +45,10 @@ export default class User {
     this._status_icon = status;
   }
 
+  public full_name() {
+    return [ this.first_name, this.last_name ].filter(x => x).join(' ');
+  }
+
   @Column("last_activity", "number")
   last_activity: number;
 
