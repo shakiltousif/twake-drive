@@ -1,3 +1,19 @@
+# Twake Drive v1.0.1
+
+## Features
+
+- New Version Semantics
+- Usage quota settings
+- PostgreSQL support as a metadata database
+- OpenSearch support as a search database
+- New API to check file storage consistency
+- UX improvements
+    - Remove the switcher from breadcrumbs
+
+## BugFixes
+- Fix preview of the files on mobile and web
+-  Malformed URL when you share a file
+
 # Twake Drive v2023.Q3.012
 
 ## Features
