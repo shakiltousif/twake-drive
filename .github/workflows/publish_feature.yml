@@ -13,8 +13,6 @@ jobs:
       matrix:
         targets: ${{ fromJSON(needs.setup.outputs.targets) }}
       fail-fast: false
-    needs:
-      - setup
     steps:
       - name: Checkout
         uses: actions/checkout@v4
