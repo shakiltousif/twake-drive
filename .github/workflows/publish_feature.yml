@@ -24,7 +24,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Echo
-        run: Publish images with tag ${GITHUB_REF##*/}
+        run: echo Publish images with tag ${GITHUB_REF##*/}
 
       - name: Docker meta
         id: meta
