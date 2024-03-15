@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        targets: [backend, frontend , onlyoffice-connector, ldap-sync, nextcloud-migration]
+        targets: [backend]
       fail-fast: false
     steps:
       - name: Checkout
@@ -24,14 +24,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Echo
-        run: Publish images with tag ${{GITHUB_REF##*/}}
+        run: Publish images with tag ${GITHUB_REF##*/}
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
           tags: |
-            ${{GITHUB_REF##*/}}
+            ${GITHUB_REF##*/}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -56,7 +56,3 @@ jobs:
           push: true
           targets: |
             backend
-            frontend
-            onlyoffice-connector
-            ldap-sync
-            nextcloud-migration
