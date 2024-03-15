@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        targets: ${{ fromJSON(needs.setup.outputs.targets) }}
+        targets: [backend, frontend , onlyoffice-connector, ldap-sync, nextcloud-migration]
       fail-fast: false
     steps:
       - name: Checkout
