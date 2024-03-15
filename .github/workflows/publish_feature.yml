@@ -7,7 +7,7 @@ on:
       - feature/**
 
 jobs:
-  publish:
+  publish-feature:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -54,4 +54,9 @@ jobs:
             ${{ steps.meta.outputs.bake-file-annotations }}
             ${{ steps.meta.outputs.bake-file }}
           push: true
-          targets: [backend, frontend, onlyoffice-connector, ldap-sync, nextcloud-migration]
+          targets: |
+            backend
+            frontend
+            onlyoffice-connector
+            ldap-sync
+            nextcloud-migration
