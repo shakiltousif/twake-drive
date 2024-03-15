@@ -7,28 +7,6 @@ on:
       - feature/**
 
 jobs:
-  setup:
-    name: Setup jobs
-    runs-on: ubuntu-latest
-    outputs:
-      targets: ${{ steps.filter.outputs.changes }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - "tdrive/backend/node/**"
-            frontend:
-              - "tdrive/frontend/**"
-            onlyoffice-connector:
-              - "tdrive/connectors/onlyoffice-connector/**"
-            ldap-sync:
-              - "tdrive/backend/utils/ldap-sync/**"
-            nextcloud-migration:
-              - "tdrive/backend/utils/nextcloud-migration/**"
-
   publish:
     runs-on: ubuntu-latest
     strategy:
@@ -78,4 +56,4 @@ jobs:
             ${{ steps.meta.outputs.bake-file-annotations }}
             ${{ steps.meta.outputs.bake-file }}
           push: true
-          targets: ${{ matrix.targets }}
+          targets: [backend, frontend, onlyoffice-connector, ldap-sync, nextcloud-migration]
