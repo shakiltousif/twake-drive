@@ -4,21 +4,23 @@ Your pull request and commits titles must respect this format:
 
 `[Emoji] [Verb] [Details]`
 
+Pick the [emoji from gitmoji](https://gitmoji.dev/).
+
 The description of the commit must contain the issues fixed by your proposition.
-Example: 
-`Fixes #43`
+Example:
+`Fixes #43 by sending an e-mail notification if the air-lock is not closed before take-off`
 
-List of commit emojis:
+Examples of commit emojis:
 
-- 🛠 Fixing broken code.
-- ♻️ Refactoring code and making it work better.
-- 🔍 Writing or fixing tests.
-- 🌈 Making your code or your app beautiful with style
-- 🐳 Deployment / docker
-- 📚 Documentation
-- 🌟 New feature
+- ✨ Introduce new features.
+- 🐛 Fix a bug.
+- 🩹 Simple fix for a non-critical issue.
+- 💄 Add or update the UI and style files.
+- 🚸 Improve user experience / usability.
+- ✅ Add, update, or pass tests.
+- 📝 Add or update documentation.
 
 Examples of commits:
 
-`🛠 Fix broken login page`
-`🌟 Implement SpaceX Crew Dragon plugin`
+`🐛 Fix broken login page #4`
+`✨ Implement SpaceX Crew Dragon plugin #523245123`
