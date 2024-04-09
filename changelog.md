@@ -1,3 +1,16 @@
+# Twake Drive v1.0.2
+
+## Features
+
+- New “Create” context menu new icons
+- CLI tool to reindex search database
+- Handling quota limit error
+- 
+## BugFixes and improvements
+- Handling quota limit error
+- Refactored starting docker-compose file
+- Fix navigation for shared link view
+
 # Twake Drive v1.0.1
 
 ## Features
