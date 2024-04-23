@@ -13,6 +13,7 @@ import iterateOverRepoPages from "../../../utils/iterate-over-repository-pages";
 
 import BaseReindexer from "./base-reindexer";
 import type ReindexerOptions from "./reindexer-options";
+import BufferedAction from "../../../utils/buffered-action";
 
 export default class DocumentsReindexer extends BaseReindexer<DriveFile> {
   constructor(platform: TdrivePlatform, options: ReindexerOptions) {
@@ -62,6 +63,7 @@ export default class DocumentsReindexer extends BaseReindexer<DriveFile> {
     const repository = await this.dbRepository();
     let count = 0,
       countChanged = 0;
+    const bufferedWriter = new BufferedAction<DriveFile>(100, items => repository.saveAll(items));
     await iterateOverRepoPages(
       repository,
       async entities => {
@@ -99,12 +101,13 @@ export default class DocumentsReindexer extends BaseReindexer<DriveFile> {
               );
             if (content_keywords !== entity.content_keywords) {
               entity.content_keywords = content_keywords;
-              repository.save(entity);
+              bufferedWriter.do(entity);
               countChanged++;
             }
           } catch (err) {
             this.statusFail(err.stack);
           }
+          bufferedWriter.flush();
         }
         this.statusStart(`Repaired ${count} documents (${countChanged} changed)`);
       },
