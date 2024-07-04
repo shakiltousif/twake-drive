@@ -1,4 +1,4 @@
-import { Prefix, TdriveService } from "../../core/platform/framework";
+import { Consumes, Prefix, TdriveService } from "../../core/platform/framework";
 import WebServerAPI from "../../core/platform/services/webserver/provider";
 import web from "./web";
 
@@ -9,6 +9,7 @@ export default class FilesService extends TdriveService<undefined> {
 
   public async doInit(): Promise<this> {
     const fastify = this.context.getProvider<WebServerAPI>("webserver").getServer();
+    // const webdavService = this.context.getProvider<WebDAVServiceAPI>("webdav");
     fastify.register((instance, _opts, next) => {
       web(instance, { prefix: this.prefix });
       next();

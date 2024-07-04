@@ -40,7 +40,10 @@ export default class WebServerService extends TdriveService<WebServerAPI> implem
     // TODO: Get server config from options
     this.server = fastify({
       maxParamLength: 300, //We have big urls with uuids and devices tokens
-      logger: false,
+//      logger: false,
+      logger: {
+        level: "trace",
+      },
     });
 
     this.server.addHook("onRequest", (req, res, done) => {
@@ -116,8 +119,7 @@ export default class WebServerService extends TdriveService<WebServerAPI> implem
       },
     });
     this.server.register(formbody);
-    this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
-
+//    this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
     return this;
   }
 

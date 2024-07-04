@@ -12,6 +12,12 @@ export const logger = pino({
   mixin() {
     return executionStorage.getStore() ? executionStorage.getStore() : {};
   },
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true
+    }
+  },
 });
 
 export const getLogger = (name?: string): TdriveLogger =>
