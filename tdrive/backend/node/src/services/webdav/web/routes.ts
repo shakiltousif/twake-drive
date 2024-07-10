@@ -444,19 +444,6 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     url: "",
     handler: async (request, reply) => {
       logger.debug("PROPFIND request handled");
-      // const path = request.params["*"];
-      // const depth = (request.headers["depth"] || "0") as string;
-      // const xmlBody = request.body as string;
-
-      // console.log(request);
-      // console.log("############");
-      // console.log(request.body);
-      // console.log("############");
-      // console.log(request.params);
-      // console.log("############");
-      // console.log(request.headers);
-      // console.log("############");
-      // console.log(await parseXMLBody(request));
 
       // Get the request body as a string
       // const bodyXml = await getBody(requestquest);
@@ -465,17 +452,9 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
 
       // Parse the XML
       const { output, prefixes } = await parseXml(bodyXml);
-
-      // Process the parsed XML (example: just echoing it back)
-      const responseXml = await renderXml(output, prefixes);
-
-      console.log("bodyXML", bodyXml);
-      console.log("request", request.body);
-      console.log("parsed", output, prefixes);
-      console.log(responseXml);
-
       const properties = getRequestedProps(output);
-      console.log(properties);
+
+      // Create the response structure template
       const response: any = {
         "D:multistatus": {
           "D:response": {
@@ -487,20 +466,20 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
           },
         },
       };
+
       const resourcePath = request.url;
-      logger.debug("response before", await renderXml(response, prefixes));
+      // Map the requested properties to the response propstat
       response["D:multistatus"]["D:response"]["D:propstat"] = await webDAVController.map(
         properties,
         resourcePath,
         response["D:multistatus"]["D:response"]["D:propstat"],
       );
-      logger.debug("response after", await renderXml(response, prefixes));
+      const reply_xml = await renderXml(response, prefixes);
 
-      //
-      //   reply
-      //     .code(207)
-      //     .header("Content-Type", "application/xml;charset=utf-8")
-      //     .send(generateXMLResponse(parsedResponse));
+      reply
+        .code(207)
+        .header("Content-Type", "application/xml;charset=utf-8")
+        .send(reply_xml);
     },
   });
   //
@@ -627,8 +606,6 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
   const routes = fastify.printRoutes();
   console.log(routes);
   console.log("###########################");
-  // logger.debug(routes);
-  // logger.debug("################################");
   next();
 };
 export default routes;
