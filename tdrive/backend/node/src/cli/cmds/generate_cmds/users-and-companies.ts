@@ -82,18 +82,21 @@ const command: yargs.CommandModule<{}, CLIArgs> = {
 
     const obsv$ = from(companies).pipe(
       // Create companies sequentially
-      mergeMap(company => createCompany(company), concurrentTasks),
+      mergeMap((company: Company) => createCompany(company), concurrentTasks),
       // until we create enough companies
       bufferCount(companies.length),
-      tap(companies => console.log("Created companies", companies.length)),
+      tap((companies: Company[]) => console.log("Created companies", companies.length)),
       // for each created company
       switchMap(companies => from(companies)),
       // generate a set of user for each company
-      map(company => getUsersForCompany(company, nbUsersPerCompany)),
+      map((company: Company) => getUsersForCompany(company, nbUsersPerCompany)),
       // Create users sequentially
       pipe(
         switchMap(userCompanies => from(userCompanies)),
-        mergeMap(userCompany => createUser(userCompany), concurrentTasks),
+        mergeMap(
+          (userCompany: { user: User; company: Company }) => createUser(userCompany),
+          concurrentTasks,
+        ),
         // until we reach the number of users in the company
         bufferCount(nbUsersPerCompany),
       ),

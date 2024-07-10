@@ -1,240 +1,634 @@
-import { FastifyInstance, FastifyPluginCallback } from "fastify";
+import { FastifyInstance, FastifyPluginCallback, FastifyRequest } from "fastify";
 import { WebDAVController } from "./controllers/webdav";
 import { logger } from "../../../core/platform/framework";
 
-const xmlBodyParser = require("fastify-xml-body-parser");
+import { splitn } from "@sciactive/splitn";
+import * as xml2js from "xml2js";
+import { res } from "pino-std-serializers";
 
+const xmlBodyParser = require("fastify-xml-body-parser");
 const webdavUrl = "/webdav";
 
 const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) => {
   const webDAVController = new WebDAVController();
- 
-  fastify.register(xmlBodyParser);
-  fastify.route({
-    method: "POST",
-    url: "",
-    handler: function (request, reply) {
-      logger.debug("post is handled");
-      reply.send({ hello: "taks" });
-    },
+  // const xmlParser = new XMLParser({ ignoreAttributes: false });
+  // const xmlBuilder = new XMLBuilder({ ignoreAttributes: false });
+
+  // async function parseXMLBody(request: FastifyRequest) {
+  //   const body = (await request.body) as string;
+  //   return xmlParser.parse(body);
+  // }
+
+  // XML Parser and Builder
+  const xmlParser = new xml2js.Parser({ xmlns: true });
+  const xmlBuilder = new xml2js.Builder({
+    xmldec: { version: "1.0", encoding: "UTF-8" },
+    renderOpts: { pretty: false },
   });
 
+  // XML parsing functions (from the previous example)
+  async function parseXml(xml: string) {
+    const parsed = await xmlParser.parseStringPromise(xml);
+    const prefixes: { [k: string]: string } = {};
+
+    const rewriteAttributes = (
+      input: {
+        [k: string]: {
+          name: string;
+          value: string;
+          prefix: string;
+          local: string;
+          uri: string;
+        };
+      },
+      namespace: string,
+    ): any => {
+      const output: { [k: string]: string } = {};
+
+      for (const name in input) {
+        if (
+          input[name].uri === "http://www.w3.org/2000/xmlns/" ||
+          input[name].uri === "http://www.w3.org/XML/1998/namespace"
+        ) {
+          output[name] = input[name].value;
+        } else if (input[name].uri === "DAV:" || (input[name].uri === "" && namespace === "DAV:")) {
+          output[input[name].local] = input[name].value;
+        } else {
+          output[`${input[name].uri || namespace}%%${input[name].local}`] = input[name].value;
+        }
+      }
+
+      return output;
+    };
+
+    const extractNamespaces = (input: {
+      [k: string]: {
+        name: string;
+        value: string;
+        prefix: string;
+        local: string;
+        uri: string;
+      };
+    }) => {
+      const output: { [k: string]: string } = {};
+
+      for (const name in input) {
+        if (
+          input[name].uri === "http://www.w3.org/2000/xmlns/" &&
+          input[name].local !== "" &&
+          input[name].value !== "DAV:"
+        ) {
+          output[input[name].local] = input[name].value;
+        }
+      }
+
+      return output;
+    };
+
+    const recursivelyRewrite = (
+      input: any,
+      lang?: string,
+      element = "",
+      prefix: string = "",
+      namespaces: { [k: string]: string } = {},
+      includeLang = false,
+    ): any => {
+      if (Array.isArray(input)) {
+        return input.map(value =>
+          recursivelyRewrite(value, lang, element, prefix, namespaces, includeLang),
+        );
+      } else if (typeof input === "object") {
+        const output: { [k: string]: any } = {};
+        // Remember the xml:lang attribute, as required by spec.
+        let curLang = lang;
+        let curNamespaces = { ...namespaces };
+
+        if ("$" in input) {
+          if ("xml:lang" in input.$) {
+            curLang = input.$["xml:lang"].value as string;
+          }
+
+          output.$ = rewriteAttributes(input.$, input.$ns.uri);
+          curNamespaces = {
+            ...curNamespaces,
+            ...extractNamespaces(input.$),
+          };
+        }
+
+        if (curLang != null && includeLang) {
+          output.$ = output.$ || {};
+          output.$["xml:lang"] = curLang;
+        }
+
+        if (element.includes("%%") && prefix !== "") {
+          const uri = element.split("%%", 1)[0];
+          if (prefix in curNamespaces && curNamespaces[prefix] === uri) {
+            output.$ = output.$ || {};
+            output.$[`xmlns:${prefix}`] = curNamespaces[prefix];
+          }
+        }
+
+        for (const name in input) {
+          if (name === "$ns" || name === "$") {
+            continue;
+          }
+
+          const ns = (Array.isArray(input[name]) ? input[name][0].$ns : input[name].$ns) || {
+            local: name,
+            uri: "DAV:",
+          };
+
+          let prefix = "";
+          if (name.includes(":")) {
+            prefix = name.split(":", 1)[0];
+            if (!(prefix in prefixes)) {
+              prefixes[prefix] = ns.uri;
+            }
+          }
+
+          const el = ns.uri === "DAV:" ? ns.local : `${ns.uri}%%${ns.local}`;
+          output[el] = recursivelyRewrite(
+            input[name],
+            curLang,
+            el,
+            prefix,
+            curNamespaces,
+            element === "prop",
+          );
+        }
+
+        return output;
+      } else {
+        return input;
+      }
+    };
+
+    const output = recursivelyRewrite(parsed);
+    return { output, prefixes };
+  }
+
+  async function renderXml(xml: any, prefixes: { [k: string]: string } = {}) {
+    let topLevelObject: { [k: string]: any } | undefined = undefined;
+    const prefixEntries = Object.entries(prefixes);
+    const davPrefix = (prefixEntries.find(([_prefix, value]) => value === "DAV:") || [
+      "",
+      "DAV:",
+    ])[0];
+
+    const recursivelyRewrite = (
+      input: any,
+      namespacePrefixes: { [k: string]: string } = {},
+      element = "",
+      currentUri = "DAV:",
+      addNamespace?: string,
+    ): any => {
+      if (Array.isArray(input)) {
+        return input.map(value =>
+          recursivelyRewrite(value, namespacePrefixes, element, currentUri, addNamespace),
+        );
+      } else if (typeof input === "object") {
+        const output: { [k: string]: any } =
+          element === ""
+            ? {}
+            : {
+                $: {
+                  ...(addNamespace == null ? {} : { xmlns: addNamespace }),
+                },
+              };
+
+        const curNamespacePrefixes = { ...namespacePrefixes };
+
+        if ("$" in input) {
+          for (const attr in input.$) {
+            // Translate uri%%name attributes to prefix:name.
+            if (
+              attr.includes("%%") ||
+              (currentUri !== "DAV:" && !attr.includes(":") && attr !== "xmlns")
+            ) {
+              const [uri, name] = attr.includes("%%") ? splitn(attr, "%%", 2) : ["DAV:", attr];
+
+              if (currentUri === uri) {
+                output.$[name] = input.$[attr];
+              } else {
+                const xmlns = Object.entries(input.$).find(
+                  ([name, value]) => name.startsWith("xmlns:") && value === uri,
+                );
+                if (xmlns) {
+                  const [_dec, prefix] = splitn(xmlns[0], ":", 2);
+                  output.$[`${prefix}:${name}`] = input.$[attr];
+                } else {
+                  const prefixEntry = Object.entries(curNamespacePrefixes).find(
+                    ([_prefix, value]) => value === uri,
+                  );
+
+                  output.$[`${prefixEntry ? prefixEntry[0] + ":" : ""}${name}`] = input.$[attr];
+                }
+              }
+            } else {
+              if (attr.startsWith("xmlns:")) {
+                // Remove excess namespace declarations.
+                if (curNamespacePrefixes[attr.substring(6)] === input.$[attr]) {
+                  continue;
+                }
+
+                curNamespacePrefixes[attr.substring(6)] = input.$[attr];
+              }
+
+              output.$[attr] = input.$[attr];
+            }
+          }
+        }
+
+        const curNamespacePrefixEntries = Object.entries(curNamespacePrefixes);
+        for (const name in input) {
+          if (name === "$") {
+            continue;
+          }
+
+          let el = name;
+          let prefix = davPrefix;
+          let namespaceToAdd: string | undefined = undefined;
+          let uri = "DAV:";
+          let local = el;
+          if (name.includes("%%")) {
+            [uri, local] = splitn(name, "%%", 2);
+            // Reset prefix because we're not in the DAV: namespace.
+            prefix = "";
+
+            // Look for a prefix in the current prefixes.
+            const curPrefixEntry = curNamespacePrefixEntries.find(
+              ([_prefix, value]) => value === uri,
+            );
+            if (curPrefixEntry) {
+              prefix = curPrefixEntry[0];
+            }
+
+            // Look for a prefix in the children. It should override the current
+            // prefix.
+            const child = Array.isArray(input[name]) ? input[name][0] : input[name];
+            if (typeof child === "object" && "$" in child) {
+              let foundPrefix = "";
+              for (const attr in child.$) {
+                if (attr.startsWith("xmlns:") && child.$[attr] === uri) {
+                  foundPrefix = attr.substring(6);
+                  break;
+                }
+              }
+
+              // Make sure every child has the same prefix.
+              if (foundPrefix) {
+                if (Array.isArray(input[name])) {
+                  let prefixIsGood = true;
+                  for (const child of input[name]) {
+                    if (
+                      typeof child !== "object" ||
+                      !("$" in child) ||
+                      child.$[`xmlns:${foundPrefix}`] !== uri
+                    ) {
+                      prefixIsGood = false;
+                      break;
+                    }
+                  }
+                  if (prefixIsGood) {
+                    prefix = foundPrefix;
+                  }
+                } else {
+                  prefix = foundPrefix;
+                }
+              }
+            }
+
+            if (prefix) {
+              el = `${prefix}:${local}`;
+            } else {
+              // If we haven't found a prefix at all, we need to attach the
+              // namespace directly to the element.
+              namespaceToAdd = uri;
+              el = local;
+            }
+          }
+
+          let setTopLevel = false;
+          if (topLevelObject == null) {
+            setTopLevel = true;
+          }
+
+          output[el] = recursivelyRewrite(
+            input[name],
+            curNamespacePrefixes,
+            el,
+            uri,
+            namespaceToAdd,
+          );
+
+          if (setTopLevel) {
+            topLevelObject = output[el];
+          }
+        }
+
+        return output;
+      } else {
+        if (addNamespace != null) {
+          return {
+            $: { xmlns: addNamespace },
+            _: input,
+          };
+        }
+        return input;
+      }
+    };
+
+    const obj = recursivelyRewrite(xml, prefixes);
+    if (topLevelObject != null) {
+      const obj = topLevelObject as { [k: string]: any };
+
+      // Explicitly set the top level namespace to 'DAV:'.
+      obj.$.xmlns = "DAV:";
+
+      for (const prefix in prefixes) {
+        obj.$[`xmlns:${prefix}`] = prefixes[prefix];
+      }
+    }
+    return xmlBuilder.buildObject(obj);
+  }
+
+  // Helper function to get the body as a string
+  async function getBody(request: FastifyRequest): Promise<string> {
+    console.log("started :: getBody()");
+    const chunks: Buffer[] = [];
+    for await (const chunk of request.raw) {
+      console.log(chunk);
+      chunks.push(chunk);
+    }
+    console.log(chunks);
+    return Buffer.concat(chunks).toString("utf8");
+  }
+
+  fastify.addContentTypeParser("text/xml", { parseAs: "string" }, (req, body, done) => {
+    try {
+      console.log("PARSER:");
+      console.log(body);
+      if (typeof body === "string") {
+        // const parsedXml = parseXml(body);
+        // console.log(parsedXml);
+        done(null, body);
+      } else {
+        console.log("Error in content  parser: body is buffer");
+        done(null, undefined);
+      }
+    } catch (err) {
+      done(err, undefined);
+    }
+  });
+
+  function getRequestedProps(parsedRequest: any): string[] {
+    const propElement = parsedRequest.propfind.prop[0];
+    return Object.keys(propElement);
+  }
+
+  // fastify.register(xmlBodyParser);
+  //
+  // // Helper function to validate XML
+  // const validateXML = (xml: string) => {
+  //   return XMLValidator.validate(xml);
+  // };
+  //
+  // // Helper function to parse XML response
+  // const parseXMLResponse = (xmlString: string) => {
+  //   return xmlParser.parse(xmlString);
+  // };
+  //
+  // // Helper function to generate XML response
+  // const generateXMLResponse = (obj: any) => {
+  //   return xmlBuilder.build(obj);
+  // };
+  //
+  // GET method
   fastify.route({
     method: "GET",
     url: "",
-    handler: (request, reply) => {
-      logger.debug("get is handled");
-      reply.send({ hello: "world" });
+    handler: async (request, reply) => {
+      logger.debug("GET request handled");
+      // const path = request.params["*"];
+      // const xml_request = request.body as string;
+      logger.debug(request);
+      logger.debug("request:", request.raw);
+      logger.debug("body:", request.body);
+      logger.debug("params:", request.params);
+      // logger.debug(xml_request);
+      // logger.debug(validateXML(xml_request));
+      // logger.debug(path);
+      // logger.debug(request.body);
+      // logger.debug(parseXMLBody(request));
+      // const response = await webDAVController.get(path);
+      // reply.type("application/xml").send(response);
     },
   });
-  fastify.route({
-    method: "HEAD",
-    url: "",
-    handler: (request, reply) => {
-      logger.debug("head is handled");
-      logger.info(request);
-    },
-  });
-  fastify.route({
-    method: "OPTIONS",
-    url: "/",
-    handler: (request, reply) => {
-      logger.debug("options is handled");
-      logger.info(request.body);
-      reply.header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
-      .header('Access-Control-Allow-Origin', '*')
-      .header('Access-Control-Allow-Credentials', 'true')
-      .header('Access-Control-Allow-Methods', 'PROPFIND, PROPPATCH, COPY, MOVE, DELETE, MKCOL, LOCK, UNLOCK, PUT, GETLIB, VERSION-CONTROL, CHECKIN, CHECKOUT, UNCHECKOUT, REPORT, UPDATE, CANCELUPLOAD, HEAD, OPTIONS, GET, POST')
-      .header('Access-Control-Allow-Headers', 'Overwrite, Destination, Content-Type, Depth, User-Agent, Translate, Range, Content-Range, Timeout, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control, Location, Lock-Token, If')
-      .header('Access-Control-Expose-Headers', 'DAV, content-length, Allow')
-      .header('Access-Control-Max-Age', '2147483647')
-      .header('X-Engine', 'IT Hit WebDAV Server v7.2.10512 (Evaluation License)')
-      .header('DASL', '<DAV:basicsearch>')
-      .header('DAV', '1, 2, 3, resumable-upload, paging, bind')
-      .header('Allow', 'OPTIONS, PROPFIND, PROPPATCH, COPY, MOVE, DELETE, MKCOL, LOCK, UNLOCK, SEARCH')
-      .header('Public', 'OPTIONS, PROPFIND, PROPPATCH, COPY, MOVE, DELETE, MKCOL, LOCK, UNLOCK, SEARCH')
-      .header('Accept-Ranges', 'bytes')
-      .header('MS-Author-Via', 'DAV')
-      .header('Content-Length', '0')
-      .header('Date', 'Thu, 04 Jul 2024 09:42:44 GMT')
-      .header('Connection', 'close')
-      .send()
-    },
-  });
-
+  //
+  // // POST method
+  // fastify.route({
+  //   method: "POST",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("POST request handled");
+  //     const path = request.params["*"];
+  //     const body = request.body;
+  //     const response = await webDAVController.post(path, body);
+  //     reply.type("application/xml").send(response);
+  //   },
+  // });
+  //
+  // PROPFIND method
   fastify.route({
     method: "PROPFIND",
-    url: "/",
-    handler: function (request, reply) {
-      logger.debug("propfind is handled");
-      logger.debug(request);
-      console.log(request.body);
-      const responseXml =`<?xml version="1.0" encoding="utf-8" ?>
-                          <D:multistatus xmlns:D="DAV:">
-                            <D:response>
-                              <D:href>/example/file1.txt</D:href>
-                              <D:propstat>
-                                <D:prop>
-                                  <D:getlastmodified>Tue, 03 Jul 2024 12:34:56 GMT</D:getlastmodified>
-                                  <D:getcontentlength>1024</D:getcontentlength>
-                                  <D:creationdate>2023-06-15T11:22:33Z</D:creationdate>
-                                  <D:resourcetype/>
-                                </D:prop>
-                                <D:status>HTTP/1.1 200 OK</D:status>
-                              </D:propstat>
-                            </D:response>
-                          </D:multistatus>
-                          `
-      
-      reply
-        .code(207)
-        .header('Cache-Control', 'private')
-        .header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
-        .header('Access-Control-Allow-Origin', '*')
-        .header('Access-Control-Allow-Credentials', 'true')
-        .header('Access-Control-Allow-Methods', 'PROPFIND, PROPPATCH, COPY, MOVE, DELETE, MKCOL, LOCK, UNLOCK, PUT, GETLIB, VERSION-CONTROL, CHECKIN, CHECKOUT, UNCHECKOUT, REPORT, UPDATE, CANCELUPLOAD, HEAD, OPTIONS, GET, POST')
-        .header('Access-Control-Allow-Headers', 'Overwrite, Destination, Content-Type, Depth, User-Agent, Translate, Range, Content-Range, Timeout, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control, Location, Lock-Token, If')
-        .header('Access-Control-Expose-Headers', 'DAV, content-length, Allow')
-        .header('Access-Control-Max-Age', '2147483647')
-        .header('X-Engine', 'IT Hit WebDAV Server v7.2.10512 (Evaluation License)')
-        .header('Content-Type', 'application/xml;charset=utf-8')
-        .header('Content-Length', '524')
-        .header('Date', 'Thu, 04 Jul 2024 09:46:05 GMT')
-        .send(`<?xml version="1.0" ?>
-<d:multistatus xmlns:d="DAV:">
-    <d:response>
-        <d:href>https://localhost:4000/webdav/internal/services/v1</d:href>
-        <d:propstat>
-            <d:prop>
-                <d:getlastmodified>Thu, 04 Jul 2024 09:36:52 GMT</d:getlastmodified>
-                <d:creationdate>2024-07-04T09:35:44Z</d:creationdate>
-                <d:resourcetype>
-                    <d:collection />
-                </d:resourcetype>
-            </d:prop>
-            <d:status>HTTP/1.1 200 OK</d:status>
-        </d:propstat>
-        <d:propstat>
-            <d:prop>
-                <d:getcontentlength></d:getcontentlength>
-            </d:prop>
-            <d:status>HTTP/1.1 404 Not Found</d:status>
-        </d:propstat>
-    </d:response>
-</d:multistatus>`);
-//      reply
-//        .code(207) // Multistatus status code
-//        .header("Content-Type", 'text/xml; charset="utf-8"')
-//        .header("Connection", "keep-alive")
-//        .send(responseXml);
+    url: "",
+    handler: async (request, reply) => {
+      logger.debug("PROPFIND request handled");
+      // const path = request.params["*"];
+      // const depth = (request.headers["depth"] || "0") as string;
+      // const xmlBody = request.body as string;
+
+      // console.log(request);
+      // console.log("############");
+      // console.log(request.body);
+      // console.log("############");
+      // console.log(request.params);
+      // console.log("############");
+      // console.log(request.headers);
+      // console.log("############");
+      // console.log(await parseXMLBody(request));
+
+      // Get the request body as a string
+      // const bodyXml = await getBody(requestquest);
+      const bodyXml = request.body as string;
+      console.log(request.raw);
+
+      // Parse the XML
+      const { output, prefixes } = await parseXml(bodyXml);
+
+      // Process the parsed XML (example: just echoing it back)
+      const responseXml = await renderXml(output, prefixes);
+
+      console.log("bodyXML", bodyXml);
+      console.log("request", request.body);
+      console.log("parsed", output, prefixes);
+      console.log(responseXml);
+
+      const properties = getRequestedProps(output);
+      console.log(properties);
+      const response: any = {
+        "D:multistatus": {
+          "D:response": {
+            "D:href": "./user/biba",
+            "D:propstat": {
+              "D:prop": {},
+              "D:status": "HTTP/1.1 200 OK",
+            },
+          },
+        },
+      };
+      const resourcePath = request.url;
+      logger.debug("response before", await renderXml(response, prefixes));
+      response["D:multistatus"]["D:response"]["D:propstat"] = await webDAVController.map(
+        properties,
+        resourcePath,
+        response["D:multistatus"]["D:response"]["D:propstat"],
+      );
+      logger.debug("response after", await renderXml(response, prefixes));
+
+      //
+      //   reply
+      //     .code(207)
+      //     .header("Content-Type", "application/xml;charset=utf-8")
+      //     .send(generateXMLResponse(parsedResponse));
     },
   });
-
+  //
+  // // PROPPATCH method
   // fastify.route({
-  //   method: 'GET',
-  //   url: '/internal/services/webdav',
-  //   schema: {
-  //     querystring: {
-  //       name: { type: 'string' },
-  //       excitement: { type: 'integer' }
-  //     },
-  //     response: {
-  //       200: {
-  //         type: 'object',
-  //         properties: {
-  //           hello: { type: 'string' }
-  //         }
-  //       }
-  //     }
+  //   method: "PROPPATCH",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("PROPPATCH request handled");
+  //     const path = request.params["*"];
+  //     const xmlBody = request.body as string;
+  //     const response = await webDAVController.proppatch(path, xmlBody);
+  //     reply.type("application/xml").send(response);
   //   },
-  //   handler: function (request, reply) {
-  //     reply.send({ hello: 'world' })
-  //   }
-  // })
-
+  // });
+  //
+  // // MKCOL method
   // fastify.route({
-  //   method: 'OPTIONS',
-  //   url: '',
-  //   // preValidation: [fastify.authenticate],
-  //   // handler: webDAVController.connect.bind(webDAVController)
-  //   schema: {
-  //     response: {
-  //       200: {
-  //         type: 'object',
-  //         properties: {
-  //           host: { type: 'string' }
-  //         }
-  //       }
-  //     }
+  //   method: "MKCOL",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("MKCOL request handled");
+  //     const path = request.params["*"];
+  //     const response = await webDAVController.mkcol(path);
+  //     reply.code(201).send(response);
   //   },
-  //   handler: function (request, reply) {
-  //       logger.debug('connection is established');
-  //       console.log('connection is established');
-  //       reply.send({ host: 'Connection is made' });
-  //   }
+  // });
+  //
+  // // DELETE method
+  // fastify.route({
+  //   method: "DELETE",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("DELETE request handled");
+  //     const path = request.params["*"];
+  //     const response = await webDAVController.delete(path);
+  //     reply.code(204).send(response);
+  //   },
+  // });
+  //
+  // // COPY method
+  // fastify.route({
+  //   method: "COPY",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("COPY request handled");
+  //     const sourcePath = request.params["*"];
+  //     const destination = request.headers["destination"] as string;
+  //     const overwrite = request.headers["overwrite"] === "T";
+  //     const response = await webDAVController.copy(sourcePath, destination, overwrite);
+  //     reply.code(201).send(response);
+  //   },
+  // });
+  //
+  // // MOVE method
+  // fastify.route({
+  //   method: "MOVE",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("MOVE request handled");
+  //     const sourcePath = request.params["*"];
+  //     const destination = request.headers["destination"] as string;
+  //     const overwrite = request.headers["overwrite"] === "T";
+  //     const response = await webDAVController.move(sourcePath, destination, overwrite);
+  //     reply.code(201).send(response);
+  //   },
+  // });
+  //
+  // // LOCK method
+  // fastify.route({
+  //   method: "LOCK",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("LOCK request handled");
+  //     const path = request.params["*"];
+  //     const xmlBody = request.body as string;
+  //     const response = await webDAVController.lock(path, xmlBody);
+  //     reply.type("application/xml").send(response);
+  //   },
+  // });
+  //
+  // // UNLOCK method
+  // fastify.route({
+  //   method: "UNLOCK",
+  //   url: "",
+  //   handler: async (request, reply) => {
+  //     logger.debug("UNLOCK request handled");
+  //     const path = request.params["*"];
+  //     const lockToken = request.headers["lock-token"] as string;
+  //     const response = await webDAVController.unlock(path, lockToken);
+  //     reply.code(204).send(response);
+  //   },
+  // });
+  //
+  // // OPTIONS method
+  // fastify.route({
+  //   method: "OPTIONS",
+  //   url: "/",
+  //   handler: (request, reply) => {
+  //     logger.debug("OPTIONS request handled");
+  //     reply
+  //       .header(
+  //         "Allow",
+  //         "OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK",
+  //       )
+  //       .header("DAV", "1, 2")
+  //       .header("MS-Author-Via", "DAV")
+  //       .code(200)
+  //       .send();
+  //   },
   // });
 
-  // fastify.route({
-  //   method: 'PROPPATCH',
-  //   url: filesUrl,
-  //   preValidation: [fastify.authenticate],
-  //   handler: webDAVController.get.bind(webDAVController),
+  // fastify.options(, async (request, reply) => {
+  //   reply
+  //     .header("DAV", "1, 2")
+  //     .header("MS-Author-Via", "DAV")
+  //     .header(
+  //       "Allow",
+  //       "OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK",
+  //     )
+  //     .send();
   // });
-
-  // fastify.route({
-  //   method: 'DELETE',
-  //   url: `${filesUrl}/:id`,
-  //   preValidation: [fastify.authenticate],
-  //   handler: webDAVController.delete.bind(webDAVController),
-  // });
-
-  // fastify.route({
-  //   method: 'MKCOL',
-  //   url: filesUrl,
-  //   preValidation: [fastify.authenticate],
-  //   handler: webDAVController.mkcol.bind(webDAVController),
-  // });
-
-  // fastify.route({
-  //   method: 'MOVE',
-  //   url: filesUrl,
-  //   preValidation: [fastify.authenticate],
-  //   handler: webDAVController.move.bind(webDAVController),
-  // });
-  // // TODO: check if all commands are called
 
   const routes = fastify.printRoutes();
-  //  logger.debug(routes);
   console.log(routes);
+  console.log("###########################");
+  // logger.debug(routes);
+  // logger.debug("################################");
   next();
 };
-
 export default routes;
-
-
-//<?xml version="1.0" encoding="utf-8" ?> \
-//<D:propfind xmlns:D="DAV:"> \
-//  <D:prop> \
-//    <D:getlastmodified/> \
-//    <D:getcontentlength/> \
-//    <D:creationdate/> \
-//    <D:resourcetype/> \
-//  </D:prop> \
-//</D:propfind>
-//curl -X PROPFIND "http://localhost:4000/internal/services/webdav/v1/" \
-//  -H "Host: localhost:4000" \
-//  -H "Content-Type: text/xml" \
-//  -H "Depth: 0" \
-//  -H "Accept: */*" \
-//  -H "User-Agent: WebDAVFS/3.0.0 (03008000) Darwin/23.2.0 (arm64)" \
-//  -H "Content-Length: 179" \
-//  -H "Connection: keep-alive" \
-//  --data '<?xml version="1.0" encoding="utf-8" ?>
-//<D:propfind xmlns:D="DAV:">
-//  <D:prop>
-//    <D:getlastmodified/>
-//    <D:getcontentlength/>
-//    <D:creationdate/>
-//    <D:resourcetype/>
-//  </D:prop>
-//</D:propfind>'

@@ -504,7 +504,7 @@ export class WorkspaceServiceImpl implements TdriveServiceProvider, Initializabl
     pagination?: Paginable,
   ): Observable<WorkspaceUser> {
     return from(this.getUsers(workspaceId, pagination)).pipe(
-      mergeMap(workspaceUsers => {
+      mergeMap((workspaceUsers: ListResult<WorkspaceUser>) => {
         const items$ = from(workspaceUsers.getEntities());
         const next$ = workspaceUsers?.nextPage?.page_token
           ? this.getAllUsers$(workspaceId, workspaceUsers.nextPage)

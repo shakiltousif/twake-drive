@@ -9,7 +9,6 @@ export default class FilesService extends TdriveService<undefined> {
 
   public async doInit(): Promise<this> {
     const fastify = this.context.getProvider<WebServerAPI>("webserver").getServer();
-    // const webdavService = this.context.getProvider<WebDAVServiceAPI>("webdav");
     fastify.register((instance, _opts, next) => {
       web(instance, { prefix: this.prefix });
       next();

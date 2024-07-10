@@ -21,7 +21,9 @@ export default class WebDAVService extends TdriveService<WebDAVServiceAPI> {
       web(instance, { prefix: this.prefix });
       next();
     });
-
+    return this;
+  }
+}
     // Request Sniffer Hook
     // Request handling hooks
 //    fastify.addHook('onRequest', async (request, reply) => {
@@ -43,7 +45,3 @@ export default class WebDAVService extends TdriveService<WebDAVServiceAPI> {
 //    fastify.addHook('onResponse', async (request, reply) => {
 //      logger.debug(`Response for request: ${request.method} ${request.url} with status: ${reply.statusCode}`);
 //    });
-
-    return this;
-  }
-}
