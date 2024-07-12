@@ -248,16 +248,20 @@ export class DocumentsService {
       path: await getPath(id, this.repository, false, context),
       item:
         entity ||
-        ({
-          id,
-          parent_id: null,
-          name: await getVirtualFoldersNames(id, context),
-          size: await calculateItemSize(
-            { id, is_directory: true, size: 0 },
-            this.repository,
-            context,
-          ),
-        } as DriveFile),
+        getDefaultDriveItem(
+          {
+            id,
+            parent_id: null,
+            name: await getVirtualFoldersNames(id, context),
+            size: await calculateItemSize(
+              { id, is_directory: true, size: 0 },
+              this.repository,
+              context,
+            ),
+            is_directory: isDirectory,
+          },
+          context,
+        ),
       versions: versions,
       children: children,
       access: await getAccessLevel(id, entity, this.repository, context),
