@@ -251,7 +251,7 @@
     "components.notifications.hidden_notifications_button.children": "Новые сообщения",
     "scenes.app.popup.adduserfromtdriveconsole.current_users_state": "{{$1}} адрес(а) электронной почты будет(ут) добавлен(ы)",
     "components.newversion.new_version_component.row.part_1": "Ваша версия Tdrive устарела",
-    "components.newversion.new_version_compo
+    "components.newversion.new_version_component.row.part_2": "предлагаем вам обновить приложение и попробовать наши новые функции!",
     "components.newversion.new_version_component.link": "Нажмите сюда, чтобы обновить",
     "services.console_services.toaster.add_emails_error": "Ошибка при добавлении адреса(ов) электронной почты",
     "login.create_account": "Создать учетную запись",
