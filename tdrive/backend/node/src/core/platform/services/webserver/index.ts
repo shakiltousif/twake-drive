@@ -116,7 +116,7 @@ export default class WebServerService extends TdriveService<WebServerAPI> implem
       },
     });
     this.server.register(formbody);
-    this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
+    // this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
 
     return this;
   }
