@@ -292,6 +292,7 @@ export class DocumentsService {
             this.repository,
             context,
           ),
+          is_directory: isDirectory,
         } as DriveFile),
       versions: versions,
       children: children,
@@ -1150,7 +1151,7 @@ export class DocumentsService {
   /**
    * Search for Drive items.
    *
-   * @param {SearchDocumentsOptions} options - the search optins.
+   * @param {SearchDocumentsOptions} options - the search options.
    * @param {DriveExecutionContext} context - the execution context.
    * @returns {Promise<ListResult<DriveFile>>} - the search result.
    */
@@ -1316,5 +1317,86 @@ export class DocumentsService {
       await globalResolver.services.files.delete(fileId, context);
       throw new CrudException(`Not enough space: ${size}, ${leftQuota}.`, 403);
     }
+  };
+
+  /**
+   * Returns the file
+   * @param name
+   * @param parent_id
+   * @param context
+   */
+  findByName = async (
+    name: string,
+    parent_id: string | null,
+    context: CompanyExecutionContext,
+  ): Promise<DriveFile> => {
+    if (!context) {
+      this.logger.error("invalid context");
+      return null;
+    }
+    //Get requested entity
+    const driveFile = await this.repository.findOne(
+      {
+        company_id: context.company.id,
+        parent_id: parent_id,
+        name: name,
+      },
+      {},
+      context,
+    );
+    if (!driveFile) {
+      this.logger.error("Drive item not found");
+      throw new CrudException("Item not found", 404);
+    }
+    //Check access to entity
+    try {
+      const hasAccess = await checkAccess(
+        driveFile.id,
+        driveFile,
+        "read",
+        this.repository,
+        context,
+      );
+      if (!hasAccess) {
+        this.logger.error("user does not have access drive item " + driveFile);
+        throw Error("user does not have access to this item");
+      }
+    } catch (error) {
+      this.logger.error({ error: `${error}` }, "Failed to grant access to the drive item");
+      throw new CrudException("User does not have access to this item or its children", 401);
+    }
+    return Promise.resolve(driveFile);
+  };
+
+  /**
+   * Copies item to destination
+   * @param id
+   * @param file
+   * @param content
+   * @param context
+   */
+  copy = async (
+    id: string,
+    file: DriveFile | null,
+    content: Partial<DriveFile>,
+    context: DriveExecutionContext,
+  ): Promise<void> => {
+    return Promise.resolve();
+  };
+
+  /**
+   * Moves item to destination
+   * @param id
+   * @param file
+   * @param content
+   * @param context
+   */
+  move = async (
+    id: string,
+    file: PublicFile | null,
+    content: Partial<DriveFile>,
+    context: DriveExecutionContext,
+  ): Promise<void> => {
+    return Promise.resolve();
   };
 }
