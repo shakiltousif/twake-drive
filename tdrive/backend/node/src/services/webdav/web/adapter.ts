@@ -30,8 +30,8 @@ const build_adapter = (nephele: any): Adapter => {
       response: AuthResponse,
     ): Promise<string[]> => {
       // "2" - means that the Adapter ( i.e. file system supports lock / unlock function )
-      // return Promise.resolve(["2"]);
-      return Promise.resolve([]);
+      return Promise.resolve(["2"]);
+      // return Promise.resolve([]);
     };
 
     /**
@@ -106,16 +106,19 @@ const build_adapter = (nephele: any): Adapter => {
      */
     getResource = async (url: URL, baseUrl: URL): Promise<Resource> => {
       const context = getDriveExecutionContext(baseUrl);
-      const pathname = url.pathname.replace(/\/?$/, "").slice(1).split("/");
+      let pathname = url.pathname;
+      pathname = pathname.replace(baseUrl.pathname, "");
+      pathname = pathname.replace(/^\/+|\/+$/g, "");
+      const pathname_arr = pathname.split("/");
 
       const resource = new ResourceService({
         adapter: this,
         baseUrl: baseUrl,
-        pathname: pathname.map(name => decodeURI(name)),
+        pathname: pathname_arr.map(name => decodeURI(name)),
         context: context,
       });
       if (!(await resource.exists())) {
-        throw new Error("ResourceNotFoundError");
+        throw new nephele.ResourceNotFoundError("Resource not found");
       }
       return Promise.resolve(resource);
     };
@@ -130,17 +133,22 @@ const build_adapter = (nephele: any): Adapter => {
      */
     newResource = async (url: URL, baseUrl: URL): Promise<Resource> => {
       const context = getDriveExecutionContext(url);
-      const pathname = url.pathname.replace(/\/?$/, "").slice(1).split("/");
-      if (pathname.length == 0) {
-        return Promise.reject("BadGatewayError: this resource is not managed by this adapter");
+      let pathname = url.pathname;
+      pathname = pathname.replace(baseUrl.pathname, "");
+      pathname = pathname.replace(/^\/+|\/+$/g, "");
+      const pathname_arr = pathname.split("/");
+
+      if (pathname_arr.length == 0) {
+        throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
       const resource = new ResourceService({
         adapter: this,
         baseUrl: baseUrl,
-        pathname: pathname.map(name => decodeURI(name)),
+        pathname: pathname_arr.map(name => decodeURI(name)),
         context: context,
+        is_collection: false,
       });
-      await resource.create({ username: context.user.id } as User);
+      // await resource.create({ username: context.user.id, groupname: context.company.id } as User);
       return Promise.resolve(resource);
     };
 
@@ -155,17 +163,22 @@ const build_adapter = (nephele: any): Adapter => {
      */
     newCollection = async (url: URL, baseUrl: URL): Promise<Resource> => {
       const context = getDriveExecutionContext(url);
-      const pathname = url.pathname.replace(/\/?$/, "").slice(1).split("/");
-      if (pathname.length == 0) {
-        throw new Error("BadGatewayError: this resource is not managed by this adapter");
+      let pathname = url.pathname;
+      pathname = pathname.replace(baseUrl.pathname, "");
+      pathname = pathname.replace(/^\/+|\/+$/g, "");
+      const pathname_arr = pathname.split("/");
+
+      if (pathname_arr.length == 0) {
+        throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
       const resource = new ResourceService({
         adapter: this,
         baseUrl: baseUrl,
-        pathname: pathname.map(name => decodeURI(name)),
+        pathname: pathname_arr.map(name => decodeURI(name)),
         context: context,
+        is_collection: true,
       });
-      await resource.create({ username: context.user.id } as User);
+      // await resource.create({ username: context.user.id, groupname: context.company.id } as User);
       return Promise.resolve(resource);
     };
 

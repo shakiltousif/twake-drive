@@ -1,4 +1,17 @@
-import type { Adapter, Lock, Properties, Resource, User } from "nephele";
+import type {
+  Adapter,
+  BadGatewayError,
+  ForbiddenError,
+  Lock,
+  MethodNotSupportedError,
+  Properties,
+  Resource,
+  ResourceExistsError,
+  ResourceNotFoundError,
+  ResourceTreeNotCompleteError,
+  UnauthorizedError,
+  User,
+} from "nephele";
 import { Readable } from "stream";
 import { PropertiesService } from "./properties";
 
@@ -9,6 +22,7 @@ import { DriveExecutionContext } from "../../documents/types";
 import assert from "assert";
 import { checkAccess } from "../../documents/services/access-check";
 import { FileVersion } from "../../documents/entities/file-version";
+import c from "config";
 
 export class ResourceService implements Resource {
   /**
@@ -27,6 +41,7 @@ export class ResourceService implements Resource {
   context: DriveExecutionContext;
   file?: DriveFile | null;
   pathIds?: string[] | null;
+  is_collection?: boolean = false;
   constructor({
     adapter,
     baseUrl,
@@ -34,6 +49,7 @@ export class ResourceService implements Resource {
     context,
     file,
     pathIds,
+    is_collection,
   }: {
     adapter: Adapter;
     baseUrl: URL;
@@ -41,6 +57,7 @@ export class ResourceService implements Resource {
     context: DriveExecutionContext;
     file?: DriveFile | null;
     pathIds?: string[] | null;
+    is_collection?: boolean;
   }) {
     this.adapter = adapter;
     this.baseUrl = baseUrl;
@@ -48,6 +65,7 @@ export class ResourceService implements Resource {
     this.context = context;
     this.file = file;
     this.pathIds = pathIds;
+    this.is_collection = is_collection;
   }
 
   loadPath = async (pathname: string[]): Promise<string[]> => {
@@ -70,7 +88,6 @@ export class ResourceService implements Resource {
    * Check if the resource exists
    */
   exists = async (): Promise<boolean> => {
-    // TODO: if file not specified: search for file
     if (!this.file) {
       // try to load by pathname
       try {
@@ -82,6 +99,7 @@ export class ResourceService implements Resource {
             this.context,
           )
         ).item;
+        this.is_collection = this.file.is_directory;
         return true;
       } catch (err) {
         return false;
@@ -191,25 +209,34 @@ export class ResourceService implements Resource {
    */
   create = async (user: User): Promise<void> => {
     // TODO: check for shared files
-    assert(!(await this.exists()), "ResourceNotFoundError");
+    assert(!(await this.exists()), new Error("ResourceExistsError") as ResourceExistsError);
 
     const user_context = this.getUserContext(user);
     const path_to_parent = this.pathname.slice(0, this.pathname.length - 1);
-    assert(path_to_parent.length > 0, "ResourceExistsError: cannot create root");
+    assert(
+      path_to_parent.length > 0,
+      new Error("ResourceExistsError: cannot create root") as ResourceExistsError,
+    );
+    let parent_resource = null;
     {
-      const parent_resource = new ResourceService({
+      parent_resource = new ResourceService({
         adapter: this.adapter,
         baseUrl: this.baseUrl,
         pathname: path_to_parent,
         context: user_context,
+        is_collection: true,
       });
-      assert(await parent_resource.exists(), "ResourceTreeNotCompleteError");
+      assert(
+        await parent_resource.exists(),
+        new Error("ResourceTreeNotCompleteError") as ResourceTreeNotCompleteError,
+      );
     }
     const new_content = {
-      parent_id: path_to_parent[path_to_parent.length - 1],
+      parent_id: parent_resource.id || "user_" + this.context.user.id,
       name: this.pathname[this.pathname.length - 1],
+      is_directory: this.is_collection,
     };
-    this.file = await gr.services.documents.documents.create(null, new_content, null, user_context);
+    this.file = await gr.services.documents.documents.create(null, new_content, {}, user_context);
     // TODO: move it to the create function in documents service
     await gr.services.documents.documents.getAccess(this.file.id, user.username, user_context);
   };
@@ -228,8 +255,17 @@ export class ResourceService implements Resource {
    * thrown.
    */
   delete = async (user: User): Promise<void> => {
-    assert(await this.exists(), "ResourceNotFoundError");
-
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(
+      checkAccess(
+        this.file.id,
+        this.file,
+        "manage",
+        gr.services.documents.documents.repository,
+        this.getUserContext(user),
+      ),
+      new Error("User cannot delete this resource") as UnauthorizedError,
+    );
     // TODO: implement deleting for shared files
     return Promise.resolve(
       gr.services.documents.documents.delete(this.file.id, this.file, this.getUserContext(user)),
@@ -266,16 +302,33 @@ export class ResourceService implements Resource {
   //TODO: check copying collection into itself
   copy = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
     // remove trailing slashes and make an array from it
-    const dest_path = destination.pathname.replace(/\/?$/, "").slice(1).split("/");
-    assert(dest_path.length > 0, "Destination cannot be null");
-    assert(await this.exists(), "ResourceNotFoundError");
+    let pathname = destination.pathname;
+    pathname = pathname.replace(baseUrl.pathname, "");
+    pathname = pathname.replace(/^\/+|\/+$/g, "");
+    const dest_path = pathname.split("/");
 
+    assert(dest_path.length > 0, new Error("Destination cannot be null") as BadGatewayError);
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(
+      !destination.pathname.includes(await this.getCanonicalPath()),
+      new Error("Cannot copy into itself") as ForbiddenError,
+    );
+    assert(
+      checkAccess(
+        this.file.id,
+        this.file,
+        "read",
+        gr.services.documents.documents.repository,
+        this.getUserContext(user),
+      ),
+      new Error("User cannot delete this resource") as UnauthorizedError,
+    );
     let parent_path = null;
     try {
       // now we need to check that there is parent of destination File
       parent_path = await this.loadPath(dest_path.slice(0, -1));
     } catch (error) {
-      throw new Error("Resource tree not completed");
+      throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
     }
 
     const new_content = this.file;
@@ -318,16 +371,33 @@ export class ResourceService implements Resource {
    */
   move = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
     // remove trailing slashes and make an array from it
-    const dest_path = destination.pathname.replace(/\/?$/, "").slice(1).split("/");
-    assert(dest_path.length > 0, "Destination cannot be null");
-    assert(await this.exists(), "ResourceNotFoundError");
+    let pathname = destination.pathname;
+    pathname = pathname.replace(baseUrl.pathname, "");
+    pathname = pathname.replace(/^\/+|\/+$/g, "");
+    const dest_path = pathname.split("/");
 
+    assert(dest_path.length > 0, new Error("Destination cannot be null") as BadGatewayError);
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(
+      !destination.pathname.includes(await this.getCanonicalPath()),
+      new Error("Cannot move into itself") as ForbiddenError,
+    );
+    assert(
+      checkAccess(
+        this.file.id,
+        this.file,
+        "manage",
+        gr.services.documents.documents.repository,
+        this.getUserContext(user),
+      ),
+      new Error("User cannot delete this resource") as UnauthorizedError,
+    );
     let parent_path = null;
     try {
       // now we need to check that there is parent of destination File
       parent_path = await this.loadPath(dest_path.slice(0, -1));
     } catch (error) {
-      throw new Error("Resource tree not completed");
+      throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
     }
 
     const new_content = this.file;
@@ -401,7 +471,7 @@ export class ResourceService implements Resource {
    * This should **not** be URL encoded.
    */
   getCanonicalPath = async (): Promise<string> => {
-    assert(await this.exists(), "ResourceNotFoundError");
+    // assert(await this.exists(), "ResourceNotFoundError");
 
     return this.pathname.join("/");
   };
@@ -428,9 +498,7 @@ export class ResourceService implements Resource {
    * Return whether this resource is a collection.
    */
   isCollection = async (): Promise<boolean> => {
-    assert(await this.exists(), "ResourceNotFoundError");
-
-    return Promise.resolve(this.file.is_directory);
+    return Promise.resolve(this.is_collection);
   };
 
   /**
@@ -446,7 +514,7 @@ export class ResourceService implements Resource {
   getInternalMembers = async (user: User): Promise<Resource[]> => {
     console.log("ResourceService::getInternalMembers called()");
     console.log(this.file);
-    assert(await this.exists(), "ResourceNotFoundError");
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
     assert(
       await checkAccess(
         this.file.id,
@@ -455,9 +523,12 @@ export class ResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      "UnauthorizedError",
+      new Error("User does not have access to this folder") as UnauthorizedError,
     );
-    assert(this.file.is_directory, "MethodNotSupportedError");
+    assert(
+      this.file.is_directory,
+      new Error("Files do not support this method") as MethodNotSupportedError,
+    );
     try {
       const item = await gr.services.documents.documents.get(this.file.id, this.context);
 
@@ -471,19 +542,20 @@ export class ResourceService implements Resource {
               context: this.context,
               file: child,
               pathIds: this.pathIds.concat([this.file.id]),
+              is_collection: child.is_directory,
             }),
         ),
       );
     } catch (err) {
       console.error(err);
-      throw new Error("BadGatewayError");
+      throw new Error(err) as BadGatewayError;
     }
   };
   /**
    * Returns last version about the resource
    */
   getVersions = async (): Promise<FileVersion[]> => {
-    assert(await this.exists(), "ResourceNotFoundError");
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
     return Promise.resolve(
       (await gr.services.documents.documents.get(this.file.id, this.context)).versions,
     );

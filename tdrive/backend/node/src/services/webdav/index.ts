@@ -1,6 +1,5 @@
 import { Prefix, TdriveService } from "../../core/platform/framework";
 import WebServerAPI from "../../core/platform/services/webserver/provider";
-import { WebDAVServiceImpl } from "./services/";
 import web from "./web";
 
 @Prefix("/internal/services/webdav/v1/")

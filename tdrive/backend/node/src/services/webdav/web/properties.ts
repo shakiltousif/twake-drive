@@ -1,4 +1,4 @@
-import type { Properties, User } from "nephele";
+import type { PropertyNotFoundError, Properties, User } from "nephele";
 import { ResourceService } from "./fileResource";
 
 export class PropertiesService implements Properties {
@@ -72,7 +72,7 @@ export class PropertiesService implements Properties {
       case "quota-used-bytes":
         return `${await this.resource.getTotalSpace()}`;
       default:
-        return Promise.reject("PropertyNotFoundError");
+        throw new Error("PropertyNotFoundError") as PropertyNotFoundError;
     }
   };
 
