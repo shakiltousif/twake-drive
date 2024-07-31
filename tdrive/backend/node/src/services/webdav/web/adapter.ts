@@ -133,7 +133,7 @@ const build_adapter = (nephele: any): Adapter => {
      */
     newResource = async (url: URL, baseUrl: URL): Promise<Resource> => {
       const context = getDriveExecutionContext(url);
-      let pathname = url.pathname;
+      let pathname = decodeURI(url.pathname);
       pathname = pathname.replace(baseUrl.pathname, "");
       pathname = pathname.replace(/^\/+|\/+$/g, "");
       const pathname_arr = pathname.split("/");
@@ -144,7 +144,7 @@ const build_adapter = (nephele: any): Adapter => {
       const resource = new ResourceService({
         adapter: this,
         baseUrl: baseUrl,
-        pathname: pathname_arr.map(name => decodeURI(name)),
+        pathname: pathname_arr,
         context: context,
         is_collection: false,
       });

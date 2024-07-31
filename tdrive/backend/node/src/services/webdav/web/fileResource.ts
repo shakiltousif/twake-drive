@@ -22,7 +22,6 @@ import { DriveExecutionContext } from "../../documents/types";
 import assert from "assert";
 import { checkAccess } from "../../documents/services/access-check";
 import { FileVersion } from "../../documents/entities/file-version";
-import c from "config";
 
 export class ResourceService implements Resource {
   /**
@@ -235,6 +234,7 @@ export class ResourceService implements Resource {
       parent_id: parent_resource.id || "user_" + this.context.user.id,
       name: this.pathname[this.pathname.length - 1],
       is_directory: this.is_collection,
+      id: null,
     };
     this.file = await gr.services.documents.documents.create(null, new_content, {}, user_context);
     // TODO: move it to the create function in documents service
@@ -266,10 +266,18 @@ export class ResourceService implements Resource {
       ),
       new Error("User cannot delete this resource") as UnauthorizedError,
     );
-    // TODO: implement deleting for shared files
-    return Promise.resolve(
-      gr.services.documents.documents.delete(this.file.id, this.file, this.getUserContext(user)),
-    );
+    // cannot delete not empty collection
+    if (this.is_collection && (await this.getInternalMembers(user)).length != 0) {
+      return;
+    }
+    // this check is needed for nephele moveing/copying handling in case the resource was moved (updated name)
+    // but the file id remains the same
+    if (this.file.name == this.pathname[this.pathname.length - 1]) {
+      // TODO: implement deleting for shared files
+      return Promise.resolve(
+        gr.services.documents.documents.delete(this.file.id, this.file, this.getUserContext(user)),
+      );
+    }
   };
 
   /**
@@ -302,7 +310,7 @@ export class ResourceService implements Resource {
   //TODO: check copying collection into itself
   copy = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
     // remove trailing slashes and make an array from it
-    let pathname = destination.pathname;
+    let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
     pathname = pathname.replace(/^\/+|\/+$/g, "");
     const dest_path = pathname.split("/");
@@ -331,9 +339,11 @@ export class ResourceService implements Resource {
       throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
     }
 
-    const new_content = this.file;
-    new_content.parent_id = parent_path[parent_path.length - 1];
-    new_content.name = dest_path[dest_path.length - 1];
+    const new_content = {
+      parent_id: parent_path[parent_path.length - 1],
+      name: dest_path[dest_path.length - 1],
+      is_directory: this.is_collection,
+    };
     await gr.services.documents.documents.copy(
       this.file.id,
       this.file,
@@ -371,7 +381,7 @@ export class ResourceService implements Resource {
    */
   move = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
     // remove trailing slashes and make an array from it
-    let pathname = destination.pathname;
+    let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
     pathname = pathname.replace(/^\/+|\/+$/g, "");
     const dest_path = pathname.split("/");
@@ -400,9 +410,11 @@ export class ResourceService implements Resource {
       throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
     }
 
-    const new_content = this.file;
-    new_content.parent_id = parent_path[parent_path.length - 1];
-    new_content.name = dest_path[dest_path.length - 1];
+    const new_content = {
+      parent_id: parent_path[parent_path.length - 1],
+      name: dest_path[dest_path.length - 1],
+      is_directory: this.is_collection,
+    };
     await gr.services.documents.documents.move(
       this.file.id,
       this.file,
