@@ -1,10 +1,11 @@
-import type {
+import {
   Adapter,
   BadGatewayError,
   ForbiddenError,
   Lock,
   MethodNotSupportedError,
   Properties,
+  RangeNotSatisfiableError,
   Resource,
   ResourceExistsError,
   ResourceNotFoundError,
@@ -22,6 +23,9 @@ import { DriveExecutionContext } from "../../documents/types";
 import assert from "assert";
 import { checkAccess } from "../../documents/services/access-check";
 import { FileVersion } from "../../documents/entities/file-version";
+import { MultipartFile } from "@fastify/multipart";
+import { BusboyFileStream } from "@fastify/busboy";
+import { UploadOptions } from "../../files/types";
 
 export class ResourceService implements Resource {
   /**
@@ -174,13 +178,58 @@ export class ResourceService implements Resource {
    * or streams.
    */
   getStream = async (range?: { start: number; end: number }): Promise<Readable> => {
-    // TODO: implement stream ranges
     const downloadObject = await gr.services.documents.documents.download(
       this.file.id,
       null,
       this.context,
     );
     const file = downloadObject.file;
+    if (!file || !file.file) {
+      throw new Error("File not found or file content is empty") as ResourceNotFoundError;
+    }
+    let stream: Readable = file.file;
+    if (range) {
+      if (range.start < 0 || range.end < range.start) {
+        throw new Error("Invalid range specified") as RangeNotSatisfiableError;
+      }
+      const end = range.end !== undefined ? Math.min(range.end, file.size - 1) : file.size - 1;
+      let rangeSize = end - range.start + 1;
+      // Create a transform stream to handle the range
+      stream = new Readable({
+        read(size) {
+          if (!file.file.readable) {
+            this.push(null);
+            return;
+          }
+
+          file.file.once("readable", () => {
+            let chunk = file.file.read(Math.min(size, rangeSize));
+            if (chunk) {
+              if (range.start > 0) {
+                chunk = chunk.slice(range.start);
+                range.start = 0;
+              }
+              if (chunk.length > rangeSize) {
+                chunk = chunk.slice(0, rangeSize);
+              }
+              this.push(chunk);
+              rangeSize -= chunk.length;
+              if (rangeSize <= 0) {
+                this.push(null);
+              }
+            } else {
+              this.push(null);
+            }
+          });
+        },
+      });
+    }
+    // Handle premature abort
+    stream.on("close", () => {
+      if (file.file instanceof Readable) {
+        file.file.destroy();
+      }
+    });
     return Promise.resolve(file.file);
   };
 
@@ -190,11 +239,212 @@ export class ResourceService implements Resource {
    * If the resource is a collection, and it can't accept a stream (like a
    * folder on a filesystem), a MethodNotSupportedError may be thrown.
    */
+  // first implementation is when we read the data in memory, then write it in repo
+  // setStream = async (input: Readable, user: User, mediaType?: string): Promise<void> => {
+  //   try {
+  //     assert(await this.exists());
+  //   } catch (error) {
+  //     await this.create(user);
+  //   }
+  //   assert(
+  //     await checkAccess(
+  //       this.file.id,
+  //       this.file,
+  //       "write",
+  //       gr.services.documents.documents.repository,
+  //       this.getUserContext(user),
+  //     ),
+  //     new Error("User does not have access to this resource") as UnauthorizedError,
+  //   );
+  //
+  //   assert(
+  //     !(await this.isCollection()),
+  //     new Error("Collection doesn't support this operation") as MethodNotSupportedError,
+  //   );
+  //   let file_id: string;
+  //   try {
+  //     // Get the file
+  //     file_id = this.file.last_version_cache.file_metadata.external_id;
+  //   } catch (error) {
+  //     file_id = null;
+  //   }
+  //   try {
+  //     // Prepare the MultipartFile object
+  //     const multipartFile: MultipartFile = {
+  //       type: "file",
+  //       toBuffer: () =>
+  //         new Promise<Buffer>(resolve => {
+  //           const chunks: Buffer[] = [];
+  //           input.on("data", chunk => chunks.push(chunk));
+  //           input.on("end", () => resolve(Buffer.concat(chunks)));
+  //           input.on("error", err => Promise.reject(err));
+  //         }),
+  //       file: input as unknown as BusboyFileStream, // Type assertion
+  //       fieldname: "file",
+  //       filename: this.file.name,
+  //       encoding: input.readableEncoding || "utf-8",
+  //       mimetype: mediaType || "application/octet-stream",
+  //       fields: {},
+  //     };
+  //
+  //     // Prepare UploadOptions
+  //     const uploadOptions: UploadOptions = {
+  //       filename: this.file.name,
+  //       type: mediaType || "application/octet-stream",
+  //       totalSize: 0, // We'll update this later
+  //       totalChunks: 1,
+  //       chunkNumber: 0,
+  //       waitForThumbnail: false,
+  //       ignoreThumbnails: false,
+  //     };
+  //
+  //     // Calculate total size as data comes in
+  //     input.on("data", chunk => {
+  //       uploadOptions.totalSize += chunk.length;
+  //     });
+  //
+  //     // Handle the 'end' event to save the file
+  //     input.on("end", async () => {
+  //       try {
+  //         const file = await gr.services.files.save(
+  //           file_id,
+  //           multipartFile,
+  //           uploadOptions,
+  //           this.getUserContext(user),
+  //         );
+  //         const version = this.file.last_version_cache;
+  //         version.file_metadata.external_id = file.id;
+  //         await gr.services.documents.documents.createVersion(
+  //           this.file.id,
+  //           version,
+  //           this.getUserContext(user),
+  //         );
+  //       } catch (error) {
+  //         console.error("Error saving file:", error);
+  //         throw error;
+  //       }
+  //     });
+  //
+  //     // Resume the stream
+  //     input.resume();
+  //     //
+  //     // try {
+  //     //   await gr.services.files.save(
+  //     //     file.id,
+  //     //     {
+  //     //       type: "file",
+  //     //       toBuffer: input.read(),
+  //     //       file: input,
+  //     //       fieldname: "undefined",
+  //     //       filename: this.file.name,
+  //     //       encoding: input.readableEncoding,
+  //     //       mimeType: mediaType,
+  //     //       fields: undefined,
+  //     //     },
+  //     //     {
+  //     //       totalChunks: input.readableLength,
+  //     //       totalSize: input.readableLength,
+  //     //       chunkNumber: 0,
+  //     //       filename: this.file.name,
+  //     //       type: mediaType,
+  //     //     },
+  //     //     this.getUserContext(user),
+  //     //   );
+  //   } catch (error) {
+  //     console.log(error);
+  //     throw error;
+  //   }
+  //   return Promise.resolve();
+  // };
+  // this one is when we write as we read
   setStream = async (input: Readable, user: User, mediaType?: string): Promise<void> => {
-    // TODO: implement setting streams
+    try {
+      assert(await this.exists());
+    } catch (error) {
+      await this.create(user);
+    }
+    assert(
+      await checkAccess(
+        this.file.id,
+        this.file,
+        "write",
+        gr.services.documents.documents.repository,
+        this.getUserContext(user),
+      ),
+      new Error("User does not have access to this resource") as UnauthorizedError,
+    );
+
+    assert(
+      !(await this.isCollection()),
+      new Error("Collection doesn't support this operation") as MethodNotSupportedError,
+    );
+    let file_id: string;
+    try {
+      // Get the file
+      file_id = this.file.last_version_cache.file_metadata.external_id;
+    } catch (error) {
+      file_id = null;
+    }
+    // Prepare UploadOptions
+    const uploadOptions: UploadOptions = {
+      filename: this.file.name,
+      type: mediaType || "application/octet-stream",
+      totalSize: 0,
+      totalChunks: 0,
+      chunkNumber: 0,
+      waitForThumbnail: false,
+      ignoreThumbnails: false,
+    };
+
+    // Function to save a chunk of data
+    const saveChunk = async (chunk: Buffer) => {
+      uploadOptions.totalSize += chunk.length;
+      uploadOptions.totalChunks++;
+      uploadOptions.chunkNumber++;
+
+      const chunkFile: MultipartFile = {
+        type: "file",
+        toBuffer: () => Promise.resolve(chunk),
+        file: Readable.from(chunk) as unknown as BusboyFileStream,
+        fieldname: "file",
+        filename: this.file.name,
+        encoding: input.readableEncoding || "utf-8",
+        mimetype: mediaType || "application/octet-stream",
+        fields: {},
+      };
+
+      try {
+        const file = await gr.services.files.save(
+          file_id,
+          chunkFile,
+          uploadOptions,
+          this.getUserContext(user),
+        );
+        file_id = file.id;
+      } catch (error) {
+        console.error("Error saveChunk:", error);
+        throw error;
+      }
+    };
+    try {
+      for await (const chunk of input) {
+        await saveChunk(Buffer.from(chunk));
+      }
+      const version = this.file.last_version_cache;
+      version.file_metadata.external_id = file_id;
+      await gr.services.documents.documents.createVersion(
+        this.file.id,
+        version,
+        this.getUserContext(user),
+      );
+      // Resume the stream
+      input.resume();
+    } catch (error) {
+      console.error("Error saving chunk:", error);
+      throw error;
+    }
     return Promise.resolve();
   };
-
   /**
    * Create the resource.
    *
@@ -237,6 +487,7 @@ export class ResourceService implements Resource {
       id: null,
     };
     this.file = await gr.services.documents.documents.create(null, new_content, {}, user_context);
+    // TODO: when creating file needed to create an empty file
     // TODO: move it to the create function in documents service
     await gr.services.documents.documents.getAccess(this.file.id, user.username, user_context);
   };
@@ -445,7 +696,7 @@ export class ResourceService implements Resource {
     try {
       return Promise.resolve(this.file.last_version_cache.id);
     } catch (err) {
-      console.log("No Version Cache for ", this);
+      // console.log("No Version Cache for ", this);
       return Promise.resolve("none");
     }
   };
@@ -524,8 +775,8 @@ export class ResourceService implements Resource {
    * UnauthorizedError should be thrown.
    */
   getInternalMembers = async (user: User): Promise<Resource[]> => {
-    console.log("ResourceService::getInternalMembers called()");
-    console.log(this.file);
+    // console.log("ResourceService::getInternalMembers called()");
+    // console.log(this.file);
     assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
     assert(
       await checkAccess(
