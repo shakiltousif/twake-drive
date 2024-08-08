@@ -26,6 +26,7 @@ import { DriveFile } from "../../documents/entities/drive-file";
 import { MissedDriveFile } from "../../documents/entities/missed-drive-file";
 import { FileVersion } from "../../documents/entities/file-version";
 import { getPath } from "../../documents/utils";
+import { createStreamSizeCounter } from "../../../utils/files";
 
 export class FileServiceImpl {
   version: "1";
@@ -134,16 +135,14 @@ export class FileServiceImpl {
           await this.repository.save(entity, context);
         }
       }
+      const sizeCounter = createStreamSizeCounter(file.file);
 
-      let totalUploadedSize = 0;
-      file.file.on("data", function (chunk) {
-        totalUploadedSize += chunk.length;
-      });
-      await gr.platformServices.storage.write(getFilePath(entity), file.file, {
+      await gr.platformServices.storage.write(getFilePath(entity), sizeCounter.stream, {
         chunkNumber: options.chunkNumber,
         encryptionAlgo: this.algorithm,
         encryptionKey: entity.encryption_key,
       });
+      const totalUploadedSize = sizeCounter.getSize();
 
       if (entity.upload_data.chunks === 1 && totalUploadedSize) {
         entity.upload_data.size = totalUploadedSize;
