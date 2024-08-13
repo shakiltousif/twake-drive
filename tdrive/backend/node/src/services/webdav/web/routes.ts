@@ -14,21 +14,25 @@ async function builder(nephele: any) {
         // console.log(request.headers, request.cookies, request.body, request.secret);
         if (request.headers.authorization) {
           // TODO: make auth just via login and password and not id's
-          const base64Credentials = request.headers.authorization.split(" ")[1];
-          const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
-          const device_id = credentials.split(":")[0];
-          const company_id = credentials.split(":")[1];
-          const user = await gr.services.users.get({ id: device_id });
-          response.locals.user = {
-            username: device_id,
-            groupname: company_id,
-          } as User;
-          executionStorage.getStore().user_id = user.id;
-          executionStorage.getStore().company_id = company_id;
-          response.setHeader("WWW-Authenticate", "Basic");
-          return response.locals.user;
+          try {
+            const base64Credentials = request.headers.authorization.split(" ")[1];
+            const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
+            const device_id = credentials.split(":")[0];
+            const company_id = credentials.split(":")[1];
+            const user = await gr.services.users.get({id: device_id});
+            response.locals.user = {
+              username: device_id,
+              groupname: company_id,
+            } as User;
+            executionStorage.getStore().user_id = user.id;
+            executionStorage.getStore().company_id = company_id;
+            response.setHeader("WWW-Authenticate", "Basic");
+            return response.locals.user;
+          } catch (error) {
+            throw new nephele.UnauthorizedError("Error while authorising");
+          }
         } else {
-          // response.statusCode = 401;
+          response.statusCode = 401;
           response.setHeader("WWW-Authenticate", "Basic");
           throw new nephele.UnauthorizedError("Unauthorized user!");
         }
@@ -82,6 +86,3 @@ async function builder(nephele: any) {
   return routes;
 }
 export const routes = eval("import('nephele').then(builder)");
-function extractUser(url: string) {
-  return url;
-}

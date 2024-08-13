@@ -77,6 +77,7 @@ export class FileServiceImpl {
     file: MultipartFile,
     options: UploadOptions,
     context: CompanyExecutionContext,
+    permitSizeUpdate: boolean = false,
   ): Promise<File> {
     const userId = context.user?.id;
     const applicationId: string | null = context.user?.application_id || null;
@@ -117,7 +118,12 @@ export class FileServiceImpl {
       // Detect a new file upload
       // Only applications can overwrite a file.
       // Users alone can only write an empty file.
-      if (applicationId || !entity.upload_data?.size || context.user.server_request) {
+      if (
+        applicationId ||
+        !entity.upload_data?.size ||
+        context.user.server_request ||
+        permitSizeUpdate
+      ) {
         if (
           //If there was any change to the file
           entity.upload_data?.size !== options.totalSize ||

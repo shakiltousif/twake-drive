@@ -131,9 +131,9 @@ export class ResourceService implements Resource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocks = (): Promise<Lock[]> => {
+  getLocks = async (): Promise<Lock[]> => {
     // TODO: create locks
-    return Promise.resolve([] as Lock[]);
+    return [] as Lock[];
   };
 
   /**
@@ -144,9 +144,9 @@ export class ResourceService implements Resource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocksByUser = (user: User): Promise<Lock[]> => {
+  getLocksByUser = async (user: User): Promise<Lock[]> => {
     // TODO: create locks for users
-    return Promise.resolve([] as Lock[]);
+    return [] as Lock[];
   };
 
   /**
@@ -155,16 +155,16 @@ export class ResourceService implements Resource {
    * The defaults for the lock don't matter. They will be assigned by Nephele
    * before being saved to storage.
    */
-  createLockForUser = (user: User): Promise<Lock> => {
+  createLockForUser = async (user: User): Promise<Lock> => {
     // TODO: create lock
-    return Promise.resolve(null);
+    return null;
   };
 
   /**
    * Return a properties object for this resource.
    */
-  getProperties = (): Promise<Properties> => {
-    return Promise.resolve(new PropertiesService(this));
+  getProperties = async (): Promise<Properties> => {
+    return new PropertiesService(this);
   };
 
   /**
@@ -230,7 +230,7 @@ export class ResourceService implements Resource {
         file.file.destroy();
       }
     });
-    return Promise.resolve(file.file);
+    return stream;
   };
 
   /**
@@ -239,124 +239,6 @@ export class ResourceService implements Resource {
    * If the resource is a collection, and it can't accept a stream (like a
    * folder on a filesystem), a MethodNotSupportedError may be thrown.
    */
-  // first implementation is when we read the data in memory, then write it in repo
-  // setStream = async (input: Readable, user: User, mediaType?: string): Promise<void> => {
-  //   try {
-  //     assert(await this.exists());
-  //   } catch (error) {
-  //     await this.create(user);
-  //   }
-  //   assert(
-  //     await checkAccess(
-  //       this.file.id,
-  //       this.file,
-  //       "write",
-  //       gr.services.documents.documents.repository,
-  //       this.getUserContext(user),
-  //     ),
-  //     new Error("User does not have access to this resource") as UnauthorizedError,
-  //   );
-  //
-  //   assert(
-  //     !(await this.isCollection()),
-  //     new Error("Collection doesn't support this operation") as MethodNotSupportedError,
-  //   );
-  //   let file_id: string;
-  //   try {
-  //     // Get the file
-  //     file_id = this.file.last_version_cache.file_metadata.external_id;
-  //   } catch (error) {
-  //     file_id = null;
-  //   }
-  //   try {
-  //     // Prepare the MultipartFile object
-  //     const multipartFile: MultipartFile = {
-  //       type: "file",
-  //       toBuffer: () =>
-  //         new Promise<Buffer>(resolve => {
-  //           const chunks: Buffer[] = [];
-  //           input.on("data", chunk => chunks.push(chunk));
-  //           input.on("end", () => resolve(Buffer.concat(chunks)));
-  //           input.on("error", err => Promise.reject(err));
-  //         }),
-  //       file: input as unknown as BusboyFileStream, // Type assertion
-  //       fieldname: "file",
-  //       filename: this.file.name,
-  //       encoding: input.readableEncoding || "utf-8",
-  //       mimetype: mediaType || "application/octet-stream",
-  //       fields: {},
-  //     };
-  //
-  //     // Prepare UploadOptions
-  //     const uploadOptions: UploadOptions = {
-  //       filename: this.file.name,
-  //       type: mediaType || "application/octet-stream",
-  //       totalSize: 0, // We'll update this later
-  //       totalChunks: 1,
-  //       chunkNumber: 0,
-  //       waitForThumbnail: false,
-  //       ignoreThumbnails: false,
-  //     };
-  //
-  //     // Calculate total size as data comes in
-  //     input.on("data", chunk => {
-  //       uploadOptions.totalSize += chunk.length;
-  //     });
-  //
-  //     // Handle the 'end' event to save the file
-  //     input.on("end", async () => {
-  //       try {
-  //         const file = await gr.services.files.save(
-  //           file_id,
-  //           multipartFile,
-  //           uploadOptions,
-  //           this.getUserContext(user),
-  //         );
-  //         const version = this.file.last_version_cache;
-  //         version.file_metadata.external_id = file.id;
-  //         await gr.services.documents.documents.createVersion(
-  //           this.file.id,
-  //           version,
-  //           this.getUserContext(user),
-  //         );
-  //       } catch (error) {
-  //         console.error("Error saving file:", error);
-  //         throw error;
-  //       }
-  //     });
-  //
-  //     // Resume the stream
-  //     input.resume();
-  //     //
-  //     // try {
-  //     //   await gr.services.files.save(
-  //     //     file.id,
-  //     //     {
-  //     //       type: "file",
-  //     //       toBuffer: input.read(),
-  //     //       file: input,
-  //     //       fieldname: "undefined",
-  //     //       filename: this.file.name,
-  //     //       encoding: input.readableEncoding,
-  //     //       mimeType: mediaType,
-  //     //       fields: undefined,
-  //     //     },
-  //     //     {
-  //     //       totalChunks: input.readableLength,
-  //     //       totalSize: input.readableLength,
-  //     //       chunkNumber: 0,
-  //     //       filename: this.file.name,
-  //     //       type: mediaType,
-  //     //     },
-  //     //     this.getUserContext(user),
-  //     //   );
-  //   } catch (error) {
-  //     console.log(error);
-  //     throw error;
-  //   }
-  //   return Promise.resolve();
-  // };
-  // this one is when we write as we read
   setStream = async (input: Readable, user: User, mediaType?: string): Promise<void> => {
     try {
       assert(await this.exists());
@@ -385,26 +267,26 @@ export class ResourceService implements Resource {
     } catch (error) {
       file_id = null;
     }
-    // Prepare UploadOptions
-    const uploadOptions: UploadOptions = {
-      filename: this.file.name,
-      type: mediaType || "application/octet-stream",
-      totalSize: 0,
-      totalChunks: 0,
-      chunkNumber: 0,
-      waitForThumbnail: false,
-      ignoreThumbnails: false,
-    };
+
+    let totalSize = 0;
+    let totalChunks = 0;
 
     // Function to save a chunk of data
-    const saveChunk = async (chunk: Buffer) => {
-      uploadOptions.totalSize += chunk.length;
-      uploadOptions.totalChunks++;
-      uploadOptions.chunkNumber++;
+    const saveChunk = async (chunk: Buffer, chunkNumber: number) => {
+      // Prepare UploadOptions
+      const uploadOptions: UploadOptions = {
+        filename: this.file.name,
+        type: mediaType || "application/octet-stream",
+        totalSize: totalSize,
+        totalChunks: totalChunks,
+        chunkNumber: chunkNumber,
+        waitForThumbnail: false,
+        ignoreThumbnails: false,
+      };
 
       const chunkFile: MultipartFile = {
         type: "file",
-        toBuffer: () => Promise.resolve(chunk),
+        toBuffer: async () => chunk,
         file: Readable.from(chunk) as unknown as BusboyFileStream,
         fieldname: "file",
         filename: this.file.name,
@@ -419,31 +301,70 @@ export class ResourceService implements Resource {
           chunkFile,
           uploadOptions,
           this.getUserContext(user),
+          true,
         );
         file_id = file.id;
+        return file.id;
       } catch (error) {
         console.error("Error saveChunk:", error);
         throw error;
       }
     };
-    try {
+    const makeChunk = async (input: Readable) => {
+      const promises: (() => Promise<any>)[] = [];
+      let totalChunk: Buffer = Buffer.from([]);
       for await (const chunk of input) {
-        await saveChunk(Buffer.from(chunk));
+        totalSize += chunk.length;
+        totalChunk = Buffer.concat([totalChunk, Buffer.from(chunk)]);
       }
+      totalChunks = 1;
+      promises.push(() => saveChunk(totalChunk, 1));
+      return promises;
+    };
+
+    const concurrentChunks = async (input: Readable) => {
+      const promises: (() => Promise<any>)[] = [];
+      for await (const chunk of input) {
+        totalSize += chunk.length;
+        while (!file_id && promises.length > 0) {
+          await promises.shift()();
+        }
+        const chunkNumber = ++totalChunks;
+        promises.push(() => saveChunk(Buffer.from(chunk), chunkNumber));
+      }
+      return promises;
+    };
+    try {
+      const promises = await makeChunk(input);
+      // TODO: why chunks buffing not working
+      // const promises = await concurrentChunks(input);
+      await Promise.all(promises.map(p => p()));
       const version = this.file.last_version_cache;
       version.file_metadata.external_id = file_id;
+      const newVersion = {
+        application_id: version.application_id,
+        drive_item_id: version.drive_item_id,
+        id: null,
+        file_metadata: version.file_metadata,
+        file_size: version.file_size,
+        filename: version.filename,
+        key: version.key,
+        realname: version.realname,
+        provider: version.provider,
+      };
       await gr.services.documents.documents.createVersion(
         this.file.id,
-        version,
+        newVersion,
         this.getUserContext(user),
       );
       // Resume the stream
       input.resume();
+
+      console.log("Finished uploading file!");
     } catch (error) {
       console.error("Error saving chunk:", error);
       throw error;
     }
-    return Promise.resolve();
   };
   /**
    * Create the resource.
@@ -519,15 +440,25 @@ export class ResourceService implements Resource {
     );
     // cannot delete not empty collection
     if (this.is_collection && (await this.getInternalMembers(user)).length != 0) {
-      return;
+      throw new Error("Method not supported: collection is not empty!") as MethodNotSupportedError;
     }
-    // this check is needed for nephele moveing/copying handling in case the resource was moved (updated name)
+    // this check is needed for nephele moving/copying handling in case the resource was moved (updated name)
     // but the file id remains the same
     if (this.file.name == this.pathname[this.pathname.length - 1]) {
       // TODO: implement deleting for shared files
-      return Promise.resolve(
-        gr.services.documents.documents.delete(this.file.id, this.file, this.getUserContext(user)),
-      );
+      // TODO: the files are not deleted, but moved to trash
+      try {
+        await gr.services.documents.documents.delete(
+          this.file.id,
+          this.file,
+          this.getUserContext(user),
+        );
+        return gr.services.documents.documents.delete(
+          this.file.id,
+          this.file,
+          this.getUserContext(user),
+        );
+      } catch (error) {}
     }
   };
 
@@ -595,7 +526,7 @@ export class ResourceService implements Resource {
       name: dest_path[dest_path.length - 1],
       is_directory: this.is_collection,
     };
-    await gr.services.documents.documents.copy(
+    return await gr.services.documents.documents.copy(
       this.file.id,
       this.file,
       new_content,
@@ -666,7 +597,7 @@ export class ResourceService implements Resource {
       name: dest_path[dest_path.length - 1],
       is_directory: this.is_collection,
     };
-    await gr.services.documents.documents.move(
+    return await gr.services.documents.documents.move(
       this.file.id,
       this.file,
       new_content,
@@ -684,9 +615,7 @@ export class ResourceService implements Resource {
       return Promise.resolve(0);
     }
 
-    return Promise.resolve(
-      calculateItemSize(this.file, gr.services.documents.documents.repository, this.context),
-    );
+    return calculateItemSize(this.file, gr.services.documents.documents.repository, this.context);
   };
 
   /**
@@ -694,10 +623,10 @@ export class ResourceService implements Resource {
    */
   getEtag = async (): Promise<string> => {
     try {
-      return Promise.resolve(this.file.last_version_cache.id);
+      return this.file.last_version_cache.id;
     } catch (err) {
       // console.log("No Version Cache for ", this);
-      return Promise.resolve("none");
+      return "none";
     }
   };
 
@@ -711,11 +640,9 @@ export class ResourceService implements Resource {
    */
   getMediaType = async (): Promise<string | null> => {
     console.log("ResourceService::getMediaType called()");
-    return Promise.resolve(
-      !(await this.exists()) || (await this.isCollection())
-        ? null
-        : this.file.last_version_cache.file_metadata.mime,
-    );
+    return !(await this.exists()) || (await this.isCollection())
+      ? null
+      : this.file.last_version_cache.file_metadata.mime;
   };
 
   /**
@@ -725,7 +652,7 @@ export class ResourceService implements Resource {
     console.log("ResourceService::canonicalName called()");
     assert(await this.exists(), "ResourceNotFoundError");
 
-    return Promise.resolve(this.file.name);
+    return this.file.name;
   };
 
   /**
@@ -761,7 +688,7 @@ export class ResourceService implements Resource {
    * Return whether this resource is a collection.
    */
   isCollection = async (): Promise<boolean> => {
-    return Promise.resolve(this.is_collection);
+    return this.is_collection;
   };
 
   /**
@@ -795,19 +722,17 @@ export class ResourceService implements Resource {
     try {
       const item = await gr.services.documents.documents.get(this.file.id, this.context);
 
-      return Promise.resolve(
-        item.children.map(
-          child =>
-            new ResourceService({
-              adapter: this.adapter,
-              baseUrl: this.baseUrl,
-              pathname: this.pathname.concat([child.name]),
-              context: this.context,
-              file: child,
-              pathIds: this.pathIds.concat([this.file.id]),
-              is_collection: child.is_directory,
-            }),
-        ),
+      return item.children.map(
+        child =>
+          new ResourceService({
+            adapter: this.adapter,
+            baseUrl: this.baseUrl,
+            pathname: this.pathname.concat([child.name]),
+            context: this.context,
+            file: child,
+            pathIds: this.pathIds.concat([this.file.id]),
+            is_collection: child.is_directory,
+          }),
       );
     } catch (err) {
       console.error(err);
@@ -819,24 +744,20 @@ export class ResourceService implements Resource {
    */
   getVersions = async (): Promise<FileVersion[]> => {
     assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
-    return Promise.resolve(
-      (await gr.services.documents.documents.get(this.file.id, this.context)).versions,
-    );
+    return (await gr.services.documents.documents.get(this.file.id, this.context)).versions;
   };
 
   /**
    * Returns total space used by user
    */
   getTotalSpace = async (): Promise<number> => {
-    return Promise.resolve(await gr.services.documents.documents.userQuota(this.context));
+    return await gr.services.documents.documents.userQuota(this.context);
   };
 
   /**
    * Returns free space for the user
    */
   getFreeSpace = async (): Promise<number> => {
-    return Promise.resolve(
-      gr.services.documents.documents.defaultQuota - (await this.getTotalSpace()),
-    );
+    return gr.services.documents.documents.defaultQuota - (await this.getTotalSpace());
   };
 }

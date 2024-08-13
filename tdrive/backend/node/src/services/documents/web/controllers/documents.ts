@@ -479,13 +479,14 @@ export class DocumentsController {
       ids = items.children.map(item => item.id);
     }
 
-    if (isDirectory) {
+    if (isDirectory === true) {
       const items = await globalResolver.services.documents.documents.get(ids[0], context, true);
       ids = items.children.map(item => item.id);
     }
 
     try {
       const archive = await globalResolver.services.documents.documents.createZip(ids, context);
+      reply.raw.setHeader("content-disposition", 'attachment; filename="twake_drive.zip"');
 
       archive.on("finish", () => {
         reply.status(200);

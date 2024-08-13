@@ -24,13 +24,9 @@ const build_adapter = (nephele: any): Adapter => {
      * (the string "2") in the returned array to indicate that the "LOCK" and
      * "UNLOCK" methods should be included in the "Allow" header.
      */
-    getComplianceClasses = (
-      url: URL,
-      request: Request,
-      response: AuthResponse,
-    ): Promise<string[]> => {
+    getComplianceClasses = async (url: URL, request: Request, response: AuthResponse) => {
       // "2" - means that the Adapter ( i.e. file system supports lock / unlock function )
-      return Promise.resolve(["2"]);
+      return ["2"];
       // return Promise.resolve([]);
     };
 
@@ -51,11 +47,11 @@ const build_adapter = (nephele: any): Adapter => {
      * Any methods this function returns are entirely the responsibility of the
      * adapter to fulfill, beyond simple authorization and error responses.
      */
-    getAllowedMethods = (url: URL, request: Request, response: AuthResponse): Promise<string[]> => {
-      if ("2" in this.getComplianceClasses(url, request, response)) {
-        return Promise.resolve(["LOCK", "UNLOCK"]);
+    getAllowedMethods = async (url: URL, request: Request, response: AuthResponse) => {
+      if ("2" in (await this.getComplianceClasses(url, request, response))) {
+        return ["LOCK", "UNLOCK"];
       } else {
-        return Promise.resolve([]);
+        return [];
       }
     };
 
@@ -69,12 +65,8 @@ const build_adapter = (nephele: any): Adapter => {
      * that information to determine whether resources exist on a server and what
      * features they support.
      */
-    getOptionsResponseCacheControl = (
-      url: URL,
-      request: Request,
-      response: AuthResponse,
-    ): Promise<string> => {
-      return Promise.resolve("max-age=604800");
+    getOptionsResponseCacheControl = async (url: URL, request: Request, response: AuthResponse) => {
+      return "max-age=604800";
     };
 
     /**
@@ -90,7 +82,7 @@ const build_adapter = (nephele: any): Adapter => {
      */
     isAuthorized = async (url: URL, method: string, baseUrl: URL, user: User): Promise<boolean> => {
       const UserByUsername = await gr.services.users.get({ id: user.username });
-      return Promise.resolve(UserByUsername != null);
+      return UserByUsername != null;
     };
 
     /**
@@ -120,7 +112,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (!(await resource.exists())) {
         throw new nephele.ResourceNotFoundError("Resource not found");
       }
-      return Promise.resolve(resource);
+      return resource;
     };
     /**
      * Create a new non-collection resource object.
@@ -148,8 +140,7 @@ const build_adapter = (nephele: any): Adapter => {
         context: context,
         is_collection: false,
       });
-      // await resource.create({ username: context.user.id, groupname: context.company.id } as User);
-      return Promise.resolve(resource);
+      return resource;
     };
 
     /**
@@ -178,8 +169,7 @@ const build_adapter = (nephele: any): Adapter => {
         context: context,
         is_collection: true,
       });
-      // await resource.create({ username: context.user.id, groupname: context.company.id } as User);
-      return Promise.resolve(resource);
+      return resource;
     };
 
     /**
