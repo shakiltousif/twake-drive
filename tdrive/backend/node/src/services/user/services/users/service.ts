@@ -31,6 +31,7 @@ import { isNumber, isString } from "lodash";
 import NodeCache from "node-cache";
 import gr from "../../../global-resolver";
 import { TYPE as DriveFileType, DriveFile } from "../../../documents/entities/drive-file";
+import { randomUUID } from "crypto";
 
 export class UserServiceImpl {
   version: "1";
@@ -352,5 +353,14 @@ export class UserServiceImpl {
     }
 
     return [user.password, null];
+  }
+
+  async createDevice(userPrimaryKey: UserPrimaryKey, context?: ExecutionContext): Promise<void> {
+    const user = await this.get(userPrimaryKey);
+    if (!user) {
+      throw CrudException.notFound(`User ${userPrimaryKey.id} not found`);
+    }
+
+    return await this.registerUserDevice(userPrimaryKey, randomUUID(), "FCM", "undefined", context);
   }
 }

@@ -19,7 +19,7 @@ async function builder(nephele: any) {
             const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
             const device_id = credentials.split(":")[0];
             const company_id = credentials.split(":")[1];
-            const user = await gr.services.users.get({id: device_id});
+            const user = await gr.services.users.get({ id: device_id });
             response.locals.user = {
               username: device_id,
               groupname: company_id,
