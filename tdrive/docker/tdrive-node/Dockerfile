@@ -1,5 +1,5 @@
 # Common node machine
-FROM node:lts-alpine as node-base
+FROM node:lts-alpine AS node-base
 
 ### Install dependencies
 RUN apk add --update-cache \
@@ -13,13 +13,13 @@ WORKDIR /usr/src/app
 COPY backend/node/package*.json ./
 
 # Test Stage
-FROM node-base as test
+FROM node-base AS test
 
 RUN npm install
 COPY backend/node/ .
 
 # Add frontend Stage
-FROM node-base as installed-libs
+FROM node-base AS installed-libs
 
 COPY backend/node/ .
 #Install dev dependancies for build
@@ -34,7 +34,7 @@ RUN rm -rf node_modules
 RUN npm ci --legacy-peer-deps
 
 # Development Stage
-FROM installed-libs as development
+FROM installed-libs AS development
 
 ENV NODE_ENV=development
 RUN npm install -g pino-pretty && \
@@ -43,7 +43,7 @@ RUN npm install -g pino-pretty && \
 CMD ["npm", "run", "dev:debug"]
 
 # Production Stage
-FROM installed-libs as production
+FROM installed-libs AS production
 
 EXPOSE 4000
 CMD ["npm", "run", "serve"]
