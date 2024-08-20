@@ -178,6 +178,7 @@ export class ResourceService implements Resource {
    * or streams.
    */
   getStream = async (range?: { start: number; end: number }): Promise<Readable> => {
+    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
     const downloadObject = await gr.services.documents.documents.download(
       this.file.id,
       null,
@@ -260,87 +261,38 @@ export class ResourceService implements Resource {
       !(await this.isCollection()),
       new Error("Collection doesn't support this operation") as MethodNotSupportedError,
     );
-    let file_id: string;
-    try {
-      // Get the file
-      file_id = this.file.last_version_cache.file_metadata.external_id;
-    } catch (error) {
-      file_id = null;
-    }
 
-    let totalSize = 0;
-    let totalChunks = 0;
-
-    // Function to save a chunk of data
-    const saveChunk = async (chunk: Buffer, chunkNumber: number) => {
-      // Prepare UploadOptions
-      const uploadOptions: UploadOptions = {
-        filename: this.file.name,
-        type: mediaType || "application/octet-stream",
-        totalSize: totalSize,
-        totalChunks: totalChunks,
-        chunkNumber: chunkNumber,
-        waitForThumbnail: false,
-        ignoreThumbnails: false,
-      };
-
-      const chunkFile: MultipartFile = {
-        type: "file",
-        toBuffer: async () => chunk,
-        file: Readable.from(chunk) as unknown as BusboyFileStream,
-        fieldname: "file",
-        filename: this.file.name,
-        encoding: input.readableEncoding || "utf-8",
-        mimetype: mediaType || "application/octet-stream",
-        fields: {},
-      };
-
-      try {
-        const file = await gr.services.files.save(
-          file_id,
-          chunkFile,
-          uploadOptions,
-          this.getUserContext(user),
-          true,
-        );
-        file_id = file.id;
-        return file.id;
-      } catch (error) {
-        console.error("Error saveChunk:", error);
-        throw error;
-      }
-    };
-    const makeChunk = async (input: Readable) => {
-      const promises: (() => Promise<any>)[] = [];
-      let totalChunk: Buffer = Buffer.from([]);
-      for await (const chunk of input) {
-        totalSize += chunk.length;
-        totalChunk = Buffer.concat([totalChunk, Buffer.from(chunk)]);
-      }
-      totalChunks = 1;
-      promises.push(() => saveChunk(totalChunk, 1));
-      return promises;
+    const uploadOptions: UploadOptions = {
+      filename: this.file.name,
+      type: mediaType || "application/octet-stream",
+      totalSize: undefined,
+      totalChunks: undefined,
+      chunkNumber: 1,
+      waitForThumbnail: false,
+      ignoreThumbnails: false,
     };
 
-    const concurrentChunks = async (input: Readable) => {
-      const promises: (() => Promise<any>)[] = [];
-      for await (const chunk of input) {
-        totalSize += chunk.length;
-        while (!file_id && promises.length > 0) {
-          await promises.shift()();
-        }
-        const chunkNumber = ++totalChunks;
-        promises.push(() => saveChunk(Buffer.from(chunk), chunkNumber));
-      }
-      return promises;
+    const chunkFile: MultipartFile = {
+      type: "file",
+      toBuffer: async () => input.read(),
+      file: input as unknown as BusboyFileStream,
+      fieldname: "file",
+      filename: this.file.name,
+      encoding: input.readableEncoding || "utf-8",
+      mimetype: mediaType || "application/octet-stream",
+      fields: {},
     };
     try {
-      const promises = await makeChunk(input);
-      // TODO: why chunks buffing not working
-      // const promises = await concurrentChunks(input);
-      await Promise.all(promises.map(p => p()));
+      // new file id is null, because we need to create new version -> new file
+      const file = await gr.services.files.save(
+        null,
+        chunkFile,
+        uploadOptions,
+        this.getUserContext(user),
+        true,
+      );
       const version = this.file.last_version_cache;
-      version.file_metadata.external_id = file_id;
+      version.file_metadata.external_id = file.id;
       const newVersion = {
         application_id: version.application_id,
         drive_item_id: version.drive_item_id,
@@ -359,10 +311,8 @@ export class ResourceService implements Resource {
       );
       // Resume the stream
       input.resume();
-
-      console.log("Finished uploading file!");
     } catch (error) {
-      console.error("Error saving chunk:", error);
+      console.error("Error saveChunk:", error);
       throw error;
     }
   };

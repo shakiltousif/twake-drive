@@ -116,6 +116,15 @@ export class FileServiceImpl {
 
     if (file) {
       // Detect a new file upload
+      const sizeCounter = createStreamSizeCounter(file.file);
+
+      await gr.platformServices.storage.write(getFilePath(entity), sizeCounter.stream, {
+        chunkNumber: options.chunkNumber,
+        encryptionAlgo: this.algorithm,
+        encryptionKey: entity.encryption_key,
+      });
+      const totalUploadedSize = sizeCounter.getSize();
+
       // Only applications can overwrite a file.
       // Users alone can only write an empty file.
       if (
@@ -126,7 +135,7 @@ export class FileServiceImpl {
       ) {
         if (
           //If there was any change to the file
-          entity.upload_data?.size !== options.totalSize ||
+          entity.upload_data?.size !== totalUploadedSize ||
           entity.metadata?.name !== options.filename
         ) {
           entity.metadata = {
@@ -135,20 +144,12 @@ export class FileServiceImpl {
             thumbnails_status: "done",
           };
           entity.upload_data = {
-            size: options.totalSize,
+            size: totalUploadedSize,
             chunks: options.totalChunks || 1,
           };
           await this.repository.save(entity, context);
         }
       }
-      const sizeCounter = createStreamSizeCounter(file.file);
-
-      await gr.platformServices.storage.write(getFilePath(entity), sizeCounter.stream, {
-        chunkNumber: options.chunkNumber,
-        encryptionAlgo: this.algorithm,
-        encryptionKey: entity.encryption_key,
-      });
-      const totalUploadedSize = sizeCounter.getSize();
 
       if (entity.upload_data.chunks === 1 && totalUploadedSize) {
         entity.upload_data.size = totalUploadedSize;
