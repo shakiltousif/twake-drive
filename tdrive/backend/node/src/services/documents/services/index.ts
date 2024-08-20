@@ -294,6 +294,7 @@ export class DocumentsService {
             context,
           ),
           is_directory: isDirectory,
+          locks: [],
         } as DriveFile),
       versions: versions,
       children: children,
@@ -548,7 +549,15 @@ export class DocumentsService {
         throw Error("content mismatch");
       }
 
-      const updatable = ["access_info", "name", "tags", "parent_id", "description", "is_in_trash"];
+      const updatable = [
+        "access_info",
+        "name",
+        "tags",
+        "parent_id",
+        "description",
+        "is_in_trash",
+        "locks",
+      ];
 
       for (const key of updatable) {
         if ((content as any)[key]) {
@@ -1452,5 +1461,24 @@ export class DocumentsService {
       "User does not have access to this item",
     );
     await this.update(item.item.id, content, context);
+  };
+  /**
+   * Clean up expired locks
+   */
+  // TODO[GK]: need to implement more wisely and not go through all the files
+  lockCleanUp = async (): Promise<void> => {
+    const now = new Date();
+    const allDriveFiles = await this.repository.find({});
+
+    for (const driveFile of allDriveFiles.getEntities()) {
+      if (driveFile.locks && driveFile.locks.length > 0) {
+        driveFile.locks = driveFile.locks.filter(lock => {
+          const expirationDate = new Date(lock.created_at + lock.timeout);
+          return expirationDate > now;
+        });
+
+        await this.repository.save(driveFile);
+      }
+    }
   };
 }

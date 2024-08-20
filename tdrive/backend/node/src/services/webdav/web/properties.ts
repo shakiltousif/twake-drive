@@ -67,6 +67,22 @@ export class PropertiesService implements Properties {
         } else {
           return {};
         }
+      case "supportedlock":
+        return {
+          lockentry: [
+            {
+              lockscope: { exclusive: {} },
+              locktype: { write: {} },
+            },
+            {
+              lockscope: { shared: {} },
+              locktype: { write: {} },
+            },
+          ],
+        };
+
+      case "getetag":
+        return this.resource.getEtag();
       case "quota-available-bytes":
         return `${await this.resource.getFreeSpace()}`;
       case "quota-used-bytes":

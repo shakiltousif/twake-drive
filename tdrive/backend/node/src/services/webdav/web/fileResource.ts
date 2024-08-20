@@ -1,7 +1,7 @@
 import {
   Adapter,
   BadGatewayError,
-  ForbiddenError,
+  ForbiddenError, InternalServerError,
   Lock,
   MethodNotSupportedError,
   Properties,
@@ -15,6 +15,7 @@ import {
 } from "nephele";
 import { Readable } from "stream";
 import { PropertiesService } from "./properties";
+import { DriveLock } from "./drivelock";
 
 import gr from "../../global-resolver";
 import { calculateItemSize } from "../../documents/utils";
@@ -74,7 +75,7 @@ export class ResourceService implements Resource {
   loadPath = async (pathname: string[]): Promise<string[]> => {
     // const path: string[] = [];
     // TODO[ASH] remove the next two lines and do actual rooting
-    pathname.shift();
+    const root = pathname.shift();
     const path: string[] = ["user_" + this.context.user.id];
     let item = null;
     let parent_id = path[path.length - 1];
@@ -84,7 +85,10 @@ export class ResourceService implements Resource {
       parent_id = item.id;
       path.push(item.id);
     }
-    return path;
+    if (root != "") {
+      return path;
+    }
+    return [undefined];
   };
 
   /**
@@ -132,8 +136,15 @@ export class ResourceService implements Resource {
    * them.
    */
   getLocks = async (): Promise<Lock[]> => {
-    // TODO: create locks
-    return [] as Lock[];
+    if (!this.file || !this.file.locks) return [];
+
+    return this.file.locks.map(lock =>
+      DriveLock.fromLockData(
+        this,
+        { user: { id: lock.user_id }, company: { id: lock.company_id } },
+        lock,
+      ),
+    );
   };
 
   /**
@@ -145,8 +156,18 @@ export class ResourceService implements Resource {
    * them.
    */
   getLocksByUser = async (user: User): Promise<Lock[]> => {
-    // TODO: create locks for users
-    return [] as Lock[];
+    if (!this.file || !this.file.locks) return [];
+    return this.file.locks.map(
+      lock =>
+        new DriveLock(this, this.context, {
+          token: lock.token,
+          timeout: lock.timeout,
+          scope: lock.scope,
+          depth: lock.depth,
+          owner: lock.owner,
+          provisional: lock.provisional,
+        }),
+    );
   };
 
   /**
@@ -156,8 +177,10 @@ export class ResourceService implements Resource {
    * before being saved to storage.
    */
   createLockForUser = async (user: User): Promise<Lock> => {
-    // TODO: create lock
-    return null;
+    const lock = new DriveLock(this, this.getUserContext(user), {
+      owner: { name: user.username },
+    });
+    return lock;
   };
 
   /**
@@ -352,7 +375,7 @@ export class ResourceService implements Resource {
       );
     }
     const new_content = {
-      parent_id: parent_resource.id || "user_" + this.context.user.id,
+      parent_id: parent_resource.file.id || "user_" + this.context.user.id,
       name: this.pathname[this.pathname.length - 1],
       is_directory: this.is_collection,
       id: null,
@@ -395,20 +418,17 @@ export class ResourceService implements Resource {
     // this check is needed for nephele moving/copying handling in case the resource was moved (updated name)
     // but the file id remains the same
     if (this.file.name == this.pathname[this.pathname.length - 1]) {
-      // TODO: implement deleting for shared files
-      // TODO: the files are not deleted, but moved to trash
+      // TODO[GK]: implement deleting for shared files
+      // TODO[GK]: the files are not deleted, but moved to trash
       try {
         await gr.services.documents.documents.delete(
           this.file.id,
           this.file,
           this.getUserContext(user),
         );
-        return gr.services.documents.documents.delete(
-          this.file.id,
-          this.file,
-          this.getUserContext(user),
-        );
-      } catch (error) {}
+      } catch (error) {
+        throw new Error("Failed to delete the resource!") as InternalServerError;
+      }
     }
   };
 
