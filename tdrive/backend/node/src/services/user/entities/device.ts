@@ -1,6 +1,7 @@
 import { merge } from "lodash";
 import { Column, Entity } from "../../../core/platform/services/database/services/orm/decorators";
 import { uuid } from "../../../utils/types";
+import {generators} from "openid-client";
 
 export const TYPE = "devices";
 
@@ -9,11 +10,18 @@ export const TYPE = "devices";
   type: TYPE,
 })
 export default class Device {
-  @Column("id", "string")
+  @Column("id", "uuid", { generator: "uuid" })
   id: string;
+
+
+  @Column("password", "string", { generator: "uuid" })
+  password: string;
 
   @Column("user_id", "uuid")
   user_id: uuid;
+
+  @Column("copmany_id", "uuid")
+  company_id: string;
 
   @Column("type", "string")
   type: string;

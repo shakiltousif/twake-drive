@@ -187,6 +187,21 @@ export class UserServiceImpl {
     );
   }
 
+  async getByDevice(
+    kv: { id: string; password: string },
+    context?: ExecutionContext,
+  ): Promise<User> {
+    const device = await this.deviceRepository.findOne(kv, {}, context);
+    return this.get({ id: device.user_id }, context);
+  }
+
+  async getDevice(
+    kv: { id: string; password: string },
+    context?: ExecutionContext,
+  ): Promise<Device> {
+    return await this.deviceRepository.findOne(kv, {}, context);
+  }
+
   async setPreferences(
     pk: UserPrimaryKey,
     preferences: User["preferences"],
@@ -292,6 +307,7 @@ export class UserServiceImpl {
     id: string,
     type: string,
     version: string,
+    password?: string,
     context?: ExecutionContext,
   ): Promise<void> {
     await this.deregisterUserDevice(id);
@@ -305,7 +321,13 @@ export class UserServiceImpl {
 
     await this.repository.save(user, context);
     await this.deviceRepository.save(
-      getDeviceInstance({ id, type, version, user_id: user.id }),
+      getDeviceInstance({
+        id: id,
+        password: password,
+        type: type,
+        version: version,
+        user_id: user.id,
+      }),
       context,
     );
   }
@@ -360,7 +382,13 @@ export class UserServiceImpl {
     if (!user) {
       throw CrudException.notFound(`User ${userPrimaryKey.id} not found`);
     }
-
-    return await this.registerUserDevice(userPrimaryKey, randomUUID(), "FCM", "undefined", context);
+    return await this.registerUserDevice(
+      userPrimaryKey,
+      randomUUID(),
+      "FCM",
+      "undefined",
+      randomUUID(),
+      context,
+    );
   }
 }

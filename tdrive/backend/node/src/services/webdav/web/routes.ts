@@ -18,14 +18,17 @@ async function builder(nephele: any) {
             const base64Credentials = request.headers.authorization.split(" ")[1];
             const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
             const device_id = credentials.split(":")[0];
-            const company_id = credentials.split(":")[1];
-            const user = await gr.services.users.get({ id: device_id });
+            const device_password = credentials.split(":")[1];
+            const device = await gr.services.users.getDevice({
+              id: device_id,
+              password: device_password,
+            });
             response.locals.user = {
-              username: device_id,
-              groupname: company_id,
+              username: device.user_id,
+              groupname: device.company_id,
             } as User;
-            executionStorage.getStore().user_id = user.id;
-            executionStorage.getStore().company_id = company_id;
+            executionStorage.getStore().user_id = device.user_id;
+            executionStorage.getStore().company_id = device.company_id;
             response.setHeader("WWW-Authenticate", "Basic");
             return response.locals.user;
           } catch (error) {
