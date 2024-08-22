@@ -308,6 +308,7 @@ export class UserServiceImpl {
     type: string,
     version: string,
     password?: string,
+    company_id?: string,
     context?: ExecutionContext,
   ): Promise<void> {
     await this.deregisterUserDevice(id);
@@ -316,8 +317,6 @@ export class UserServiceImpl {
     if (!user) {
       throw CrudException.notFound(`User ${userPrimaryKey} not found`);
     }
-    user.devices = user.devices || [];
-    user.devices.push(id);
 
     await this.repository.save(user, context);
     await this.deviceRepository.save(
@@ -327,9 +326,12 @@ export class UserServiceImpl {
         type: type,
         version: version,
         user_id: user.id,
+        company_id: company_id,
       }),
       context,
     );
+    user.devices = user.devices || [];
+    user.devices.push(id);
   }
 
   async deregisterUserDevice(id: string, context?: ExecutionContext): Promise<void> {
@@ -377,7 +379,11 @@ export class UserServiceImpl {
     return [user.password, null];
   }
 
-  async createDevice(userPrimaryKey: UserPrimaryKey, context?: ExecutionContext): Promise<void> {
+  async createDevice(
+    userPrimaryKey: UserPrimaryKey,
+    company_id?: string,
+    context?: ExecutionContext,
+  ): Promise<void> {
     const user = await this.get(userPrimaryKey);
     if (!user) {
       throw CrudException.notFound(`User ${userPrimaryKey.id} not found`);
@@ -388,6 +394,7 @@ export class UserServiceImpl {
       "FCM",
       "undefined",
       randomUUID(),
+      company_id,
       context,
     );
   }

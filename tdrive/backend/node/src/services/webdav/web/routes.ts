@@ -19,6 +19,7 @@ async function builder(nephele: any) {
             const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
             const device_id = credentials.split(":")[0];
             const device_password = credentials.split(":")[1];
+
             const device = await gr.services.users.getDevice({
               id: device_id,
               password: device_password,

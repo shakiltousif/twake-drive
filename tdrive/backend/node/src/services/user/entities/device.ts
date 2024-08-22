@@ -20,7 +20,7 @@ export default class Device {
   @Column("user_id", "uuid")
   user_id: uuid;
 
-  @Column("copmany_id", "uuid")
+  @Column("company_id", "uuid")
   company_id: string;
 
   @Column("type", "string")
