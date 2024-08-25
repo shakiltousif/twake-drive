@@ -62,6 +62,15 @@ export namespace Callback {
   }
 }
 
+/** For error responses from the {@see CommandService} */
+export class CommandError extends Error {
+  constructor(public readonly errorCode: ErrorCode, req: any, res: any) {
+    super(
+      `OnlyOffice command service error ${ErrorCodeFromValue(errorCode)} (${errorCode}): Requested ${JSON.stringify(req)} got ${JSON.stringify(res)}`,
+    );
+  }
+}
+
 /**
  * Helpers to define the protocol of the OnlyOffice editor service command API
  * @see https://api.onlyoffice.com/editors/command/
@@ -75,16 +84,6 @@ namespace CommandService {
   }
   interface ErrorResponse extends BaseResponse {
     error: Exclude<ErrorCode, ErrorCode.SUCCESS>;
-  }
-
-  export class CommandError extends Error {
-    constructor(errorCode: ErrorCode, req: any, res: any) {
-      super(
-        `OnlyOffice command service error ${ErrorCodeFromValue(errorCode)} (${errorCode}): Requested ${JSON.stringify(req)} got ${JSON.stringify(
-          res,
-        )}`,
-      );
-    }
   }
 
   abstract class BaseRequest<TSuccessResponse extends SuccessResponse> {

@@ -2,9 +2,10 @@ import OnlyOfficeController from '@/controllers/onlyoffice.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import requirementsMiddleware from '@/middlewares/requirements.middleware';
 import { Router } from 'express';
+import { SERVER_PREFIX } from '@config';
 
 class OnlyOfficeRoute implements Routes {
-  public path = '/';
+  public path = SERVER_PREFIX;
   public router = Router();
   public onlyOfficeController: OnlyOfficeController;
 
@@ -14,8 +15,8 @@ class OnlyOfficeRoute implements Routes {
   }
 
   private initRoutes = () => {
-    this.router.get(`${this.path}:mode/read`, requirementsMiddleware, this.onlyOfficeController.read);
-    this.router.post(`${this.path}:mode/callback`, requirementsMiddleware, this.onlyOfficeController.ooCallback);
+    this.router.get(`:mode/read`, requirementsMiddleware, this.onlyOfficeController.read);
+    this.router.post(`:mode/callback`, requirementsMiddleware, this.onlyOfficeController.ooCallback);
   };
 }
 

@@ -6,6 +6,8 @@ import WebServerAPI from "../../core/platform/services/webserver/provider";
 import Application from "../applications/entities/application";
 import web from "./web/index";
 import { logger } from "../../core/platform/framework/logger";
+import { EditingSessionKeyFormat } from "../documents/entities/drive-file";
+import jwt from "jsonwebtoken";
 
 @Prefix("/api")
 export default class ApplicationsApiService extends TdriveService<undefined> {
@@ -70,6 +72,72 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
     }
 
     return this;
+  }
+
+  /** Send a request to the plugin by its application id
+   * @param url Full URL that doesn't start with a `/`
+   */
+  private async requestFromApplication(
+    method: "GET" | "POST" | "DELETE",
+    url: string,
+    appId: string,
+  ) {
+    const apps = config.get<Application[]>("applications.plugins") || [];
+    const app = apps.find(app => app.id === appId);
+    if (!app) throw new Error(`Unknown application.id ${JSON.stringify(appId)}`);
+    if (!app.internal_domain)
+      throw new Error(`application.id ${JSON.stringify(appId)} missing an internal_domain`);
+    const signature = jwt.sign(
+      {
+        ts: new Date().getTime(),
+        type: "tdriveToApplication",
+        application_id: appId,
+      },
+      app.api.private_key,
+    );
+    const domain = app.internal_domain.replace(/(\/$|^\/)/gm, "");
+    const finalURL = `${domain}/${url}${
+      url.indexOf("?") > -1 ? "&" : "?"
+    }token=${encodeURIComponent(signature)}`;
+    return axios.request({
+      url: finalURL,
+      method: method,
+      headers: {
+        Authorization: signature,
+      },
+      maxRedirects: 0,
+    });
+  }
+
+  /**
+   * Check status of `editing_session_key` in the corresponding application.
+   * @param editingSessionKey {@see DriveFile.editing_session_key} to check
+   * @returns a URL string if there is a pending version to add, `null`
+   * if the key is unknown.
+   */
+  async checkPendingEditingStatus(editingSessionKey: string): Promise<string | null> {
+    const parsedKey = EditingSessionKeyFormat.parse(editingSessionKey);
+    const response = await this.requestFromApplication(
+      "POST",
+      "tdriveApi/1/session/" + encodeURIComponent(editingSessionKey) + "/check",
+      parsedKey.applicationId,
+    );
+    return (response.data.url as string) || null;
+  }
+
+  /**
+   * Remove any reference to the `editing_session_key` in the plugin
+   * @param editingSessionKey {@see DriveFile.editing_session_key} to delete
+   * @returns `true` if the key was deleted
+   */
+  async deleteEditingKey(editingSessionKey: string): Promise<boolean> {
+    const parsedKey = EditingSessionKeyFormat.parse(editingSessionKey);
+    const response = await this.requestFromApplication(
+      "DELETE",
+      "tdriveApi/1/session/" + encodeURIComponent(editingSessionKey),
+      parsedKey.applicationId,
+    );
+    return !!response.data.done as boolean;
   }
 
   // TODO: remove
