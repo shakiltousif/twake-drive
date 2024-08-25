@@ -976,7 +976,11 @@ export class DocumentsService {
 
     let newKey: string;
     try {
-      newKey = EditingSessionKeyFormat.generate(editorApplicationId, context.user.id);
+      newKey = EditingSessionKeyFormat.generate(
+        editorApplicationId,
+        context.company.id,
+        context.user.id,
+      );
     } catch (e) {
       CrudException.throwMe(e, new CrudException("Error generating new editing_session_key", 500));
     }

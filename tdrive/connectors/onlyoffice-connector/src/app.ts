@@ -41,7 +41,7 @@ class App {
     });
 
     routes.forEach(route => {
-      this.app.use(SERVER_PREFIX, route.router);
+      this.app.use(route.path ?? '/', route.router);
     });
 
     this.app.get('/health', (_req, res) => {
