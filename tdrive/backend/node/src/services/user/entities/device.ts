@@ -13,7 +13,6 @@ export default class Device {
   @Column("id", "uuid", { generator: "uuid" })
   id: string;
 
-
   @Column("password", "string", { generator: "uuid" })
   password: string;
 
