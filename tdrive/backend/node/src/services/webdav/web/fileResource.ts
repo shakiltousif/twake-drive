@@ -1,7 +1,8 @@
 import {
   Adapter,
   BadGatewayError,
-  ForbiddenError, InternalServerError,
+  ForbiddenError,
+  InternalServerError,
   Lock,
   MethodNotSupportedError,
   Properties,
@@ -27,6 +28,7 @@ import { FileVersion } from "../../documents/entities/file-version";
 import { MultipartFile } from "@fastify/multipart";
 import { BusboyFileStream } from "@fastify/busboy";
 import { UploadOptions } from "../../files/types";
+import { lookup } from "mrmime";
 
 export class ResourceService implements Resource {
   /**
@@ -302,7 +304,7 @@ export class ResourceService implements Resource {
       fieldname: "file",
       filename: this.file.name,
       encoding: input.readableEncoding || "utf-8",
-      mimetype: mediaType || "application/octet-stream",
+      mimetype: mediaType || lookup(this.file.name),
       fields: {},
     };
     try {
