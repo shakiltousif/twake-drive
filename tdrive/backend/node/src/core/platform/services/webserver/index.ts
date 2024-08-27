@@ -5,7 +5,6 @@ import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
 import formbody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
-import corsPlugin, { FastifyCorsOptions } from "@fastify/cors";
 import { serverErrorHandler } from "./error";
 import WebServerAPI from "./provider";
 import jwtPlugin from "../auth/web/jwt";

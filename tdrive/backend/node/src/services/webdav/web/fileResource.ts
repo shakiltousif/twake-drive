@@ -30,6 +30,7 @@ import { BusboyFileStream } from "@fastify/busboy";
 import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
 
+//@typescript-eslint/no-unused-vars
 export class ResourceService implements Resource {
   /**
    * This is implementation of Resource from nephele package

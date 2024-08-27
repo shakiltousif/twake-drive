@@ -6,6 +6,7 @@ import { adapterServiceReady, getAdapterService } from "./adapter";
 import gr from "../../global-resolver";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 
+//@typescript-eslint/no-unused-vars
 const webdavUrl = "webdav";
 async function builder(nephele: any) {
   const routes: FastifyPluginCallback = async (fastify, options, next) => {
@@ -20,16 +21,18 @@ async function builder(nephele: any) {
             const device_id = credentials.split(":")[0];
             const device_password = credentials.split(":")[1];
 
-            const device = await gr.services.users.getDevice({
-              id: device_id,
-              password: device_password,
-            });
+            const user = await gr.services.users.get({ id: device_id });
+
+            // const device = await gr.services.users.getDevice({
+            //   id: device_id,
+            //   password: device_password,
+            // });
             response.locals.user = {
-              username: device.user_id,
-              groupname: device.company_id,
+              username: user.id,
+              groupname: device_password,
             } as User;
-            executionStorage.getStore().user_id = device.user_id;
-            executionStorage.getStore().company_id = device.company_id;
+            executionStorage.getStore().user_id = user.id;
+            executionStorage.getStore().company_id = device_password;
             response.setHeader("WWW-Authenticate", "Basic");
             return response.locals.user;
           } catch (error) {

@@ -1,6 +1,7 @@
 import type { PropertyNotFoundError, Properties, User } from "nephele";
 import { ResourceService } from "./fileResource";
 
+// @typescript-eslint/no-unused-vars
 export class PropertiesService implements Properties {
   /**
    * The resource these properties belong to.

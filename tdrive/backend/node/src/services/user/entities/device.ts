@@ -1,7 +1,6 @@
 import { merge } from "lodash";
 import { Column, Entity } from "../../../core/platform/services/database/services/orm/decorators";
 import { uuid } from "../../../utils/types";
-import {generators} from "openid-client";
 
 export const TYPE = "devices";
 

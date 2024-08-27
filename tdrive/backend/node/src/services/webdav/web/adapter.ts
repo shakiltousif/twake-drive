@@ -9,6 +9,7 @@ import { executionStorage } from "../../../core/platform/framework/execution-sto
 
 let AdapterService;
 
+//@typescript-eslint/no-unused-vars
 const build_adapter = (nephele: any): Adapter => {
   /**
    * WebDAVAdapter implements Adapter interface from nephele module using Drive files
