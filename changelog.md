@@ -1,3 +1,21 @@
+# Twake Drive v1.0.3
+
+## Features
+
+- Infinite scrolling in files list view
+- Sort files chronologically
+- Added Left and Right buttons in the preview gallery
+
+## Fixes and Improvements
+
+- Folders with large numbers of files now work
+- OIDC logout
+- Dark mode related fixes
+- Rework of share and permissions dialog
+- Removed Cassandra support
+- A large number of minor fixes
+- Translation of user notifications
+
 # Twake Drive v1.0.2
 
 ## Features
