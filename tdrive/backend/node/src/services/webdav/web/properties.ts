@@ -1,7 +1,6 @@
 import type { PropertyNotFoundError, Properties, User } from "nephele";
 import { ResourceService } from "./fileResource";
 
-// @typescript-eslint/no-unused-vars
 export class PropertiesService implements Properties {
   /**
    * The resource these properties belong to.
@@ -40,9 +39,9 @@ export class PropertiesService implements Properties {
    * Any property not in the DAV: namespace will have its namespace and the
    * string '%%' prepended to its name, like "LCGDM:%%mode".
    */
-  get = async (name: string): Promise<string | object | object[] | undefined> => {
+  get = async (_name: string): Promise<string | object | object[] | undefined> => {
     // const versions = await this.resource.getVersions();
-    switch (name) {
+    switch (_name) {
       case "creationdate":
         return Promise.resolve((this.resource.file.added || new Date().toISOString()).toString());
       case "displayname":
@@ -96,7 +95,10 @@ export class PropertiesService implements Properties {
   /**
    * Same as get, but for a specific user.
    */
-  getByUser = async (name: string, user: User): Promise<string | object | object[] | undefined> => {
+  getByUser = async (
+    name: string,
+    _user: User,
+  ): Promise<string | object | object[] | undefined> => {
     // TODO: implement get property by user
     return this.get(name);
   };
@@ -125,7 +127,7 @@ export class PropertiesService implements Properties {
    *
    * - lockdiscovery
    */
-  set = (name: string, value: string | object | object[] | undefined): Promise<void> => {
+  set = (_name: string, _value: string | object | object[] | undefined): Promise<void> => {
     return Promise.resolve();
   };
 
@@ -133,9 +135,9 @@ export class PropertiesService implements Properties {
    * Same as set, but for a specific user.
    */
   setByUser = (
-    name: string,
-    value: string | object | object[] | undefined,
-    user: User,
+    _name: string,
+    _value: string | object | object[] | undefined,
+    _user: User,
   ): Promise<void> => {
     return Promise.resolve();
   };
@@ -143,14 +145,14 @@ export class PropertiesService implements Properties {
   /**
    * Completely remove a property.
    */
-  remove = (name: string): Promise<void> => {
+  remove = (_name: string): Promise<void> => {
     return Promise.resolve();
   };
 
   /**
    * Same as remove, but for a specific user.
    */
-  removeByUser = (name: string, user: User): Promise<void> => {
+  removeByUser = (_name: string, _user: User): Promise<void> => {
     return Promise.resolve();
   };
 
@@ -175,7 +177,7 @@ export class PropertiesService implements Properties {
    *   being removed.
    */
   runInstructions = (
-    instructions: ["set" | "remove", string, any][],
+    _instructions: ["set" | "remove", string, any][],
   ): Promise<undefined | [string, Error][]> => {
     return Promise.resolve(undefined);
   };
@@ -184,8 +186,8 @@ export class PropertiesService implements Properties {
    * Same as runInstructions, but for a specific user.
    */
   runInstructionsByUser = (
-    instructions: ["set" | "remove", string, any][],
-    user: User,
+    _instructions: ["set" | "remove", string, any][],
+    _user: User,
   ): Promise<undefined | [string, Error][]> => {
     return Promise.resolve(undefined);
   };
@@ -231,7 +233,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as getAll, but for a specific user.
    */
-  getAllByUser = (user: User): Promise<{ [k: string]: string | object | object[] }> => {
+  getAllByUser = (_user: User): Promise<{ [k: string]: string | object | object[] }> => {
     return Promise.resolve({ ["noname"]: "undefined" });
   };
 
@@ -251,7 +253,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as list, but for a specific user.
    */
-  listByUser = (user: User): Promise<string[]> => {
+  listByUser = (_user: User): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 
@@ -271,7 +273,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as listLive, but for a specific user.
    */
-  listLiveByUser = (user: User): Promise<string[]> => {
+  listLiveByUser = (_user: User): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 
@@ -285,7 +287,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as listDead, but for a specific user.
    */
-  listDeadByUser = (user: User): Promise<string[]> => {
+  listDeadByUser = (_user: User): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 }

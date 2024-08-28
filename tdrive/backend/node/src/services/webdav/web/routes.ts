@@ -6,8 +6,8 @@ import { adapterServiceReady, getAdapterService } from "./adapter";
 import gr from "../../global-resolver";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 
-//@typescript-eslint/no-unused-vars
 const webdavUrl = "webdav";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function builder(nephele: any) {
   const routes: FastifyPluginCallback = async (fastify, options, next) => {
     const authenticator = {
@@ -20,19 +20,16 @@ async function builder(nephele: any) {
             const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
             const device_id = credentials.split(":")[0];
             const device_password = credentials.split(":")[1];
-
-            const user = await gr.services.users.get({ id: device_id });
-
-            // const device = await gr.services.users.getDevice({
-            //   id: device_id,
-            //   password: device_password,
-            // });
+            const device = await gr.services.users.getDevice({
+              id: device_id,
+              password: device_password,
+            });
             response.locals.user = {
-              username: user.id,
-              groupname: device_password,
+              username: device.user_id,
+              groupname: device.company_id,
             } as User;
-            executionStorage.getStore().user_id = user.id;
-            executionStorage.getStore().company_id = device_password;
+            executionStorage.getStore().user_id = device.user_id;
+            executionStorage.getStore().company_id = device.company_id;
             response.setHeader("WWW-Authenticate", "Basic");
             return response.locals.user;
           } catch (error) {
@@ -45,11 +42,11 @@ async function builder(nephele: any) {
         }
       },
       cleanAuthentication: async (
-        request: express.Request,
-        response: AuthResponse,
+        _request: express.Request,
+        _response: AuthResponse,
       ): Promise<void> => {
         // TODO: think about cleaning the user
-        response.set("WWW-Authenticate", "Basic");
+        _response.set("WWW-Authenticate", "Basic");
         console.log("AUTHENTICATOR::cleanAuthentication is called()");
       },
     } as Authenticator;

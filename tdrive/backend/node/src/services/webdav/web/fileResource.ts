@@ -30,7 +30,6 @@ import { BusboyFileStream } from "@fastify/busboy";
 import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
 
-//@typescript-eslint/no-unused-vars
 export class ResourceService implements Resource {
   /**
    * This is implementation of Resource from nephele package
@@ -121,12 +120,12 @@ export class ResourceService implements Resource {
   /**
    * Returns execution context for the user based on the execution context of the resource
    *
-   * @param user
+   * @param _user
    */
-  getUserContext = (user: User): DriveExecutionContext => {
+  getUserContext = (_user: User): DriveExecutionContext => {
     const context = this.context;
-    context.user.id = user.username;
-    context.company.id = user.groupname;
+    context.user.id = _user.username;
+    context.company.id = _user.groupname;
     return context;
   };
 
@@ -158,7 +157,7 @@ export class ResourceService implements Resource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocksByUser = async (user: User): Promise<Lock[]> => {
+  getLocksByUser = async (_user: User): Promise<Lock[]> => {
     if (!this.file || !this.file.locks) return [];
     return this.file.locks.map(
       lock =>

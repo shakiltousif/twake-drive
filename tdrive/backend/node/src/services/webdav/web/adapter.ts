@@ -9,7 +9,7 @@ import { executionStorage } from "../../../core/platform/framework/execution-sto
 
 let AdapterService;
 
-//@typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const build_adapter = (nephele: any): Adapter => {
   /**
    * WebDAVAdapter implements Adapter interface from nephele module using Drive files
@@ -25,7 +25,7 @@ const build_adapter = (nephele: any): Adapter => {
      * (the string "2") in the returned array to indicate that the "LOCK" and
      * "UNLOCK" methods should be included in the "Allow" header.
      */
-    getComplianceClasses = async (url: URL, request: Request, response: AuthResponse) => {
+    getComplianceClasses = async (_url: URL, _request: Request, _response: AuthResponse) => {
       // "2" - means that the Adapter ( i.e. file system supports lock / unlock function )
       return ["2"];
       // return Promise.resolve([]);
@@ -66,7 +66,11 @@ const build_adapter = (nephele: any): Adapter => {
      * that information to determine whether resources exist on a server and what
      * features they support.
      */
-    getOptionsResponseCacheControl = async (url: URL, request: Request, response: AuthResponse) => {
+    getOptionsResponseCacheControl = async (
+      _url: URL,
+      _request: Request,
+      _response: AuthResponse,
+    ) => {
       return "max-age=604800";
     };
 
