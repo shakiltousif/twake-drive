@@ -1,6 +1,6 @@
 # WebDAV Adapter
 
-The Adapter component serves as the interface between the Nephele WebDAV library and TDrive's file system. It handles resource location, authorization, and provides methods for creating and retrieving resources.
+The Adapter component serves as the interface between the Nephele WebDAV library and Twake Drive's file system. It handles resource location, authorization, and provides methods for creating and retrieving resources.
 
 Key features:
 - Implements the `Adapter` interface from Nephele

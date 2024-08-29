@@ -1,6 +1,6 @@
 # WebDAV Service for TDrive
 
-This document provides an overview of the WebDAV service implementation for TDrive, which allows users to access and manipulate their files using the WebDAV protocol.
+This document provides an overview of the WebDAV service implementation for Twake Drive, which allows users to access and manipulate their files using the WebDAV protocol.
 
 ## Table of Contents
 
@@ -13,13 +13,13 @@ This document provides an overview of the WebDAV service implementation for TDri
 
 ## Overview
 
-The WebDAV service is implemented using the Nephele library and integrates with TDrive's existing file storage and permission system. It provides standard WebDAV functionality, including file operations (read, write, delete), directory listings, and locking mechanisms.
+The WebDAV service is implemented using the Nephele library and integrates with Twake Drive's existing file storage and permission system. It provides standard WebDAV functionality, including file operations (read, write, delete), directory listings, and locking mechanisms.
 
 ## Components
 
 The WebDAV service consists of several key components:
 
-1. [Adapter](Adapter.md): Interfaces between Nephele and TDrive's file system.
+1. [Adapter](Adapter.md): Interfaces between Nephele and Twake Drive's file system.
 2. [ResourceService](ResourceService.md): Implements the Resource interface, handling file and directory operations.
 3. [PropertiesService](PropertiesService.md): Manages WebDAV properties for resources.
 4. [DriveLock](DriveLock.md): Implements locking mechanisms for WebDAV resources.

@@ -1,6 +1,6 @@
 # ResourceService
 
-The ResourceService implements the `Resource` interface from Nephele, providing methods for file and directory operations within TDrive's file system.
+The ResourceService implements the `Resource` interface from Nephele, providing methods for file and directory operations within Twake Drive's file system.
 
 Key features:
 - File and directory CRUD operations

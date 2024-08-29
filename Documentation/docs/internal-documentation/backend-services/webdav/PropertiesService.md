@@ -1,6 +1,6 @@
 # PropertiesService
 
-The PropertiesService manages WebDAV properties for resources in TDrive's file system.
+The PropertiesService manages WebDAV properties for resources in Twake Drive's file system.
 
 Key features:
 - Retrieval of standard WebDAV properties (e.g., creationdate, displayname, getcontentlength)
