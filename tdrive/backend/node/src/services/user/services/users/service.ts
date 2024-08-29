@@ -332,6 +332,7 @@ export class UserServiceImpl {
     );
     user.devices = user.devices || [];
     user.devices.push(id);
+    await this.repository.save(user, context);
   }
 
   async deregisterUserDevice(id: string, context?: ExecutionContext): Promise<void> {

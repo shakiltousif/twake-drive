@@ -247,7 +247,7 @@ export class UsersCrudController
   }
 
   async registerUserDevice(
-    request: FastifyRequest<{ Body: RegisterDeviceBody }>,
+    request: FastifyRequest<{ Body: RegisterDeviceBody; Params: CompanyUsersParameters }>,
     _reply: FastifyReply,
   ): Promise<ResourceGetResponse<RegisterDeviceParams>> {
     const resource = request.body.resource;
@@ -261,6 +261,8 @@ export class UsersCrudController
       resource.value,
       resource.type,
       resource.version,
+      null,
+      request.params.companyId,
     );
 
     return {

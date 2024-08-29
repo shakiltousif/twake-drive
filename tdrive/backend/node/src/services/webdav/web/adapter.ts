@@ -214,7 +214,6 @@ export function getAdapterService() {
 export const adapterServiceReady = initializeAdapterService();
 
 export const getDriveExecutionContext = (url: URL): DriveExecutionContext => ({
-  //TODO[ASH] username will be actually a device, and we will need to get real user by device
   user: {
     id: executionStorage.getStore().user_id,
   } as types.User,

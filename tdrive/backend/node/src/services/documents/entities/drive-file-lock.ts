@@ -3,11 +3,6 @@ import { Column, Entity } from "../../../core/platform/services/database/service
 
 export const TYPE = "drive_file_locks";
 
-@Entity(TYPE, {
-  globalIndexes: [["company_id", "drive_file_id"], ["token"]],
-  primaryKey: [["company_id"], "id"],
-  type: TYPE,
-})
 export class DriveLock {
   @Type(() => String)
   @Column("company_id", "uuid")
@@ -33,6 +28,7 @@ export class DriveLock {
   @Column("created_at", "number")
   created_at: number;
 
+  // unit: milliseconds
   @Type(() => Number)
   @Column("timeout", "number")
   timeout: number;
