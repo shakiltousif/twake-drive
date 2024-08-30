@@ -141,6 +141,7 @@ export interface RegisterDeviceParams {
   type: "FCM";
   value: string;
   version: string;
+  password?: string;
 }
 
 export interface DeregisterDeviceParams {

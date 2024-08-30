@@ -256,7 +256,7 @@ export class UsersCrudController
     }
     const context = getExecutionContext(request);
 
-    await gr.services.users.registerUserDevice(
+    const password = await gr.services.users.registerUserDevice(
       { id: context.user.id },
       resource.value,
       resource.type,
@@ -266,7 +266,12 @@ export class UsersCrudController
     );
 
     return {
-      resource: request.body.resource,
+      resource: {
+        type: resource.type,
+        value: resource.value,
+        version: resource.version,
+        password: password,
+      },
     };
   }
 
