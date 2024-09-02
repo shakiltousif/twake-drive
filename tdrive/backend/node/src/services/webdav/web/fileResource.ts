@@ -29,6 +29,7 @@ import { MultipartFile } from "@fastify/multipart";
 import { BusboyFileStream } from "@fastify/busboy";
 import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
+import _ from "lodash";
 
 export class ResourceService implements Resource {
   /**
@@ -102,6 +103,9 @@ export class ResourceService implements Resource {
       try {
         //slice() to create a copy of the path
         this.pathIds = await this.loadPath(this.pathname.slice());
+        if (_.isEqual(this.pathIds, [undefined])) {
+          return true;
+        }
         this.file = (
           await gr.services.documents.documents.get(
             this.pathIds[this.pathIds.length - 1],
@@ -582,7 +586,6 @@ export class ResourceService implements Resource {
    * returned from getStream).
    */
   getLength = async (): Promise<number> => {
-    console.log("ResourceService::getLength called()");
     if (!(await this.exists()) || (await this.isCollection())) {
       return Promise.resolve(0);
     }
@@ -611,7 +614,6 @@ export class ResourceService implements Resource {
    * return null.
    */
   getMediaType = async (): Promise<string | null> => {
-    console.log("ResourceService::getMediaType called()");
     return !(await this.exists()) || (await this.isCollection())
       ? null
       : this.file.last_version_cache.file_metadata.mime;
@@ -621,7 +623,6 @@ export class ResourceService implements Resource {
    * The canonical name of the resource. (The basename of its path.)
    */
   getCanonicalName = async (): Promise<string> => {
-    console.log("ResourceService::canonicalName called()");
     assert(await this.exists(), "ResourceNotFoundError");
 
     return this.file.name;

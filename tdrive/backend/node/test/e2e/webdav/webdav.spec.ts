@@ -1,8 +1,14 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { init, TestPlatform } from "../setup";
 import {TestDbService, uuid} from "../utils.prepare.db";
-import {v1 as uuidv1} from "uuid";
+import formAutoContent from "form-auto-content";
 import UserApi from "../common/user-api";
+import {Readable} from "stream";
+import fs from "fs";
+import { logger } from "../../../src/core/platform/framework/logger";
+import {resolve} from "node:dns";
+
+const sget = require('simple-get');
 
 describe("The /webdav API", () => {
     const url = "/internal/services/webdav/v1";
@@ -14,7 +20,7 @@ describe("The /webdav API", () => {
 
 
     afterEach(async () => {
-        await platform?.tearDown();
+        // await platform?.tearDown();
         platform = null;
     });
 
@@ -45,15 +51,6 @@ describe("The /webdav API", () => {
         currentUser = await UserApi.getInstance(platform);
         testDbService = await TestDbService.getInstance(platform);
         companyId = (await testDbService.createCompany()).id;
-    });
-
-    const deviceToken = "testDeviceToken";
-    const password = "testPassword";
-
-    // TODO[GK]: create it instead of pasting
-    const credentials = 'dGVzdERldmljZVRva2VuOnRlc3RQYXNzd29yZA==';
-
-    it("Creating device for the user", async () => {
         const device_mock = {
             id: deviceToken,
             password: password,
@@ -64,7 +61,14 @@ describe("The /webdav API", () => {
             push_notifications: false,
         }
         await testDbService.createDevice(device_mock);
-    })
+    });
+
+    const deviceToken = "testDeviceToken";
+    const password = "testPassword";
+
+    // TODO[GK]: create it instead of pasting
+    const credentials = 'dGVzdERldmljZVRva2VuOnRlc3RQYXNzd29yZA==';
+
 
     it("Should return 401 Unauthorized", async () => {
         const response = await platform.app.inject({
@@ -77,17 +81,54 @@ describe("The /webdav API", () => {
     })
 
     // Checking PUT file
-    it("Creating file", async () => {
-        const response = await platform.app.inject({
-            method: "PUT",
-            url: `${url}/webdav/My%20Drive/hello-world.md`,
+    // it("Creating file", async () => {
+    //     const fullPath = `${__dirname}/../common/assets/sample.doc`;
+    //     const readable = fs.createReadStream(fullPath);
+    //     const form = formAutoContent({file: readable});
+    //
+    //     const response = await platform.app.inject({
+    //         method: "PUT",
+    //         url: `${url}/webdav/My%20Drive/hello-world.md`,
+    //         ...form,
+    //         headers: {
+    //             'Authorization': "Basic " + Buffer.from(`${deviceToken}:${password}`).toString('base64'),
+    //         },
+    //     })
+    //     const resp = response.json();
+    //     console.log(resp);
+    // })
+    // Checking PUT file
+    it("Go Propfind", async () => {
+        const opts = {
+            url: `http://127.0.0.1:3000${url}/webdav/My%20Drive`,
+            method: 'PROPFIND',
             headers: {
-                'Authorization': "Basic " + Buffer.from(`${deviceToken}:${password}`).toString('base64'),
-                'content-type': 'text/markdown',
+                'Authorization': 'Basic ' + Buffer.from(`${deviceToken}:${password}`).toString('base64'),
             },
-            body: '## Hello-world!',
+            timeout: 1000000,
+        }
+        const data = await new Promise<void>( (resolve, reject) => {
+            sget(opts, function (err, res, data) {
+                platform.platform.logger.debug(res);
+                platform.platform.logger.debug(data);
+
+                platform.platform.logger.debug(res.headers);
+                if (err) {
+                    throw err;
+                }
+                resolve(data);
+            });
         })
-        const resp = response.json();
-        console.log(resp);
+        console.log(data);
+
+        // const response = await platform.app.inject({
+        //     method: "OPTIONS",
+        //     url: `${url}/webdav/My%20Drive`,
+        //     headers: {
+        //         'Authorization': "Basic " + Buffer.from(`${deviceToken}:${password}`).toString('base64'),
+        //     },
+        // })
+        // const resp = response.json();
+        // console.log(resp);
     })
 });

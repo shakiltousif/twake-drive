@@ -43,24 +43,22 @@ export class PropertiesService implements Properties {
     // const versions = await this.resource.getVersions();
     switch (_name) {
       case "creationdate":
-        return Promise.resolve((this.resource.file.added || new Date().toISOString()).toString());
+        return (this.resource.file.added || new Date().toISOString()).toString();
       case "displayname":
-        return Promise.resolve(this.resource.getCanonicalName());
+        return this.resource.getCanonicalName();
       case "getcontentlanguage":
         // TODO: keep it ?
-        return Promise.resolve("en");
+        return "en";
       case "getcontentlength":
-        return Promise.resolve(this.resource.file.size.toString());
+        return this.resource.file.size.toString();
       case "getcontenttype":
         const mediaType = await this.resource.getMediaType();
         if (mediaType == null) {
-          return Promise.resolve("PropertyNotFoundError");
+          return "PropertyNotFoundError";
         }
-        return Promise.resolve(mediaType);
+        return mediaType;
       case "getlastmodified":
-        return Promise.resolve(
-          (this.resource.file.last_modified || new Date().toISOString()).toString(),
-        );
+        return (this.resource.file.last_modified || new Date().toISOString()).toString();
       case "resourcetype":
         if (await this.resource.isCollection()) {
           return { collection: {} };

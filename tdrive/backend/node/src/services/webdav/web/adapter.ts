@@ -108,6 +108,9 @@ const build_adapter = (nephele: any): Adapter => {
       pathname = pathname.replace(/^\/+|\/+$/g, "");
       const pathname_arr = pathname.split("/");
 
+      if (pathname == "") {
+        return null;
+      }
       const resource = new ResourceService({
         adapter: this,
         baseUrl: baseUrl,
