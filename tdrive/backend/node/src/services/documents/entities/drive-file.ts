@@ -135,6 +135,14 @@ const OnlyOfficeSafeDocKeyBase64 = {
   },
 };
 
+function checkFieldValue(field: string, value: string) {
+  if (!/^[0-9a-zA-Z_-]+$/m.test(value))
+    throw new Error(
+      `Invalid ${field} value (${JSON.stringify(
+        value,
+      )}). Must be short and only alpha numeric or '_' and '-'`,
+    );
+}
 /** Reference implementation for generating then parsing the {@link DriveFile.editing_session_key} field */
 export const EditingSessionKeyFormat = {
   // OnlyOffice key limits: 128 chars, [0-9a-zA-Z.=_-]
@@ -145,13 +153,15 @@ export const EditingSessionKeyFormat = {
   // common denominator to all plugin/interop systems. Plugins that
   // require something even stricter have the option of maintaining
   // a look up table to an acceptable value.
-  generate(applicationId: string, companyId: string, userId: string, overrideTimeStamp?: Date) {
-    if (!/^[0-9a-zA-Z_-]+$/m.test(applicationId))
-      throw new Error(
-        `Invalid applicationId string (${JSON.stringify(
-          applicationId,
-        )}). Must be short and only alpha numeric`,
-      );
+  generate(
+    applicationId: string,
+    instanceId: string,
+    companyId: string,
+    userId: string,
+    overrideTimeStamp?: Date,
+  ) {
+    checkFieldValue("applicationId", applicationId);
+    checkFieldValue("instanceId", instanceId);
     const isoUTCDateNoSpecialCharsNoMS = (overrideTimeStamp ?? new Date())
       .toISOString()
       .replace(/\..+$/, "")
@@ -162,7 +172,7 @@ export const EditingSessionKeyFormat = {
     const idsString = OnlyOfficeSafeDocKeyBase64.fromBuffer(
       Buffer.concat([companyIdBuffer, userIdBuffer, entropyBuffer]),
     );
-    const newKey = [isoUTCDateNoSpecialCharsNoMS, applicationId, idsString].join("=");
+    const newKey = [isoUTCDateNoSpecialCharsNoMS, applicationId, instanceId, idsString].join("=");
     if (newKey.length > 128 || !/^[0-9a-zA-Z=_-]+$/m.test(newKey))
       throw new Error(
         `Invalid generated editingSessionKey (${JSON.stringify(
@@ -174,14 +184,14 @@ export const EditingSessionKeyFormat = {
 
   parse(editingSessionKey: string) {
     const parts = editingSessionKey.split("=");
-    const expectedParts = 3;
+    const expectedParts = 4;
     if (parts.length !== expectedParts)
       throw new Error(
         `Invalid editingSessionKey (${JSON.stringify(
           editingSessionKey,
         )}). Expected ${expectedParts} parts`,
       );
-    const [timestampStr, appId, idsOOBase64String] = parts;
+    const [timestampStr, applicationId, instanceId, idsOOBase64String] = parts;
     const timestampMatch = timestampStr.match(
       /^(?<year>\d{4})(?<month>\d\d)(?<day>\d\d)(?<hour>\d\d)(?<minute>\d\d)(?<second>\d\d)$/,
     );
@@ -199,7 +209,8 @@ export const EditingSessionKeyFormat = {
       timestamp: new Date(
         Date.parse(`${[year, month, day].join("-")}T${[hour, minute, second].join(":")}Z`),
       ),
-      applicationId: appId,
+      applicationId,
+      instanceId,
       companyId,
       userId,
     };

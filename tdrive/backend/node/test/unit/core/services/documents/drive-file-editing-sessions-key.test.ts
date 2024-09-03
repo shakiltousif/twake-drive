@@ -7,6 +7,7 @@ describe('DriveFile EditingSessionKeyFormat', () => {
   const mockAppId = 'tdrive_random_application_id';
   const mockCompanyId = randomUUID();
   const mockUserId = randomUUID();
+  const mockInstanceId = "super-instance-id";
   const mockTimestamp = new Date();
   const mockTimestampWith0MS = mockTimestamp.getTime() - (mockTimestamp.getTime() % 1000);
 
@@ -23,31 +24,32 @@ describe('DriveFile EditingSessionKeyFormat', () => {
   test('generates a valid value that can be parsed', async () => {
     checkIsUUID(mockUserId);
     checkIsUUID(mockCompanyId);
-    const key = EditingSessionKeyFormat.generate(mockAppId, mockCompanyId, mockUserId, mockTimestamp);
+    const key = EditingSessionKeyFormat.generate(mockAppId, mockInstanceId, mockCompanyId, mockUserId, mockTimestamp);
     checkKeyIsOOCompatible(key);
     const parsed = EditingSessionKeyFormat.parse(key);
     expect(parsed.applicationId).toBe(mockAppId);
+    expect(parsed.instanceId).toBe(mockInstanceId);
     expect(parsed.userId).toBe(mockUserId);
     expect(parsed.companyId).toBe(mockCompanyId);
     expect(parsed.timestamp.getTime()).toBe(mockTimestampWith0MS);
   });
 
   test('generates unique values', async () => {
-    const key = EditingSessionKeyFormat.generate(mockAppId, mockCompanyId, mockUserId, mockTimestamp);
-    const key2 = EditingSessionKeyFormat.generate(mockAppId, mockCompanyId, mockUserId, mockTimestamp);
+    const key = EditingSessionKeyFormat.generate(mockAppId, mockInstanceId, mockCompanyId, mockUserId, mockTimestamp);
+    const key2 = EditingSessionKeyFormat.generate(mockAppId, mockInstanceId, mockCompanyId, mockUserId, mockTimestamp);
     expect(key).not.toBe(key2);
   });
 
   test('checks the appId', async () => {
     expect(() => {
-      EditingSessionKeyFormat.generate('invalid app id !', mockCompanyId, mockUserId);
-    }).toThrow('Invalid applicationId string');
+      EditingSessionKeyFormat.generate('invalid app id !', mockInstanceId, mockCompanyId, mockUserId);
+    }).toThrow('Invalid applicationId value');
   });
 
   test('checks final length', async () => {
     expect(() => {
       const tooLongAppID = new Array(100).join('x');
-      EditingSessionKeyFormat.generate(tooLongAppID, mockCompanyId, mockUserId);
+      EditingSessionKeyFormat.generate(tooLongAppID, mockInstanceId, mockCompanyId, mockUserId);
     }).toThrow('Must be <128 chars,');
   });
 });

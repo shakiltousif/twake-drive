@@ -351,7 +351,7 @@ export class DocumentsController {
     request: FastifyRequest<{
       Params: ItemRequestParams;
       //TODO application id should be received from the token that we have during the login
-      Body: { editorApplicationId: string };
+      Body: { editorApplicationId: string; instanceId: string };
     }>,
   ) => {
     try {
@@ -366,6 +366,7 @@ export class DocumentsController {
       return await globalResolver.services.documents.documents.beginEditing(
         id,
         request.body.editorApplicationId,
+        request.body.instanceId || "",
         context,
       );
     } catch (error) {

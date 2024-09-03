@@ -967,6 +967,7 @@ export class DocumentsService {
   beginEditing = async (
     id: string,
     editorApplicationId: string,
+    appInstanceId: string,
     context: DriveExecutionContext,
   ) => {
     if (!context) {
@@ -978,6 +979,7 @@ export class DocumentsService {
     try {
       newKey = EditingSessionKeyFormat.generate(
         editorApplicationId,
+        appInstanceId,
         context.company.id,
         context.user.id,
       );
