@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { Column, Entity } from "../../../core/platform/services/database/services/orm/decorators";
+import { Column } from "../../../core/platform/services/database/services/orm/decorators";
 
 export const TYPE = "drive_file_locks";
 

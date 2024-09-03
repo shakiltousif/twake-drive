@@ -8,7 +8,5 @@ export default async (
     prefix: string;
   }>,
 ): Promise<void> => {
-  fastify.log.debug("Configuring /webdav routes");
-  // const routes = eval ("import('nephele').then(builder)");
   fastify.register(routes, options);
 };

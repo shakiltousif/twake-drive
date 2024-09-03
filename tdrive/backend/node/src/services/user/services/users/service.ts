@@ -305,7 +305,7 @@ export class UserServiceImpl {
   async registerUserDevice(
     userPrimaryKey: UserPrimaryKey,
     id: string,
-    type: string,
+    type: Device["type"],
     version: string,
     password?: string,
     company_id?: string,
@@ -386,6 +386,7 @@ export class UserServiceImpl {
 
   async createDevice(
     userPrimaryKey: UserPrimaryKey,
+    type: Device["type"],
     company_id?: string,
     context?: ExecutionContext,
   ): Promise<void> {
@@ -396,7 +397,7 @@ export class UserServiceImpl {
     await this.registerUserDevice(
       userPrimaryKey,
       randomUUID(),
-      "FCM",
+      type,
       "undefined",
       randomUUID(),
       company_id,

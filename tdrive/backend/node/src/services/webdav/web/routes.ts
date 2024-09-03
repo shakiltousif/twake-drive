@@ -43,11 +43,10 @@ async function builder(nephele: any) {
       },
       cleanAuthentication: async (
         _request: express.Request,
-        _response: AuthResponse,
+        response: AuthResponse,
       ): Promise<void> => {
         // TODO: think about cleaning the user
-        _response.set("WWW-Authenticate", "Basic");
-        console.log("AUTHENTICATOR::cleanAuthentication is called()");
+        response.set("WWW-Authenticate", "Basic");
       },
     } as Authenticator;
 
@@ -76,14 +75,6 @@ async function builder(nephele: any) {
       });
       fastify.use(`${webdavUrl}`, webdavMiddleware);
     });
-    fastify.all("webdav/*", (request, reply) => {
-      console.log(request);
-      reply.send({ message: "Test route" });
-    });
-    fastify.all("webdav", (request, reply) => {
-      reply.send({ message: "Test route" });
-    });
-    console.debug(fastify.printRoutes());
     next();
   };
 

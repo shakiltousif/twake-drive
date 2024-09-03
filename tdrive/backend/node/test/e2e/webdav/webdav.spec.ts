@@ -56,7 +56,7 @@ describe("The /webdav API", () => {
             password: password,
             user_id: currentUser.user.id,
             company_id: companyId,
-            type: "FCM",
+            type: "WebDAV",
             version: "1",
             push_notifications: false,
         }
