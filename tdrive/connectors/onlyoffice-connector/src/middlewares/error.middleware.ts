@@ -1,7 +1,6 @@
 import logger from '@/lib/logger';
 import { NextFunction, Request, Response } from 'express';
-import * as Utils from '@/utils';
-import { SERVER_ORIGIN, SERVER_PREFIX } from '@config';
+import { makeURLTo } from '@/routes';
 
 export default (error: Error & { status?: number }, req: Request, res: Response, next: NextFunction): void => {
   try {
@@ -12,7 +11,7 @@ export default (error: Error & { status?: number }, req: Request, res: Response,
 
     res.status(status);
     res.render('error', {
-      server: Utils.joinURL([SERVER_ORIGIN, SERVER_PREFIX]),
+      server: makeURLTo.rootAbsolute(),
       errorMessage: message,
     });
   } catch (error) {

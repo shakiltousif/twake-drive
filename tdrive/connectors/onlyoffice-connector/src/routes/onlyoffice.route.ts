@@ -1,23 +1,15 @@
 import OnlyOfficeController from '@/controllers/onlyoffice.controller';
-import { Routes } from '@/interfaces/routes.interface';
 import requirementsMiddleware from '@/middlewares/requirements.middleware';
-import { Router } from 'express';
-import { SERVER_PREFIX } from '@config';
+import type { Router } from 'express';
 
-class OnlyOfficeRoute implements Routes {
-  public path = SERVER_PREFIX;
-  public router = Router();
-  public onlyOfficeController: OnlyOfficeController;
-
-  constructor() {
-    this.onlyOfficeController = new OnlyOfficeController();
-    this.initRoutes();
-  }
-
-  private initRoutes = () => {
-    this.router.get(`:mode/read`, requirementsMiddleware, this.onlyOfficeController.read);
-    this.router.post(`:mode/callback`, requirementsMiddleware, this.onlyOfficeController.ooCallback);
-  };
-}
-
-export default OnlyOfficeRoute;
+/**
+ * These routes are called by the Only Office server
+ * when reading a document or updating an editing session
+ */
+export const OnlyOfficeRoutes = {
+  mount(router: Router) {
+    const controller = new OnlyOfficeController();
+    router.get(`/:mode/read`, requirementsMiddleware, controller.read);
+    router.post(`/:mode/callback`, requirementsMiddleware, controller.ooCallback);
+  },
+};

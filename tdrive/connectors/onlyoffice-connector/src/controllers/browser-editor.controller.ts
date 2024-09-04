@@ -1,13 +1,13 @@
 import editorService from '@/services/editor.service';
 import { NextFunction, Request, Response } from 'express';
-import { CREDENTIALS_SECRET, SERVER_ORIGIN, SERVER_PREFIX } from '@config';
+import { CREDENTIALS_SECRET } from '@config';
 import jwt from 'jsonwebtoken';
 import driveService from '@/services/drive.service';
 import { DriveFileType } from '@/interfaces/drive.interface';
 import fileService from '@/services/file.service';
 import { OfficeToken } from '@/interfaces/routes.interface';
 import logger from '@/lib/logger';
-import * as Utils from '@/utils';
+import { makeURLTo } from '@/routes';
 
 interface RequestQuery {
   mode: string;
@@ -29,7 +29,7 @@ interface RequestEditorQuery {
  * The user is redirected from there to open directly the OnlyOffice edition server's web UI, with appropriate preview or not
  * and rights checks.
  */
-class IndexController {
+class BrowserEditorController {
   /**
    * Opened by the user's browser, proxied through the Twake Drive backend. Checks access to the
    * file with the backend, then redirects the user to the `editor` method but directly on this
@@ -98,9 +98,8 @@ class IndexController {
           expiresIn: 60 * 60 * 24 * 30,
         },
       );
-
       res.redirect(
-        Utils.joinURL([SERVER_ORIGIN ?? '', SERVER_PREFIX, 'editor'], {
+        makeURLTo.editorAbsolute({
           token,
           file_id,
           editing_session_key: editingSessionKey,
@@ -145,7 +144,7 @@ class IndexController {
       res.render('index', {
         ...initResponse,
         docId: preview ? file_id : editing_session_key,
-        server: Utils.joinURL([SERVER_ORIGIN, SERVER_PREFIX]),
+        server: makeURLTo.rootAbsolute(),
         token: inPageToken,
       });
     } catch (error) {
@@ -155,4 +154,4 @@ class IndexController {
   };
 }
 
-export default IndexController;
+export default BrowserEditorController;

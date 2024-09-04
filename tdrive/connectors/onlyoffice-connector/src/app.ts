@@ -5,24 +5,25 @@ import cors from 'cors';
 import { renderFile } from 'eta';
 import path from 'path';
 import errorMiddleware from './middlewares/error.middleware';
-import { SERVER_PORT, SERVER_PREFIX } from '@config';
+import { SERVER_PORT } from '@config';
 import logger from './lib/logger';
 import cookieParser from 'cookie-parser';
 import apiService from './services/api.service';
 import onlyofficeService from './services/onlyoffice.service';
+import { makeURLTo, mountRoutes } from './routes';
 
 class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
 
-  constructor(routes: Routes[]) {
+  constructor() {
     this.app = express();
     this.env = NODE_ENV;
 
     this.initViews();
     this.initMiddlewares();
-    this.initRoutes(routes);
+    this.initRoutes();
     this.initErrorHandling();
   }
 
@@ -34,15 +35,13 @@ class App {
 
   public getServer = () => this.app;
 
-  private initRoutes = (routes: Routes[]) => {
+  private initRoutes = () => {
     this.app.use((req, res, next) => {
       logger.info(`Received request: ${req.method} ${req.originalUrl} from ${req.header('user-agent')} (${req.ip})`);
       next();
     });
 
-    routes.forEach(route => {
-      this.app.use(route.path ?? '/', route.router);
-    });
+    mountRoutes(this.app);
 
     this.app.get('/health', (_req, res) => {
       Promise.all([onlyofficeService.getLatestLicence(), apiService.hasToken(), onlyofficeService.getForgottenList()]).then(
@@ -58,7 +57,7 @@ class App {
     });
 
     this.app.use(
-      SERVER_PREFIX.replace(/\/$/, '') + '/assets',
+      makeURLTo.assets(),
       (req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'X-Requested-With');

@@ -16,3 +16,5 @@ export const {
 export const twakeDriveTokenRefrehPeriodMS = 10 * 60 * 1000;
 export const onlyOfficeForgottenFilesCheckPeriodMS = 10 * 60 * 1000;
 export const onlyOfficeConnectivityCheckPeriodMS = 10 * 60 * 1000;
+
+export const SERVER_TDRIVE_API_PREFIX = '/tdriveApi/1';
