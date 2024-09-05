@@ -11,7 +11,6 @@ export default (error: Error & { status?: number }, req: Request, res: Response,
 
     res.status(status);
     res.render('error', {
-      server: makeURLTo.rootAbsolute(),
       errorMessage: message,
     });
   } catch (error) {
