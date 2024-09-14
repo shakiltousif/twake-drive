@@ -91,7 +91,7 @@ class ApiService implements IApiService {
   };
 
   public post = async <T, R>(params: IApiServiceRequestParams<T>): Promise<R> => {
-    const { url, payload, headers } = params;
+    const { url, token, payload, headers } = params;
 
     const axiosWithToken = await this.requireAxios();
 
@@ -99,6 +99,7 @@ class ApiService implements IApiService {
       return await axiosWithToken.post(url, payload, {
         headers: {
           ...headers,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
     } catch (error) {

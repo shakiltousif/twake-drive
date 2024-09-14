@@ -4,6 +4,7 @@ config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 export const {
   NODE_ENV,
   SERVER_PORT,
+  SERVER_BIND,
   SECRET_KEY,
   CREDENTIALS_ENDPOINT,
   ONLY_OFFICE_SERVER,
@@ -13,8 +14,10 @@ export const {
   SERVER_ORIGIN,
 } = process.env;
 
-export const twakeDriveTokenRefrehPeriodMS = 10 * 60 * 1000;
-export const onlyOfficeForgottenFilesCheckPeriodMS = 10 * 60 * 1000;
-export const onlyOfficeConnectivityCheckPeriodMS = 10 * 60 * 1000;
+const secs = 1000,
+  mins = 60 * secs;
 
-export const SERVER_TDRIVE_API_PREFIX = '/tdriveApi/1';
+export const twakeDriveTokenRefrehPeriodMS = 10 * mins;
+export const onlyOfficeForgottenFilesCheckPeriodMS = 10 * mins;
+export const onlyOfficeConnectivityCheckPeriodMS = 10 * mins;
+export const onlyOfficeCallbackTimeoutMS = 10 * secs;

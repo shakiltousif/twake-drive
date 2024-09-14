@@ -76,7 +76,7 @@ class BrowserEditorController {
 
       let editingSessionKey = null;
       if (!preview) {
-        editingSessionKey = await driveService.beginEditingSession(company_id, drive_file_id);
+        editingSessionKey = await driveService.beginEditingSession(company_id, drive_file_id, token);
         //TODO catch error and display to the user when we can't stopped editing
 
         //TODO Log error with format to be able to set up grafana alert fir such king of errors

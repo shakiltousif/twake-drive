@@ -49,12 +49,12 @@ class DriveService implements IDriveService {
     }
   };
 
-  public async beginEditingSession(company_id: string, drive_file_id: string) {
+  public async beginEditingSession(company_id: string, drive_file_id: string, user_token?: string) {
     try {
       const resource = await apiService.post<{}, { editingSessionKey: string }>({
         url: `/internal/services/documents/v1/companies/${company_id}/item/${drive_file_id}/editing_session`,
         payload: {
-          editorApplicationId: 'mock_application_id',
+          editorApplicationId: 'tdrive_onlyoffice',
         },
       });
       if (resource?.editingSessionKey) {
