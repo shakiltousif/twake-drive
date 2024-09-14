@@ -1,26 +1,41 @@
-import { Application, Router } from 'express';
+import * as path from 'path';
+import { static as expressStatic, Application, Router } from 'express';
 
 import * as Utils from '@/utils';
+import { SERVER_ORIGIN, SERVER_PREFIX } from '@config';
 
+import { HealthStatusController } from '@/controllers/health-status.controller';
 import { TwakeDriveBackendCallbackRoutes } from './backend-callbacks.route';
 import { BrowserEditorRoutes } from './browser-editor.route';
 import { OnlyOfficeRoutes } from './onlyoffice.route';
 
-import { SERVER_ORIGIN, SERVER_PREFIX, SERVER_TDRIVE_API_PREFIX } from '@config';
+function mountAssetsRoutes(router: Router) {
+  router.use(
+    '/assets',
+    (req, res, next) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Headers', 'X-Requested-With');
+      next();
+    },
+    expressStatic(path.join(__dirname, '../../assets')),
+  );
+}
 
 export function mountRoutes(app: Application) {
+  // Technical routes for ops. Should not be exposed.
+  app.get('/health', HealthStatusController.get);
+
   // These routes are forwarded through the Twake Drive front, back and here
   const proxiedRouter = Router();
   BrowserEditorRoutes.mount(proxiedRouter);
   OnlyOfficeRoutes.mount(proxiedRouter);
-  console.log('Mounting at ' + SERVER_PREFIX);
-  app.use(SERVER_PREFIX, proxiedRouter);
+  mountAssetsRoutes(proxiedRouter);
+  app.use(SERVER_PREFIX /* usually "plugins/onlyoffice" */, proxiedRouter);
 
   // These endpoints should only be accessible to the Twake Drive backend
   const apiRouter = Router();
-  console.log('Mounting at ' + SERVER_TDRIVE_API_PREFIX);
   TwakeDriveBackendCallbackRoutes.mount(apiRouter);
-  app.use(SERVER_TDRIVE_API_PREFIX, apiRouter);
+  app.use('/tdriveApi/1', apiRouter);
 }
 
 export const makeURLTo = {
@@ -30,14 +45,3 @@ export const makeURLTo = {
     return Utils.joinURL([SERVER_ORIGIN ?? '', SERVER_PREFIX, 'editor'], params);
   },
 };
-
-// export function makeURLToEditor2() {
-//   const initResponse = await editorService.init(company_id, file_name, file_id, user, preview, drive_file_id || file_id);
-
-//   res.render('index', {
-//     ...initResponse,
-//     docId: preview ? file_id : editing_session_key,
-//     server: Utils.joinURL([SERVER_ORIGIN, SERVER_PREFIX]),
-//     token: inPageToken,
-//   });
-// }

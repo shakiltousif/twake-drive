@@ -1,10 +1,3 @@
-import { Router } from 'express';
-
-export interface Routes {
-  path?: string;
-  router: Router;
-}
-
 export interface OfficeToken {
   user_id: string;
   company_id: string;

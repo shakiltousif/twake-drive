@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import driveService from '@/services/drive.service';
 import { DriveFileType } from '@/interfaces/drive.interface';
 import fileService from '@/services/file.service';
-import { OfficeToken } from '@/interfaces/routes.interface';
+import { OfficeToken } from '@/interfaces/office-token.interface';
 import logger from '@/lib/logger';
 import { makeURLTo } from '@/routes';
 

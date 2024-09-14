@@ -1,16 +1,13 @@
+import path from 'path';
 import express from 'express';
-import { Routes } from '@interfaces/routes.interface';
-import { NODE_ENV } from '@config';
 import cors from 'cors';
 import { renderFile } from 'eta';
-import path from 'path';
-import errorMiddleware from './middlewares/error.middleware';
-import { SERVER_PORT } from '@config';
-import logger from './lib/logger';
 import cookieParser from 'cookie-parser';
-import apiService from './services/api.service';
-import onlyofficeService from './services/onlyoffice.service';
-import { makeURLTo, mountRoutes } from './routes';
+
+import { NODE_ENV, SERVER_BIND, SERVER_PORT } from '@config';
+import logger from './lib/logger';
+import errorMiddleware from './middlewares/error.middleware';
+import { mountRoutes } from './routes';
 
 class App {
   public app: express.Application;
@@ -28,8 +25,9 @@ class App {
   }
 
   public listen = () => {
-    this.app.listen(parseInt(SERVER_PORT, 10), '0.0.0.0', () => {
-      logger.info(`🚀 App listening on port ${SERVER_PORT}`);
+    const binding_host = SERVER_BIND || '0.0.0.0';
+    this.app.listen(parseInt(SERVER_PORT, 10), binding_host, () => {
+      logger.info(`🚀 App listening at http://${binding_host}:${SERVER_PORT}`);
     });
   };
 
@@ -42,29 +40,6 @@ class App {
     });
 
     mountRoutes(this.app);
-
-    this.app.get('/health', (_req, res) => {
-      Promise.all([onlyofficeService.getLatestLicence(), apiService.hasToken(), onlyofficeService.getForgottenList()]).then(
-        ([onlyOfficeLicense, twakeDriveToken, forgottenKeys]) =>
-          res.status(onlyOfficeLicense && twakeDriveToken ? 200 : 500).send({
-            uptime: process.uptime(),
-            onlyOfficeLicense,
-            twakeDriveToken,
-            forgottenKeys,
-          }),
-        err => res.status(500).send(err),
-      );
-    });
-
-    this.app.use(
-      makeURLTo.assets(),
-      (req, res, next) => {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.header('Access-Control-Allow-Headers', 'X-Requested-With');
-        next();
-      },
-      express.static(path.join(__dirname, '../assets')),
-    );
   };
 
   private initMiddlewares = () => {

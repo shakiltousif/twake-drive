@@ -1,5 +1,5 @@
 import { CREDENTIALS_SECRET } from '@/config';
-import { OfficeToken } from '@/interfaces/routes.interface';
+import { OfficeToken } from '@/interfaces/office-token.interface';
 import driveService from '@/services/drive.service';
 import fileService from '@/services/file.service';
 import logger from '@/lib/logger';
