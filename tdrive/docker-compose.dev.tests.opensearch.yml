@@ -41,7 +41,7 @@ services:
       - "5432:5432"
 
   node:
-    image: tdrive/tdrive-node:test
+    # Use the build context in the current directory
     build:
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
