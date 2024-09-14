@@ -135,7 +135,8 @@ const OnlyOfficeSafeDocKeyBase64 = {
   },
 };
 
-function checkFieldValue(field: string, value: string) {
+function checkFieldValue(field: string, value: string, required: boolean = true) {
+  if (!required && !value) return;
   if (!/^[0-9a-zA-Z_-]+$/m.test(value))
     throw new Error(
       `Invalid ${field} value (${JSON.stringify(
@@ -143,7 +144,12 @@ function checkFieldValue(field: string, value: string) {
       )}). Must be short and only alpha numeric or '_' and '-'`,
     );
 }
-/** Reference implementation for generating then parsing the {@link DriveFile.editing_session_key} field */
+/**
+ * Reference implementation for generating then parsing the {@link DriveFile.editing_session_key} field.
+ *
+ * Fields should be explicit, `instanceId` is for the case when we have multiple
+ * clients
+ */
 export const EditingSessionKeyFormat = {
   // OnlyOffice key limits: 128 chars, [0-9a-zA-Z.=_-]
   // See https://api.onlyoffice.com/editors/config/document#key
@@ -161,7 +167,7 @@ export const EditingSessionKeyFormat = {
     overrideTimeStamp?: Date,
   ) {
     checkFieldValue("applicationId", applicationId);
-    checkFieldValue("instanceId", instanceId);
+    checkFieldValue("instanceId", instanceId, false);
     const isoUTCDateNoSpecialCharsNoMS = (overrideTimeStamp ?? new Date())
       .toISOString()
       .replace(/\..+$/, "")
