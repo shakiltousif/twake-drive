@@ -1,6 +1,5 @@
 import logger from '@/lib/logger';
 import { NextFunction, Request, Response } from 'express';
-import { makeURLTo } from '@/routes';
 
 export default (error: Error & { status?: number }, req: Request, res: Response, next: NextFunction): void => {
   try {

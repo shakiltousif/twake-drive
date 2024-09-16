@@ -70,10 +70,10 @@ class DriveService implements IDriveService {
     }
   }
 
-  public async cancelEditing(company_id: string, editing_session_key) {
+  public async cancelEditing(editing_session_key: string) {
     try {
       await apiService.delete<{}>({
-        url: `/internal/services/documents/v1/companies/${company_id}/item/editing_session/${encodeURIComponent(editing_session_key)}`,
+        url: `/internal/services/documents/v1/editing_session/${encodeURIComponent(editing_session_key)}`,
       });
     } catch (error) {
       logger.error('Failed to begin editing session: ', error.stack);
@@ -82,13 +82,13 @@ class DriveService implements IDriveService {
     }
   }
 
-  public async endEditing(company_id: string, editing_session_key: string, url: string) {
+  public async endEditing(editing_session_key: string, url: string) {
     try {
       if (!url) {
         throw Error('no url found');
       }
 
-      const originalFile = await this.getByEditingSessionKey({ company_id, editing_session_key });
+      const originalFile = await this.getByEditingSessionKey({ editing_session_key });
 
       if (!originalFile) {
         throw Error('original file not found');
@@ -110,7 +110,7 @@ class DriveService implements IDriveService {
       logger.info('Saving file version to Twake Drive: ', filename);
 
       await apiService.post({
-        url: `/internal/services/documents/v1/companies/${company_id}/item/editing_session/${encodeURIComponent(editing_session_key)}`,
+        url: `/internal/services/documents/v1/editing_session/${encodeURIComponent(editing_session_key)}`,
         payload: form,
         headers: form.getHeaders(),
       });
@@ -126,15 +126,11 @@ class DriveService implements IDriveService {
    * /item/editing_session/${editing_session_key}
    * @param params
    */
-  public getByEditingSessionKey = async (params: {
-    company_id: string;
-    editing_session_key: string;
-    user_token?: string;
-  }): Promise<DriveFileType['item']> => {
+  public getByEditingSessionKey = async (params: { editing_session_key: string; user_token?: string }): Promise<DriveFileType['item']> => {
     try {
-      const { company_id, editing_session_key } = params;
+      const { editing_session_key } = params;
       return await apiService.get<DriveFileType['item']>({
-        url: `/internal/services/documents/v1/companies/${company_id}/item/editing_session/${encodeURIComponent(editing_session_key)}`,
+        url: `/internal/services/documents/v1/editing_session/${encodeURIComponent(editing_session_key)}`,
         token: params.user_token,
       });
     } catch (error) {

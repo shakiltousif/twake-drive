@@ -1043,6 +1043,20 @@ export class DocumentsService {
       throw new CrudException("Invalid editing_session_key", 400);
     }
 
+    try {
+      const parsedKey = EditingSessionKeyFormat.parse(editing_session_key);
+      context = {
+        ...context,
+        company: { id: parsedKey.companyId },
+      };
+    } catch (e) {
+      this.logger.error(
+        "Invalid editing_session_key value: " + JSON.stringify(editing_session_key),
+        e,
+      );
+      throw new CrudException("Invalid editing_session_key", 400);
+    }
+
     const driveFile = await this.repository.findOne({ editing_session_key }, {}, context);
     if (!driveFile) {
       this.logger.error("Drive item not found by editing session key");

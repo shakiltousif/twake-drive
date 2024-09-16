@@ -96,10 +96,9 @@ class OnlyOfficeController {
           break;
 
         case OnlyOffice.Callback.Status.READY_FOR_SAVING:
-          await driveService.endEditing(company_id, editing_session_key, url);
-
           logger.info(`New version for session ${editing_session_key} created`);
           return respondToOO();
+          await driveService.endEditing(editing_session_key, url);
 
         case OnlyOffice.Callback.Status.CLOSED_WITHOUT_CHANGES:
           // Save end of transaction

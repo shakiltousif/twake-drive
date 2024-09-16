@@ -11,6 +11,5 @@ export const TwakeDriveBackendCallbackRoutes = {
     const controller = new TwakeDriveBackendCallbackController();
     // Why post ? to garantee it is never cached and always ran
     router.post('/session/:editing_session_key/check', authMiddleware, controller.checkSessionStatus);
-    router.delete('/session/:editing_session_key', authMiddleware, controller.deleteSessionKey);
   },
 };

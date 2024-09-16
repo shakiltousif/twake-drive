@@ -83,15 +83,4 @@ export default class TwakeDriveBackendCallbackController {
         throw new Error(`Unexpected callback status: ${JSON.stringify(info.result)}`);
     }
   }
-
-  /**
-   * Force deletion of the provided `editing_session_key` in the OO document server.
-   * If the key was succesfully deleted, the `done` property in the response body will be true.
-   */
-  public async deleteSessionKey(req: Request<RequestQuery>, res: Response): Promise<void> {
-    await ignoreMissingKeyErrorButNoneElse(res, async () => {
-      await onlyofficeService.deleteForgotten(req.params.editing_session_key);
-      await res.send({ done: true });
-    });
-  }
 }

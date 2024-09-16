@@ -419,7 +419,7 @@ export default class UserApi {
 
     return await this.platform.app.inject({
       method: "POST",
-      url: `${UserApi.DOC_URL}/companies/${this.platform.workspace.company_id}/item/editing_session/${editingSessionKey}`,
+      url: `${UserApi.DOC_URL}/editing_session/${editingSessionKey}`,
       headers: {
         authorization: `Bearer ${this.jwt}`
       },
@@ -432,7 +432,7 @@ export default class UserApi {
   ): Promise<Response> {
     return await this.platform.app.inject({
       method: "DELETE",
-      url: `${UserApi.DOC_URL}/companies/${this.platform.workspace.company_id}/item/editing_session/${editingSessionKey}`,
+      url: `${UserApi.DOC_URL}/editing_session/${editingSessionKey}`,
       headers: {
         authorization: `Bearer ${this.jwt}`
       }
