@@ -12,6 +12,7 @@ export const {
   CREDENTIALS_SECRET,
   SERVER_PREFIX,
   SERVER_ORIGIN,
+  INSTANCE_ID,
 } = process.env;
 
 const secs = 1000,

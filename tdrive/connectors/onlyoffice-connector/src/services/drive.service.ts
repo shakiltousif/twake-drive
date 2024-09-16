@@ -3,6 +3,7 @@ import apiService from './api.service';
 import logger from '../lib/logger';
 import { Stream } from 'stream';
 import FormData from 'form-data';
+import { INSTANCE_ID } from '@/config';
 
 /**
  * Client for Twake Drive's APIs dealing with `DriveItem`s, using {@see apiService}
@@ -55,6 +56,7 @@ class DriveService implements IDriveService {
         url: `/internal/services/documents/v1/companies/${company_id}/item/${drive_file_id}/editing_session`,
         payload: {
           editorApplicationId: 'tdrive_onlyoffice',
+          appInstanceId: INSTANCE_ID ?? '',
         },
       });
       if (resource?.editingSessionKey) {
@@ -113,7 +115,7 @@ class DriveService implements IDriveService {
         headers: form.getHeaders(),
       });
     } catch (error) {
-      logger.error('Failed to begin editing session: ', error.stack);
+      logger.error('Failed to end editing session: ', error.stack);
       throw error;
       //TODO make monitoring for such kind of errors
     }

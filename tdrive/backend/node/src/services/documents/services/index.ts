@@ -960,7 +960,8 @@ export class DocumentsService {
    * @param id DriveFile ID of the document to begin editing
    * @param editorApplicationId Editor/Application/Plugin specific identifier
    * @param appInstanceId For that `editorApplicationId` a unique identifier
-   *   when multiple instances are running. Unused today.
+   *   when multiple instances are running. Unused today - would need a mapping
+   *   from `appInstanceId` to server host.
    * @param context
    * @returns An object in the format `{}` with the unique identifier for the
    *   editing session

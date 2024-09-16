@@ -46,7 +46,7 @@ class PendingRequest<TResult> {
 export class PendingRequestQueue<TResult> {
   private queue: PendingRequest<TResult>[] = [];
 
-  constructor(private readonly timeoutMs: number, niquystSamplingRatio: 4) {
+  constructor(private readonly timeoutMs: number, niquystSamplingRatio = 4) {
     setInterval(() => {
       this.flush();
     }, timeoutMs / niquystSamplingRatio);
