@@ -9,6 +9,8 @@ import logger from './lib/logger';
 import errorMiddleware from './middlewares/error.middleware';
 import { mountRoutes } from './routes';
 
+import forgottenProcessorService from './services/forgotten-processor.service';
+
 class App {
   public app: express.Application;
   public env: string;
@@ -22,6 +24,8 @@ class App {
     this.initMiddlewares();
     this.initRoutes();
     this.initErrorHandling();
+
+    forgottenProcessorService.makeSureItsLoaded();
   }
 
   public listen = () => {

@@ -96,11 +96,20 @@ class DriveService implements IDriveService {
       if (!url) {
         throw Error('no url found');
       }
-
+      //TODO: It would be better to avoid two requests for this operation
       const originalFile = await this.getByEditingSessionKey({ editing_session_key });
 
       if (!originalFile) {
-        throw Error('original file not found');
+        // TODO: Make a single request and don't require the filename at all
+        //   then in POST /editing_session/... if the key is not found, just
+        //   put it in a users or company "lost and found" folder.
+        //   and accept without error. Because really, if backend doesn't know
+        //   the key anymore, there's not much we can do, and we should get OO
+        //   to clean up and stop trying to upload it.
+        //   but for today:
+        logger.fatal("Losing OO document because Twake Drive doesn't know that Key.", { editing_session_key, url });
+        throw new Error(`Unknown key ${JSON.stringify(editing_session_key)}`);
+        // TODO: Distinguish this case from a long disconnected browser tab waking up
       }
 
       const newFile = await apiService.get<Stream>({
@@ -137,6 +146,7 @@ class DriveService implements IDriveService {
    * Get the document information by the editing session key. Just simple call to the drive API
    * /item/editing_session/${editing_session_key}
    * @param params
+   * @returns null if the key was not found, or the api response body
    */
   public getByEditingSessionKey = async (params: { editing_session_key: string; user_token?: string }): Promise<DriveFileType['item']> => {
     try {
@@ -146,7 +156,7 @@ class DriveService implements IDriveService {
         token: params.user_token,
       });
     } catch (error) {
-      logger.error('Failed to fetch file metadata by editing session key: ', error.stack);
+      if (error?.response?.status === 404) return null;
       throw error;
     }
   };

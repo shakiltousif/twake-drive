@@ -249,8 +249,13 @@ class OnlyOfficeService {
    * @returns The number of files processed and deleted
    */
   public async processForgotten(processor: (key: string, url: string) => Promise<boolean>): Promise<number> {
+    logger.info(`Begin to process forgotten files in OnlyOffice`);
+    //TODO: filter by instance id of the key
     const forgottenFiles = await this.getForgottenList();
-    if (forgottenFiles.length === 0) return 0;
+    if (forgottenFiles.length === 0) {
+      logger.info(`No forgotten files in OnlyOffice`);
+      return 0;
+    }
     Utils.fisherYattesShuffleInPlace(forgottenFiles);
     logger.info(`Forgotten files found: ${forgottenFiles.length}`);
     let deleted = 0;
