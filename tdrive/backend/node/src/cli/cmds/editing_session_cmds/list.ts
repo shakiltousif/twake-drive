@@ -20,11 +20,11 @@ async function makeUserCache(platform: TdrivePlatform) {
     .getProvider<DatabaseServiceAPI>("database")
     .getRepository<User>(User_TYPE, User);
   const cache: { [id: string]: User } = {};
-  return async id => {
-    if (id in cache) return cache[id];
+  return async (id): Promise<[boolean, User]> => {
+    if (id in cache) return [true, cache[id]];
     const user = await usersRepo.findOne({ id });
     if (user) cache[id] = user;
-    return user;
+    return [false, user];
   };
 }
 
@@ -36,8 +36,10 @@ interface ListArguments {
 async function report(platform: TdrivePlatform, args: ListArguments) {
   const users = await makeUserCache(platform);
   async function formatUser(id) {
-    const user = await users(id);
-    return user?.email_canonical || id;
+    const [wasKnown, user] = await users(id);
+    return user?.email_canonical
+      ? user.email_canonical + (wasKnown ? "" : ` (${id})`)
+      : `${JSON.stringify(id)} (user id not found)`;
   }
   const drivesRepo = await platform
     .getProvider<DatabaseServiceAPI>("database")
@@ -60,7 +62,7 @@ async function report(platform: TdrivePlatform, args: ListArguments) {
       console.error(`    - URL encoded:   ${encodeURIComponent(dfile.editing_session_key)}`);
       console.error(`    - applicationId: ${parsed.applicationId}`);
       console.error(`    - companyId:     ${parsed.companyId}`);
-      console.error(`    - instanceId:    ${parsed.instanceId}`);
+      console.error(`    - instanceId:    ${JSON.stringify(parsed.instanceId)}`);
       console.error(
         `    - userId:        ${await formatUser(parsed.userId)} (${
           parsed.userId === dfile.creator ? "same as creator ID" : "not the creator"
