@@ -7,18 +7,6 @@ interface RequestQuery {
   editing_session_key: string;
 }
 
-async function ignoreMissingKeyErrorButNoneElse(res: Response, call: () => Promise<void>): Promise<void> {
-  try {
-    await call();
-  } catch (e) {
-    if (e instanceof CommandError && e.errorCode == ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND) {
-      return void (await res.send({ info: 'Unknown editing_session_key' }));
-    }
-    logger.error('Running OO command for TDrive backend', e);
-    return void (await res.sendStatus(500));
-  }
-}
-
 /**
  * These routes are called by Twake Drive backend, for ex. before editing or retreiving a file,
  * if it has an editing_session_key still, get the status of that and force a resolution.
@@ -30,34 +18,42 @@ export default class TwakeDriveBackendCallbackController {
    * be considered lost after an admin alert.
    *
    * @returns
+   *   - `{ status: 'unknown' }`: the key isn't known and maybe used for a new session
    *   - `{ status: 'updated' }`: the key needed updating but is now invalid
-   *   - `{ status: 'expired' }`: the key can't be used (it is verified unknown)
+   *   - `{ status: 'expired' }`: the key was already used in a finished session and can't be used again
    *   - `{ status: 'live' }`:    the key is valid and current and should be used again for the same file
    *   - `{ error: number }`:     there was an error retreiving the status of the key, http status `!= 200`
    */
   public async checkSessionStatus(req: Request<RequestQuery>, res: Response): Promise<void> {
-    //TODO: check there is auth from backend before this is ran
-
-    // have to get forgotten first, if it's there it's definitive,
-    // but if we paralelise it risks calling the callback
     try {
       const forgottenURL = await onlyofficeService.getForgotten(req.params.editing_session_key);
-      // Run upload before returning
+      try {
+        await driveService.endEditing(req.params.editing_session_key, forgottenURL);
+      } catch (error) {
+        logger.error(`endEditing failed`, { error });
+        return void res.status(502).send({ error: -57649 });
+      }
+      try {
+        await onlyofficeService.deleteForgotten(req.params.editing_session_key);
+      } catch (error) {
+        logger.error(`deleteForgotten failed`, { error });
+        return void res.status(502).send({ error: -57650 });
+      }
       return void res.send({ status: 'updated' });
     } catch (e) {
       if (!(e instanceof CommandError && e.errorCode == ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND)) {
-        logger.error(`getForgotten failed`, e);
-        return void res.status(e instanceof CommandError ? 502 : 500).send({ error: -51 });
+        logger.error(`getForgotten failed`, { error: e });
+        return void res.status(e instanceof CommandError ? 502 : 500).send({ error: -57651 });
       }
     }
     const info = await onlyofficeService.getInfoAndWaitForCallbackUnsafe(req.params.editing_session_key);
     if (info.error === ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND) {
-      // just cancel it
-      return void res.send({ status: 'expired' });
+      // just start using it
+      return void res.send({ status: 'unknown' });
     }
     if (info.error !== undefined) {
       logger.error(`getInfo failed`, { error: info });
-      return void res.status(502).send({ error: -52 });
+      return void res.status(502).send({ error: -57652 });
     }
     switch (info.result.status) {
       case Callback.Status.BEING_EDITED:
@@ -75,7 +71,6 @@ export default class TwakeDriveBackendCallbackController {
 
       case Callback.Status.READY_FOR_SAVING:
         // upload it, have to do it here for correct user stored in url in OO
-        //TODO: Need to fix so company_id is not needed by ooconnector but parsed from key server side
         await driveService.endEditing(req.params.editing_session_key, info.result.url);
         return void res.send({ status: 'updated' });
 

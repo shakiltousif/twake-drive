@@ -32,6 +32,7 @@ export namespace Callback {
     USER_CONNECTED = 1,
     USER_INITIATED_FORCE_SAVE = 2,
   }
+  export const ActionTypeToString = (value: number) => Utils.getKeyForValueSafe(value, ActionType, 'OnlyOffice.Callback.ActionType');
 
   interface Action {
     type: ActionType;
@@ -44,6 +45,7 @@ export namespace Callback {
     SERVER_TIMER = 2,
     FORM_SUBMITTED = 3,
   }
+  export const ForceSaveTypeToString = (value: number) => Utils.getKeyForValueSafe(value, ForceSaveType, 'OnlyOffice.Callback.ForceSaveType');
 
   export enum Status {
     BEING_EDITED = 1,
@@ -57,6 +59,7 @@ export namespace Callback {
     /** `url` and `forcesavetype` fields present with this status */
     ERROR_FORCE_SAVING = 7,
   }
+  export const StatusToString = (value: number) => Utils.getKeyForValueSafe(value, Status, 'OnlyOffice.Callback.Status');
 
   /** Parameters given to the callback by the editing service */
   export interface Parameters {
@@ -305,6 +308,7 @@ class OnlyOfficeService {
     return await new CommandService.Info.Request(key, userdata).postUnsafe().then(({ error }) => error);
   }
 
+  /** Send the info command, wait for the callback if warranted, and return the error or callback body */
   async getInfoAndWaitForCallbackUnsafe(key: string): Promise<CallbackResponseFromCommand> {
     // const userdata = randomUUID();
     return new Promise((resolve, reject) => {
