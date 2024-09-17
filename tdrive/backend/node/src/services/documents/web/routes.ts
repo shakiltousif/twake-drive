@@ -99,7 +99,7 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, _options, next)
     method: "POST",
     url: editingSessionBase,
     preValidation: [fastify.authenticateOptional],
-    handler: documentsController.endEditing.bind(documentsController),
+    handler: documentsController.updateEditing.bind(documentsController),
   });
 
   fastify.route({

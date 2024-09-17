@@ -977,6 +977,8 @@ export class DocumentsService {
       return null;
     }
 
+    //TODO: This needs to try in a loop depending on oo-connector response
+    //       when there is already a key
     let newKey: string;
     try {
       newKey = EditingSessionKeyFormat.generate(
@@ -986,6 +988,7 @@ export class DocumentsService {
         context.user.id,
       );
     } catch (e) {
+      logger.error(`Error generating new editing_session_key: ${e}`, { error: e });
       CrudException.throwMe(e, new CrudException("Error generating new editing_session_key", 500));
     }
 
@@ -1026,12 +1029,15 @@ export class DocumentsService {
    * @param editing_session_key Editing key of the DriveFile
    * @param file Multipart files from the incoming http request
    * @param options Optional upload information from the request
+   * @param keepEditing If `true`, the file will be saved as a new version,
+   *  and the DriveFile will keep its editing_session_key. If `true`, a file is required.
    * @param context
    */
-  endEditing = async (
+  updateEditing = async (
     editing_session_key: string,
     file: MultipartFile,
     options: UploadOptions,
+    keepEditing: boolean,
     context: CompanyExecutionContext,
   ) => {
     if (!context) {
@@ -1043,6 +1049,7 @@ export class DocumentsService {
       throw new CrudException("Invalid editing_session_key", 400);
     }
 
+    //TODO If the app is the "user" calling, set user to that from the parsed key
     try {
       const parsedKey = EditingSessionKeyFormat.parse(editing_session_key);
       context = {
@@ -1087,26 +1094,31 @@ export class DocumentsService {
         },
         context,
       );
+    } else if (keepEditing) {
+      this.logger.error("Inconsistent endEditing call");
+      throw new CrudException("Inconsistent endEditing call", 500);
     }
 
-    try {
-      const result = await this.repository.atomicCompareAndSet(
-        driveFile,
-        "editing_session_key",
-        editing_session_key,
-        null,
-      );
-      if (!result.didSet)
-        throw new Error(
-          `Couldn't set editing_session_key ${JSON.stringify(
-            editing_session_key,
-          )} on DriveFile ${JSON.stringify(driveFile.id)} because it is ${JSON.stringify(
-            result.currentValue,
-          )}`,
+    if (!keepEditing) {
+      try {
+        const result = await this.repository.atomicCompareAndSet(
+          driveFile,
+          "editing_session_key",
+          editing_session_key,
+          null,
         );
-    } catch (error) {
-      logger.error({ error: `${error}` }, "Failed to cancel editing Drive item");
-      CrudException.throwMe(error, new CrudException("Failed to cancel editing Drive item", 500));
+        if (!result.didSet)
+          throw new Error(
+            `Couldn't set editing_session_key ${JSON.stringify(
+              editing_session_key,
+            )} on DriveFile ${JSON.stringify(driveFile.id)} because it is ${JSON.stringify(
+              result.currentValue,
+            )}`,
+          );
+      } catch (error) {
+        logger.error({ error: `${error}` }, "Failed to cancel editing Drive item");
+        CrudException.throwMe(error, new CrudException("Failed to cancel editing Drive item", 500));
+      }
     }
   };
 

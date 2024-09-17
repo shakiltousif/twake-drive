@@ -54,6 +54,7 @@ class DriveService implements IDriveService {
     try {
       const resource = await apiService.post<{}, { editingSessionKey: string }>({
         url: `/internal/services/documents/v1/companies/${company_id}/item/${drive_file_id}/editing_session`,
+        token: user_token,
         payload: {
           editorApplicationId: 'tdrive_onlyoffice',
           appInstanceId: INSTANCE_ID ?? '',
@@ -82,7 +83,15 @@ class DriveService implements IDriveService {
     }
   }
 
-  public async endEditing(editing_session_key: string, url: string) {
+  public async addEditingSessionVersion(editing_session_key: string, url: string, user_token?: string) {
+    return this.updateEditing(editing_session_key, url, true, user_token);
+  }
+
+  public async endEditing(editing_session_key: string, url: string, user_token?: string) {
+    return this.updateEditing(editing_session_key, url, false, user_token);
+  }
+
+  private async updateEditing(editing_session_key: string, url: string, keepEditing: boolean, user_token?: string) {
     try {
       if (!url) {
         throw Error('no url found');
@@ -109,9 +118,12 @@ class DriveService implements IDriveService {
 
       logger.info('Saving file version to Twake Drive: ', filename);
 
+      const queryString = keepEditing ? '?keepEditing=true' : '';
+
       await apiService.post({
-        url: `/internal/services/documents/v1/editing_session/${encodeURIComponent(editing_session_key)}`,
+        url: `/internal/services/documents/v1/editing_session/${encodeURIComponent(editing_session_key)}` + queryString,
         payload: form,
+        token: user_token,
         headers: form.getHeaders(),
       });
     } catch (error) {

@@ -381,10 +381,11 @@ export class DocumentsController {
 
       if (!editing_session_key) throw new CrudException("Missing editing_session_key", 400);
 
-      return await globalResolver.services.documents.documents.endEditing(
+      return await globalResolver.services.documents.documents.updateEditing(
         editing_session_key,
         null,
         null,
+        false,
         context,
       );
     } catch (error) {
@@ -394,12 +395,13 @@ export class DocumentsController {
   };
   //TODO: will need a save under session key, but without ending the edit (for force saves)
   /**
-   * Finish an editing session for a given `editing_session_key` by uploading the new version of the File
+   * Finish an editing session for a given `editing_session_key` by uploading the new version of the File.
+   * Unless the `keepEditing` query param is `true`, then just save and stay in editing mode.
    */
-  endEditing = async (
+  updateEditing = async (
     request: FastifyRequest<{
       Params: ItemRequestByEditingSessionKeyParams;
-      Querystring: Record<string, string>;
+      Querystring: { keepEditing?: string };
       Body: {
         item: Partial<DriveFile>;
         version: Partial<FileVersion>;
@@ -423,17 +425,19 @@ export class DocumentsController {
         waitForThumbnail: !!q.thumbnail_sync,
         ignoreThumbnails: false,
       };
-      return await globalResolver.services.documents.documents.endEditing(
+      return await globalResolver.services.documents.documents.updateEditing(
         editing_session_key,
         file,
         options,
+        request.query.keepEditing == "true",
         context,
       );
     } else {
-      return await globalResolver.services.documents.documents.endEditing(
+      return await globalResolver.services.documents.documents.updateEditing(
         editing_session_key,
         null,
         null,
+        true,
         context,
       );
     }
