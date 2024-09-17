@@ -1,6 +1,7 @@
 import { describe, beforeEach, it, expect, afterAll, jest } from "@jest/globals";
 import { init, TestPlatform } from "../setup";
 import UserApi from "../common/user-api";
+import * as utils from "../../../src/services/documents/utils";
 import { DocumentsEngine } from "../../../src/services/documents/services/engine";
 import EmailPusherClass from "../../../src/core/platform/services/email-pusher";
 import { deserialize } from "class-transformer";
@@ -10,6 +11,7 @@ import { e2e_createDocumentFile, e2e_createVersion } from "./utils";
 
 describe("the Drive feature", () => {
   let platform: TestPlatform;
+  const isVirtualFolder = jest.spyOn(utils, "isVirtualFolder");
   const notifyDocumentShared = jest.spyOn(DocumentsEngine.prototype, "notifyDocumentShared");
   const notifyDocumentVersionUpdated = jest.spyOn(
     DocumentsEngine.prototype,
@@ -38,7 +40,7 @@ describe("the Drive feature", () => {
         "statistics",
         "platform-services",
         "documents",
-        "email-pusher"
+        "email-pusher",
       ],
     });
     currentUser = await UserApi.getInstance(platform);
@@ -131,10 +133,31 @@ describe("the Drive feature", () => {
     );
   });
 
+  it("Did not attempt to notify the user if the parent folder is a virutal folder.", async () => {    
+    // upload a file
+    const oneUser = await UserApi.getInstance(platform, true, { companyRole: "admin" });
+    const oneUserDrive = `user_${oneUser.user.id}`;
+    await oneUser.uploadRandomFileAndCreateDocument(oneUserDrive);
+    // expect the notification to not be sent
+    expect(isVirtualFolder).toHaveBeenCalled();
+    expect(isVirtualFolder).toHaveReturnedWith(true);
+    expect(notifyDocumentShared).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        notificationEmitter: oneUser.user.id,
+      }),
+    );
+  });
+
   // Test the email language based on the user's language and the email subject
   it("Did notify the user after sharing a file in the user's language.", async () => {
-    const oneUser = await UserApi.getInstance(platform, true, { companyRole: "admin", preferences: { language: "en" } });
-    const anotherUser = await UserApi.getInstance(platform, true, { companyRole: "admin", preferences: { language: "fr" }});
+    const oneUser = await UserApi.getInstance(platform, true, {
+      companyRole: "admin",
+      preferences: { language: "en" },
+    });
+    const anotherUser = await UserApi.getInstance(platform, true, {
+      companyRole: "admin",
+      preferences: { language: "fr" },
+    });
     //upload files
     const doc = await oneUser.uploadRandomFileAndCreateDocument();
     const doc2 = await anotherUser.uploadRandomFileAndCreateDocument();

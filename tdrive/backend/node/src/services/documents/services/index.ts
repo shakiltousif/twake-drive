@@ -227,7 +227,7 @@ export class DocumentsService {
     if (options?.pagination) {
       const { page_token, limitStr } = options.pagination;
       const pageNumber =
-        dbType === "mongodb" ? parseInt(page_token) : parseInt(page_token) / parseInt(limitStr) + 1;
+        dbType === "mongodb" ? parseInt(page_token) : parseInt(page_token) / parseInt(limitStr);
 
       pagination = new Pagination(`${pageNumber}`, `${limitStr}`, false);
     }
@@ -441,7 +441,7 @@ export class DocumentsService {
       );
       // TODO: notify the user a document has been added to the directory shared with them
       try {
-        if (driveItem.parent_id !== "root" && driveItem.parent_id !== "trash") {
+        if (!isVirtualFolder(driveItem.parent_id)) {
           const parentItem = await this.repository.findOne(
             {
               id: driveItem.parent_id,
