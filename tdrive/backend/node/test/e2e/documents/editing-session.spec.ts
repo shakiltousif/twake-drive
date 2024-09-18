@@ -1,10 +1,13 @@
-import { describe, beforeAll, beforeEach, it, expect, afterAll } from "@jest/globals";
+import { describe, beforeAll, beforeEach, it, expect, afterAll, jest } from "@jest/globals";
 
 import { init, TestPlatform } from "../setup";
 import UserApi from "../common/user-api";
 
 import { DriveFile, TYPE as DriveFileType } from "../../../src/services/documents/entities/drive-file";
 import exp = require("node:constants");
+import ApplicationsApiService from "../../../src/services/applications-api";
+import { afterEach } from "node:test";
+import Application from "../../../src/services/applications/entities/application";
 
 describe("the Drive's documents' editing session kind-of-lock", () => {
   let platform: TestPlatform | null;
@@ -49,6 +52,11 @@ describe("the Drive's documents' editing session kind-of-lock", () => {
       parent_id: currentUserRoot,
       scope: "personal",
     });
+    jest.spyOn(ApplicationsApiService.getDefault(), 'getApplicationConfig').mockImplementation((id) => id === "e2e_testing" ? {} as Application : undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("atomicCompareAndSet allows a single value at a time", async () => {

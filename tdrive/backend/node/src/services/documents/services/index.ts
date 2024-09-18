@@ -61,6 +61,7 @@ import config from "config";
 import { MultipartFile } from "@fastify/multipart";
 import { UploadOptions } from "src/services/files/types";
 import { SortType } from "src/core/platform/services/search/api";
+import ApplicationsApiService from "../../applications-api";
 
 export class DocumentsService {
   version: "1";
@@ -976,9 +977,16 @@ export class DocumentsService {
       this.logger.error("invalid execution context");
       return null;
     }
-
-    //TODO: This needs to try in a loop depending on oo-connector response
-    //       when there is already a key
+    if (
+      !editorApplicationId ||
+      !ApplicationsApiService.getDefault().getApplicationConfig(editorApplicationId)
+    ) {
+      logger.error(`Missing or invalid application ID: ${JSON.stringify(editorApplicationId)}`);
+      CrudException.throwMe(
+        new Error("Unknown appId"),
+        new CrudException("Missing or invalid application ID", 400),
+      );
+    }
     let newKey: string;
     try {
       newKey = EditingSessionKeyFormat.generate(

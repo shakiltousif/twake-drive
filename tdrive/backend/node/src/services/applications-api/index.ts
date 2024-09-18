@@ -14,6 +14,11 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
   version = "1";
   name = "applicationsapi";
 
+  private static default: ApplicationsApiService;
+  public static getDefault() {
+    return this.default;
+  }
+
   public async doInit(): Promise<this> {
     const fastify = this.context.getProvider<WebServerAPI>("webserver").getServer();
     fastify.register((instance, _opts, next) => {
@@ -70,8 +75,21 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
         }
       }
     }
-
+    ApplicationsApiService.default = this;
     return this;
+  }
+
+  /** Get the configuration of a given `appId` or `undefined` if unknown */
+  public getApplicationConfig(appId: string) {
+    const apps = config.get<Application[]>("applications.plugins") || [];
+    return apps.find(app => app.id === appId);
+  }
+
+  /** Get the configuration of a given `appId` or throw an error if unknown */
+  public requireApplicationConfig(appId: string) {
+    const app = this.getApplicationConfig(appId);
+    if (!app) throw new Error(`Unknown application.id ${JSON.stringify(appId)}`);
+    return app;
   }
 
   /** Send a request to the plugin by its application id
@@ -82,9 +100,7 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
     url: string,
     appId: string,
   ) {
-    const apps = config.get<Application[]>("applications.plugins") || [];
-    const app = apps.find(app => app.id === appId);
-    if (!app) throw new Error(`Unknown application.id ${JSON.stringify(appId)}`);
+    const app = this.requireApplicationConfig(appId);
     if (!app.internal_domain)
       throw new Error(`application.id ${JSON.stringify(appId)} missing an internal_domain`);
     const signature = jwt.sign(

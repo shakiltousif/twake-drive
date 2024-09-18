@@ -516,7 +516,7 @@ export default class UserApi {
   async getDocumentByEditingKey(editing_session_key: string) {
     return await this.platform.app.inject({
       method: "GET",
-      url: `${UserApi.DOC_URL}/companies/${this.platform.workspace.company_id}/item/editing_session/${encodeURIComponent(editing_session_key)}`,
+      url: `${UserApi.DOC_URL}/editing_session/${encodeURIComponent(editing_session_key)}`,
       headers: {
         authorization: `Bearer ${this.jwt}`
       }
