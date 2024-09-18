@@ -1,12 +1,21 @@
 import { Request, Response } from 'express';
 import logger from '@/lib/logger';
+import { createSingleProcessorLock } from '@/lib/single-processor-lock';
 import onlyofficeService, { Callback, CommandError, ErrorCode } from '@/services/onlyoffice.service';
 import driveService from '@/services/drive.service';
 import forgottenProcessorService from '@/services/forgotten-processor.service';
+import { IHealthProvider, registerHealthProvider } from '@/services/health-providers.service';
 
 interface RequestQuery {
   editing_session_key: string;
 }
+const keyCheckLock = createSingleProcessorLock<[status: number, body: unknown]>();
+
+registerHealthProvider({
+  async getHealthData() {
+    return { checks: { locks: keyCheckLock.getWorstStats() } };
+  },
+});
 
 /**
  * These routes are called by Twake Drive backend, for ex. before editing or retreiving a file,
@@ -26,51 +35,54 @@ export default class TwakeDriveBackendCallbackController {
    *   - `{ error: number }`:     there was an error retreiving the status of the key, http status `!= 200`
    */
   public async checkSessionStatus(req: Request<RequestQuery>, res: Response): Promise<void> {
-    try {
-      const forgottenURL = await onlyofficeService.getForgotten(req.params.editing_session_key);
+    const [status, body] = await keyCheckLock.runWithLock(req.params.editing_session_key, async () => {
       try {
-        await forgottenProcessorService.processForgottenFile(req.params.editing_session_key, forgottenURL);
-      } catch (error) {
-        logger.error(`processForgottenFile failed`, { error });
-        return void res.status(502).send({ error: -57650 });
+        const forgottenURL = await onlyofficeService.getForgotten(req.params.editing_session_key);
+        try {
+          await forgottenProcessorService.processForgottenFile(req.params.editing_session_key, forgottenURL);
+        } catch (error) {
+          logger.error(`processForgottenFile failed`, { error });
+          return [502, { error: -57650 }];
+        }
+        return [200, { status: 'updated' }];
+      } catch (e) {
+        if (!(e instanceof CommandError && e.errorCode == ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND)) {
+          logger.error(`getForgotten failed`, { error: e });
+          return [e instanceof CommandError ? 502 : 500, { error: -57651 }];
+        }
       }
-      return void res.send({ status: 'updated' });
-    } catch (e) {
-      if (!(e instanceof CommandError && e.errorCode == ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND)) {
-        logger.error(`getForgotten failed`, { error: e });
-        return void res.status(e instanceof CommandError ? 502 : 500).send({ error: -57651 });
+      const info = await onlyofficeService.getInfoAndWaitForCallbackUnsafe(req.params.editing_session_key);
+      if (info.error === ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND) {
+        // just start using it
+        return [200, { status: 'unknown' }];
       }
-    }
-    const info = await onlyofficeService.getInfoAndWaitForCallbackUnsafe(req.params.editing_session_key);
-    if (info.error === ErrorCode.KEY_MISSING_OR_DOC_NOT_FOUND) {
-      // just start using it
-      return void res.send({ status: 'unknown' });
-    }
-    if (info.error !== undefined) {
-      logger.error(`getInfo failed`, { error: info });
-      return void res.status(502).send({ error: -57652 });
-    }
-    switch (info.result.status) {
-      case Callback.Status.BEING_EDITED:
-      case Callback.Status.BEING_EDITED_BUT_IS_SAVED:
-        // use it as is
-        return void res.send({ status: 'live' });
+      if (info.error !== undefined) {
+        logger.error(`getInfo failed`, { error: info });
+        return [502, { error: -57652 }];
+      }
+      switch (info.result.status) {
+        case Callback.Status.BEING_EDITED:
+        case Callback.Status.BEING_EDITED_BUT_IS_SAVED:
+          // use it as is
+          return [200, { status: 'live' }];
 
-      case Callback.Status.CLOSED_WITHOUT_CHANGES:
-        // just cancel it
-        return void res.send({ status: 'expired' });
+        case Callback.Status.CLOSED_WITHOUT_CHANGES:
+          // just cancel it
+          return [200, { status: 'expired' }];
 
-      case Callback.Status.ERROR_FORCE_SAVING:
-      case Callback.Status.ERROR_SAVING:
-        return void res.status(502).send({ error: info.result.status });
+        case Callback.Status.ERROR_FORCE_SAVING:
+        case Callback.Status.ERROR_SAVING:
+          return [502, { error: info.result.status }];
 
-      case Callback.Status.READY_FOR_SAVING:
-        // upload it, have to do it here for correct user stored in url in OO
-        await driveService.endEditing(req.params.editing_session_key, info.result.url);
-        return void res.send({ status: 'updated' });
+        case Callback.Status.READY_FOR_SAVING:
+          // upload it, have to do it here for correct user stored in url in OO
+          await driveService.endEditing(req.params.editing_session_key, info.result.url);
+          return [200, { status: 'updated' }];
 
-      default:
-        throw new Error(`Unexpected callback status: ${JSON.stringify(info.result)}`);
-    }
+        default:
+          throw new Error(`Unexpected callback status: ${JSON.stringify(info.result)}`);
+      }
+    });
+    await res.status(status).send(body);
   }
 }

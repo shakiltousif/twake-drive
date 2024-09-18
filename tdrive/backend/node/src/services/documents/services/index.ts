@@ -6,6 +6,7 @@ import {
   Pagination,
 } from "../../../core/platform/framework/api/crud-service";
 import Repository, {
+  AtomicCompareAndSetResult,
   comparisonType,
   inType,
 } from "../../../core/platform/services/database/services/orm/repository/repository";
@@ -61,7 +62,7 @@ import config from "config";
 import { MultipartFile } from "@fastify/multipart";
 import { UploadOptions } from "src/services/files/types";
 import { SortType } from "src/core/platform/services/search/api";
-import ApplicationsApiService from "../../applications-api";
+import ApplicationsApiService, { ApplicationEditingKeyStatus } from "../../applications-api";
 
 export class DocumentsService {
   version: "1";
@@ -987,18 +988,45 @@ export class DocumentsService {
         new CrudException("Missing or invalid application ID", 400),
       );
     }
-    let newKey: string;
-    try {
-      newKey = EditingSessionKeyFormat.generate(
-        editorApplicationId,
-        appInstanceId,
-        context.company.id,
-        context.user.id,
-      );
-    } catch (e) {
-      logger.error(`Error generating new editing_session_key: ${e}`, { error: e });
-      CrudException.throwMe(e, new CrudException("Error generating new editing_session_key", 500));
-    }
+    const spinLoopUntilEditable = async (
+      provider: {
+        generateKey: () => string;
+        atomicSet: (
+          key: string | null,
+          previous: string | null,
+        ) => Promise<AtomicCompareAndSetResult<string>>;
+        getPluginKeyStatus: (key: string) => Promise<ApplicationEditingKeyStatus>;
+      },
+      attemptCount = 8,
+      tarpitS = 1,
+      tarpitWorsenCoeff = 1.2,
+    ) => {
+      while (attemptCount-- > 0) {
+        const newKey = provider.generateKey();
+        const swapResult = await provider.atomicSet(newKey, null);
+        logger.debug(`Begin edit try ${newKey}, got: ${JSON.stringify(swapResult)}`);
+        if (swapResult.didSet) return newKey;
+        if (!swapResult.currentValue) continue; // glitch in the matrix but ok because atomicCompareAndSet is not actually completely atomic
+        const existingStatus = await provider.getPluginKeyStatus(swapResult.currentValue);
+        logger.debug(`Begin edit get status of ${newKey}: ${JSON.stringify(existingStatus)}`);
+        switch (existingStatus) {
+          case ApplicationEditingKeyStatus.unknown:
+          case ApplicationEditingKeyStatus.live:
+            return swapResult.currentValue;
+          case ApplicationEditingKeyStatus.updated:
+          case ApplicationEditingKeyStatus.expired:
+            logger.debug(`Begin edit emptying previous ${swapResult.currentValue}`);
+            await provider.atomicSet(null, swapResult.currentValue);
+            break;
+          default:
+            throw new Error(
+              `Unexpected ApplicationEditingKeyStatus: ${JSON.stringify(existingStatus)}`,
+            );
+        }
+        await new Promise(resolve => setTimeout(resolve, tarpitS * 1000));
+        tarpitS *= tarpitWorsenCoeff;
+      }
+    };
 
     const hasAccess = await checkAccess(id, null, "write", this.repository, context);
     if (!hasAccess) {
@@ -1018,13 +1046,20 @@ export class DocumentsService {
         {},
         context,
       );
-      const result = await this.repository.atomicCompareAndSet(
-        driveFile,
-        "editing_session_key",
-        null,
-        newKey,
-      );
-      return { editingSessionKey: result.currentValue };
+      const editingSessionKey = await spinLoopUntilEditable({
+        atomicSet: (key, previous) =>
+          this.repository.atomicCompareAndSet(driveFile, "editing_session_key", previous, key),
+        generateKey: () =>
+          EditingSessionKeyFormat.generate(
+            editorApplicationId,
+            appInstanceId,
+            context.company.id,
+            context.user.id,
+          ),
+        getPluginKeyStatus: key =>
+          ApplicationsApiService.getDefault().checkPendingEditingStatus(key),
+      });
+      return { editingSessionKey };
     } catch (error) {
       logger.error({ error: `${error}` }, "Failed to begin editing Drive item");
       CrudException.throwMe(error, new CrudException("Failed to begin editing Drive item", 500));

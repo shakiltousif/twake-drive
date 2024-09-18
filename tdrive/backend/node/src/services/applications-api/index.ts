@@ -9,6 +9,17 @@ import { logger } from "../../core/platform/framework/logger";
 import { EditingSessionKeyFormat } from "../documents/entities/drive-file";
 import jwt from "jsonwebtoken";
 
+export enum ApplicationEditingKeyStatus {
+  /** the key isn't known and maybe used for a new session */
+  unknown = "unknown",
+  /** the key needed updating but is now invalid */
+  updated = "updated",
+  /** the key was already used in a finished session and can't be used again */
+  expired = "expired",
+  /** the key is valid and current and should be used again for the same file */
+  live = "live",
+}
+
 @Prefix("/api")
 export default class ApplicationsApiService extends TdriveService<undefined> {
   version = "1";
@@ -128,17 +139,22 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
   /**
    * Check status of `editing_session_key` in the corresponding application.
    * @param editingSessionKey {@see DriveFile.editing_session_key} to check
-   * @returns a URL string if there is a pending version to add, `null`
-   * if the key is unknown.
+   * @returns status of the provided key as far as the application knows
    */
-  async checkPendingEditingStatus(editingSessionKey: string): Promise<string | null> {
+  async checkPendingEditingStatus(editingSessionKey: string): Promise<ApplicationEditingKeyStatus> {
     const parsedKey = EditingSessionKeyFormat.parse(editingSessionKey);
     const response = await this.requestFromApplication(
       "POST",
       "tdriveApi/1/session/" + encodeURIComponent(editingSessionKey) + "/check",
       parsedKey.applicationId,
     );
-    return (response.data.url as string) || null;
+    if (response.status != 200 || response.data.error)
+      throw new Error(
+        `Application check key ${editingSessionKey} failed with HTTP ${
+          response.status
+        }: ${JSON.stringify(response.data)}`,
+      );
+    return (response.data.status as ApplicationEditingKeyStatus) || null;
   }
 
   /**
