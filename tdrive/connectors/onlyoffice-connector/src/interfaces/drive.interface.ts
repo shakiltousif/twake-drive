@@ -23,5 +23,4 @@ export interface IDriveService {
   beginEditingSession: (company_id: string, drive_file_id: string) => Promise<string>;
   addEditingSessionVersion: (editing_session_key: string, url: string) => Promise<void>;
   endEditing: (editing_session_key: string, url: string) => Promise<void>;
-  getByEditingSessionKey: (params: { company_id: string; editing_session_key: string; user_token?: string }) => Promise<DriveFileType['item']>;
 }

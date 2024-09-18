@@ -83,8 +83,9 @@ class ApiService implements IApiService {
         },
       });
     } catch (error) {
-      logger.error('Failed to post to Twake Drive: ', { error });
+      logger.error('Failed to post to Twake Drive: ', { error: error.stack });
       this.refreshToken();
+      throw error;
     }
   };
 

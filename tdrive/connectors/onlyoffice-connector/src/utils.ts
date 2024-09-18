@@ -16,7 +16,7 @@ export type QueryParams = { [key: string]: string | number };
 export function joinURL(path: string[], params?: QueryParams) {
   let joinedPath = path.map(x => x.replace(/(?:^\/+)+|(?:\/+$)/g, '')).join('/');
   if (path[path.length - 1].endsWith('/')) joinedPath += '/';
-  const paramEntries = Object.entries(params || {});
+  const paramEntries = Object.entries(params || {}).filter(([, value]) => value !== undefined && value !== null);
   if (paramEntries.length === 0) return joinedPath;
   const query = paramEntries.map(p => p.map(encodeURIComponent).join('=')).join('&');
   return joinedPath + (joinedPath.indexOf('?') > -1 ? '&' : '?') + query;
