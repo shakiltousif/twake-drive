@@ -5,7 +5,7 @@ import UserApi from "../common/user-api";
 
 import { DriveFile, TYPE as DriveFileType } from "../../../src/services/documents/entities/drive-file";
 import exp = require("node:constants");
-import ApplicationsApiService from "../../../src/services/applications-api";
+import ApplicationsApiService, { ApplicationEditingKeyStatus } from "../../../src/services/applications-api";
 import { afterEach } from "node:test";
 import Application from "../../../src/services/applications/entities/application";
 
@@ -53,6 +53,7 @@ describe("the Drive's documents' editing session kind-of-lock", () => {
       scope: "personal",
     });
     jest.spyOn(ApplicationsApiService.getDefault(), 'getApplicationConfig').mockImplementation((id) => id === "e2e_testing" ? {} as Application : undefined);
+    jest.spyOn(ApplicationsApiService.getDefault(), 'checkPendingEditingStatus').mockImplementation(async () => ApplicationEditingKeyStatus.unknown);
   });
 
   afterEach(() => {
