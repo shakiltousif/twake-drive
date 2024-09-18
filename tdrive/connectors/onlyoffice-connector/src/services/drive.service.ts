@@ -5,6 +5,9 @@ import { Stream } from 'stream';
 import FormData from 'form-data';
 import { INSTANCE_ID } from '@/config';
 
+/** Thrown when Twake Drive returns a 404 for a key */
+export class UnknownKeyInDriveError extends Error {}
+
 /**
  * Client for Twake Drive's APIs dealing with `DriveItem`s, using {@see apiService}
  * to handle authorization
@@ -107,8 +110,8 @@ class DriveService implements IDriveService {
         //   the key anymore, there's not much we can do, and we should get OO
         //   to clean up and stop trying to upload it.
         //   but for today:
-        logger.fatal("Losing OO document because Twake Drive doesn't know that Key.", { editing_session_key, url });
-        throw new Error(`Unknown key ${JSON.stringify(editing_session_key)}`);
+        logger.error("Forgotten OO document that Twake Drive doesn't know the key of.", { editing_session_key, url });
+        throw new UnknownKeyInDriveError(`Unknown key ${JSON.stringify(editing_session_key)}`);
         // TODO: Distinguish this case from a long disconnected browser tab waking up
       }
 

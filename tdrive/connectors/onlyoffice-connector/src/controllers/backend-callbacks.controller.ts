@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import logger from '@/lib/logger';
 import onlyofficeService, { Callback, CommandError, ErrorCode } from '@/services/onlyoffice.service';
 import driveService from '@/services/drive.service';
+import forgottenProcessorService from '@/services/forgotten-processor.service';
 
 interface RequestQuery {
   editing_session_key: string;
@@ -28,15 +29,9 @@ export default class TwakeDriveBackendCallbackController {
     try {
       const forgottenURL = await onlyofficeService.getForgotten(req.params.editing_session_key);
       try {
-        await driveService.endEditing(req.params.editing_session_key, forgottenURL);
+        await forgottenProcessorService.processForgottenFile(req.params.editing_session_key, forgottenURL);
       } catch (error) {
-        logger.error(`endEditing failed`, { error });
-        return void res.status(502).send({ error: -57649 });
-      }
-      try {
-        await onlyofficeService.deleteForgotten(req.params.editing_session_key);
-      } catch (error) {
-        logger.error(`deleteForgotten failed`, { error });
+        logger.error(`processForgottenFile failed`, { error });
         return void res.status(502).send({ error: -57650 });
       }
       return void res.send({ status: 'updated' });

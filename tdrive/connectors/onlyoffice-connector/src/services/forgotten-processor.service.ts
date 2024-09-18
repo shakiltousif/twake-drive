@@ -1,10 +1,11 @@
+import logger from '@/lib/logger';
 import { onlyOfficeForgottenFilesCheckPeriodMS } from '@/config';
 import { PolledThingieValue } from '@/lib/polled-thingie-value';
+import { createSingleProcessorLock } from '@/lib/single-processor-lock';
 
 import apiService from './api.service';
 import onlyofficeService from './onlyoffice.service';
-import driveService from './drive.service';
-import logger from '@/lib/logger';
+import driveService, { UnknownKeyInDriveError } from './drive.service';
 
 /**
  * Periodically poll the Only Office document server for forgotten
@@ -12,6 +13,7 @@ import logger from '@/lib/logger';
  */
 class ForgottenProcessor {
   private readonly forgottenFilesPoller: PolledThingieValue<number>;
+  public readonly forgottenSynchroniser = createSingleProcessorLock<boolean>();
   private lastStart = 0;
 
   constructor() {
@@ -23,33 +25,64 @@ class ForgottenProcessor {
     );
   }
 
-  /** Get the number of seconds since the last time this process started */
-  public getLastStartTimeAgoS() {
-    return ~~((new Date().getTime() - this.lastStart) / 1000);
+  public async getHealthData() {
+    const keys = await onlyofficeService.getForgottenList();
+    return {
+      forgotten: {
+        timeSinceLastStartS: ~~((new Date().getTime() - this.lastStart) / 1000),
+        count: keys?.length ?? 0,
+        locks: this.forgottenSynchroniser.getWorstStats(),
+      },
+    };
   }
 
+  /**
+   * The point of this is to ensure this file is imported,
+   * which is needed for side-effect of starting this timer.
+   * The only other use being the health stuff it could easily
+   * be refactored out as unused.
+   */
   public makeSureItsLoaded() {
-    // The point of this is to ensure this file is imported,
-    // which is needed for side-effect of starting this timer
-    return true;
+    return 'yup this module is loaded !';
   }
 
-  private async processForgottenFiles() {
-    this.lastStart = new Date().getTime();
-    if (!(await apiService.hasToken())) return -1;
-    return await onlyofficeService.processForgotten(async (key, url) => {
+  /**
+   * Try to upload the forgotten file, optionally delete it from OO, will return if it was
+   * (or should be) deleted. Does not throw unless the OO deletion itself threw.
+   */
+  private async safeEndEditing(key: string, url: string, deleteForgotten: boolean) {
+    return this.forgottenSynchroniser.runWithLock(key, async () => {
+      let succeded = false;
       try {
         await driveService.endEditing(key, url);
-        return true;
+        succeded = true;
       } catch (error) {
-        logger.error(`Error processing forgotten file by key ${JSON.stringify(key)}: ${error}`, { key, url, error });
+        if (!(error instanceof UnknownKeyInDriveError))
+          logger.error(`Error processing forgotten file by key ${JSON.stringify(key)}: ${error}`, { key, url, error });
         // Can't do much about it here, hope it goes in retry, but don't
         // throw to keep processing
         //TODO: Maybe make a date string, compare to key, if old enough, delete...
         // this logic should probably in Twake Drive backend though
       }
-      return false;
+      if (succeded && deleteForgotten) await onlyofficeService.deleteForgotten(key);
+      return succeded;
     });
+  }
+
+  private async processForgottenFiles() {
+    this.lastStart = new Date().getTime();
+    if (!(await apiService.hasToken())) return -1;
+    return await onlyofficeService.processForgotten((key, url) =>
+      this.safeEndEditing(key, url, false /* `onlyofficeService.processForgotten` will do it */),
+    );
+  }
+
+  /**
+   * Attempt to upload the forgotten OO file, only throws if deleting it failed,
+   * returns wether it was deleted.
+   */
+  public async processForgottenFile(key: string, url: string) {
+    return this.safeEndEditing(key, url, true);
   }
 }
 

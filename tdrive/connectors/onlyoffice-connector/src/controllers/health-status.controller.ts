@@ -9,19 +9,13 @@ import forgottenProcessorService from '@/services/forgotten-processor.service';
  */
 export const HealthStatusController = {
   async get(req: Request<{}, {}, {}, {}>, res: Response): Promise<void> {
-    Promise.all([
-      onlyofficeService.getLatestLicence(),
-      apiService.hasToken(),
-      onlyofficeService.getForgottenList(),
-      forgottenProcessorService.getLastStartTimeAgoS(),
-    ]).then(
-      ([onlyOfficeLicense, twakeDriveToken, forgottenKeys, forgottenLastProcessAgoS]) =>
+    Promise.all([onlyofficeService.getLatestLicence(), apiService.hasToken(), forgottenProcessorService.getHealthData()]).then(
+      ([onlyOfficeLicense, twakeDriveToken, forgottenProcessorHealth]) =>
         res.status(onlyOfficeLicense && twakeDriveToken ? 200 : 500).send({
           uptimeS: Math.floor(process.uptime()),
           onlyOfficeLicense,
           twakeDriveToken,
-          forgottenCount: forgottenKeys?.length ?? 0,
-          forgottenLastProcessAgoS,
+          ...forgottenProcessorHealth,
         }),
       err => res.status(500).send(err),
     );
