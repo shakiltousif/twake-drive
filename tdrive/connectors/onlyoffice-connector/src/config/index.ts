@@ -13,6 +13,7 @@ export const {
   SERVER_PREFIX,
   SERVER_ORIGIN,
   INSTANCE_ID,
+  OOCONNECTOR_HEALTH_SECRET,
 } = process.env;
 
 const secs = 1000,

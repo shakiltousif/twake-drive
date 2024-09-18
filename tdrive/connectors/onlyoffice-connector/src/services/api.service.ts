@@ -9,20 +9,26 @@ import { CREDENTIALS_ENDPOINT, CREDENTIALS_ID, CREDENTIALS_SECRET, twakeDriveTok
 import logger from '../lib/logger';
 import * as Utils from '@/utils';
 import { PolledThingieValue } from '@/lib/polled-thingie-value';
+import { IHealthProvider, registerHealthProvider } from './health-providers.service';
 
 /**
  * Client for the Twake Drive backend API on behalf of the plugin (or provided token in parameters).
  * Periodically updates authorization and adds to requests.
  */
-class ApiService implements IApiService {
+class ApiService implements IApiService, IHealthProvider {
   private readonly tokenPoller: PolledThingieValue<Axios>;
 
   constructor() {
     this.tokenPoller = new PolledThingieValue('Refresh Twake Drive token', async () => await this.refreshToken(), twakeDriveTokenRefrehPeriodMS);
+    registerHealthProvider(this);
   }
 
   public async hasToken() {
     return (await this.tokenPoller.latestValueWithTry()) !== undefined;
+  }
+
+  async getHealthData() {
+    return { TwakeDriveApi: { tokenAgeS: this.tokenPoller.latest()?.ageS ?? -1 } };
   }
 
   private requireAxios() {

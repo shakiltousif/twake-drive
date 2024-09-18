@@ -5,6 +5,7 @@ import { PolledThingieValue } from '@/lib/polled-thingie-value';
 import { PendingRequestQueue, PendingRequestCallback } from '@/lib/pending-request-matcher';
 import logger from '@/lib/logger';
 import * as Utils from '@/utils';
+import { IHealthProvider, registerHealthProvider } from './health-providers.service';
 
 /** @see https://api.onlyoffice.com/editors/basic */
 export enum ErrorCode {
@@ -218,7 +219,7 @@ class CallbackResponseFromCommand {
  * Exposed OnlyOffice command service
  * @see https://api.onlyoffice.com/editors/command/
  */
-class OnlyOfficeService {
+class OnlyOfficeService implements IHealthProvider {
   private readonly poller: PolledThingieValue<CommandService.License.Response>;
   // Technically the timeout field is from the PendingRequestQueue but avoid 2 classes
   private readonly pendingRequests = new PendingRequestQueue<CallbackResponseFromCommand>(onlyOfficeCallbackTimeoutMS);
@@ -232,6 +233,7 @@ class OnlyOfficeService {
       },
       onlyOfficeConnectivityCheckPeriodMS,
     );
+    registerHealthProvider(this);
   }
   /** Get the latest Only Office licence status from polling. If the return is `undefined`
    * it probably means there is a connection issue contacting the OnlyOffice server
@@ -297,6 +299,10 @@ class OnlyOfficeService {
   async getLicense(): Promise<CommandService.License.Response> {
     //TODO: When typing the response more fully, don't return the response object itself as here
     return new CommandService.License.Request().post();
+  }
+
+  async getHealthData() {
+    return { OO: { license: this.poller.latest() } };
   }
 
   /**

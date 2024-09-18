@@ -6,12 +6,13 @@ import { createSingleProcessorLock } from '@/lib/single-processor-lock';
 import apiService from './api.service';
 import onlyofficeService from './onlyoffice.service';
 import driveService, { UnknownKeyInDriveError } from './drive.service';
+import { IHealthProvider, registerHealthProvider } from './health-providers.service';
 
 /**
  * Periodically poll the Only Office document server for forgotten
  * files and try to upload to Twake Drive or get rid if unknown.
  */
-class ForgottenProcessor {
+class ForgottenProcessor implements IHealthProvider {
   private readonly forgottenFilesPoller: PolledThingieValue<number>;
   public readonly forgottenSynchroniser = createSingleProcessorLock<boolean>();
   private lastStart = 0;
@@ -23,13 +24,14 @@ class ForgottenProcessor {
       async () => (skippedFirst ? await this.processForgottenFiles() : ((skippedFirst = true), -1)),
       onlyOfficeForgottenFilesCheckPeriodMS,
     );
+    registerHealthProvider(this);
   }
 
   public async getHealthData() {
     const keys = await onlyofficeService.getForgottenList();
     return {
       forgotten: {
-        timeSinceLastStartS: ~~((new Date().getTime() - this.lastStart) / 1000),
+        timeSinceLastStartS: this.lastStart ? ~~((new Date().getTime() - this.lastStart) / 1000) : -1,
         count: keys?.length ?? 0,
         locks: this.forgottenSynchroniser.getWorstStats(),
       },

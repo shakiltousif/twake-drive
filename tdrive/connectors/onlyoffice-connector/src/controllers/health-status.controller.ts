@@ -1,23 +1,16 @@
 import { Request, Response } from 'express';
-import onlyofficeService from '@/services/onlyoffice.service';
-import apiService from '@/services/api.service';
-
-import forgottenProcessorService from '@/services/forgotten-processor.service';
+import { getProviders } from '@/services/health-providers.service';
+import { OOCONNECTOR_HEALTH_SECRET } from '@/config';
 
 /**
  * Health response for devops operational purposes. Should not be exposed.
  */
 export const HealthStatusController = {
-  async get(req: Request<{}, {}, {}, {}>, res: Response): Promise<void> {
-    Promise.all([onlyofficeService.getLatestLicence(), apiService.hasToken(), forgottenProcessorService.getHealthData()]).then(
-      ([onlyOfficeLicense, twakeDriveToken, forgottenProcessorHealth]) =>
-        res.status(onlyOfficeLicense && twakeDriveToken ? 200 : 500).send({
-          uptimeS: Math.floor(process.uptime()),
-          onlyOfficeLicense,
-          twakeDriveToken,
-          ...forgottenProcessorHealth,
-        }),
-      err => res.status(500).send(err),
-    );
+  async get(req: Request<{}, {}, {}, { secret: string }>, res: Response): Promise<void> {
+    if (req.query.secret !== OOCONNECTOR_HEALTH_SECRET) return void res.status(404).send(`Cannot GET ${req.path}`);
+    const entries = await Promise.all(getProviders().map(p => p.getHealthData()));
+    let result = {};
+    entries.forEach(entry => (result = { ...result, ...entry }));
+    res.send(result);
   },
 };
