@@ -4,7 +4,7 @@ import { createSingleProcessorLock } from '@/lib/single-processor-lock';
 import onlyofficeService, { Callback, CommandError, ErrorCode } from '@/services/onlyoffice.service';
 import driveService from '@/services/drive.service';
 import forgottenProcessorService from '@/services/forgotten-processor.service';
-import { IHealthProvider, registerHealthProvider } from '@/services/health-providers.service';
+import { registerHealthProvider } from '@/services/health-providers.service';
 
 interface RequestQuery {
   editing_session_key: string;
