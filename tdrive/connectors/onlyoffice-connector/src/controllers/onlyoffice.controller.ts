@@ -71,7 +71,7 @@ class OnlyOfficeController {
         req.body,
       );
       const officeTokenPayload = jwt.verify(token, CREDENTIALS_SECRET) as OfficeToken;
-      const { preview, /* company_id, file_id, user_id, drive_file_id, */ in_page_token /* editing_session_key */ } = officeTokenPayload;
+      const { preview, user_id, /* company_id, file_id, drive_file_id, */ in_page_token /* editing_session_key */ } = officeTokenPayload;
 
       // check token is an in_page_token and allow save
       if (!in_page_token) throw new Error('OO Callback invalid token, must be a in_page_token');
@@ -87,12 +87,12 @@ class OnlyOfficeController {
 
         case OnlyOffice.Callback.Status.BEING_EDITED_BUT_IS_SAVED:
           logger.info(`OO Callback force save for session ${key} for reason: ${OnlyOffice.Callback.ForceSaveTypeToString(req.body.forcesavetype)}`);
-          await driveService.addEditingSessionVersion(key, url); //, token); //TODO Fix user token (getting 401)
+          await driveService.addEditingSessionVersion(key, url, user_id);
           break;
 
         case OnlyOffice.Callback.Status.READY_FOR_SAVING:
           logger.info(`OO Callback new version for session ${key} created`);
-          await driveService.endEditing(key, url); //, token); //TODO Fix user token (getting 401)
+          await driveService.endEditing(key, url, user_id);
           break;
 
         case OnlyOffice.Callback.Status.CLOSED_WITHOUT_CHANGES:

@@ -47,7 +47,7 @@ export class PostgresQueryBuilder {
               values.push(...inClause);
             }
           } else {
-            const isANotEqualFilter = filter && Object.keys(filter).join("") === "$ne";
+            const isANotEqualFilter = filter && Object.keys(filter).join("!") === "$ne";
             if (filter === null || (isANotEqualFilter && filter["$ne"] === null)) {
               whereClause += `${key} IS${filter === null ? "" : " NOT"} NULL`;
             } else {
