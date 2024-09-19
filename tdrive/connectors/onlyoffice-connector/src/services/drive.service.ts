@@ -93,15 +93,15 @@ class DriveService implements IDriveService {
     }
   }
 
-  public async addEditingSessionVersion(editing_session_key: string, url: string, user_token?: string) {
-    return this.updateEditing(editing_session_key, url, true, user_token);
+  public async addEditingSessionVersion(editing_session_key: string, url: string, userId?: string) {
+    return this.updateEditing(editing_session_key, url, true, userId);
   }
 
-  public async endEditing(editing_session_key: string, url: string, user_token?: string) {
-    return this.updateEditing(editing_session_key, url, false, user_token);
+  public async endEditing(editing_session_key: string, url: string, userId?: string) {
+    return this.updateEditing(editing_session_key, url, false, userId);
   }
 
-  private async updateEditing(editing_session_key: string, url: string, keepEditing: boolean, user_token?: string) {
+  private async updateEditing(editing_session_key: string, url: string, keepEditing: boolean, userId?: string) {
     try {
       if (!url) {
         throw Error('no url found');
@@ -121,9 +121,9 @@ class DriveService implements IDriveService {
       await apiService.post({
         url: makeEditingSessionItemUrl(editing_session_key, {
           keepEditing: keepEditing ? 'true' : null,
+          userId,
         }),
         payload: form,
-        token: user_token,
         headers: form.getHeaders(),
       });
     } catch (error) {

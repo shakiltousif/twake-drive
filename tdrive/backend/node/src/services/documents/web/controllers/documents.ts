@@ -386,6 +386,7 @@ export class DocumentsController {
         null,
         null,
         false,
+        null,
         context,
       );
     } catch (error) {
@@ -401,7 +402,7 @@ export class DocumentsController {
   updateEditing = async (
     request: FastifyRequest<{
       Params: ItemRequestByEditingSessionKeyParams;
-      Querystring: { keepEditing?: string };
+      Querystring: { keepEditing?: string; userId?: string };
       Body: {
         item: Partial<DriveFile>;
         version: Partial<FileVersion>;
@@ -430,6 +431,7 @@ export class DocumentsController {
         file,
         options,
         request.query.keepEditing == "true",
+        request.query.userId,
         context,
       );
     } else {
@@ -438,6 +440,7 @@ export class DocumentsController {
         null,
         null,
         true,
+        request.query.userId,
         context,
       );
     }

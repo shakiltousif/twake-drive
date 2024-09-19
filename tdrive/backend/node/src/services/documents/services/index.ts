@@ -1075,6 +1075,8 @@ export class DocumentsService {
    * @param options Optional upload information from the request
    * @param keepEditing If `true`, the file will be saved as a new version,
    *  and the DriveFile will keep its editing_session_key. If `true`, a file is required.
+   * @param userId When authentified by the root token of an application, this user
+   *  will override the creator of this version
    * @param context
    */
   updateEditing = async (
@@ -1082,8 +1084,12 @@ export class DocumentsService {
     file: MultipartFile,
     options: UploadOptions,
     keepEditing: boolean,
+    userId: string | null,
     context: CompanyExecutionContext,
   ) => {
+    //TODO rethink the locking stuff shouldn't be just forgotten
+    //TODO Make this accept even if missing and act ok about it,
+    // store to dump folder or such
     if (!context) {
       this.logger.error("invalid execution context");
       return null;
@@ -1092,14 +1098,22 @@ export class DocumentsService {
       this.logger.error("Invalid editing_session_key: " + JSON.stringify(editing_session_key));
       throw new CrudException("Invalid editing_session_key", 400);
     }
-
-    //TODO If the app is the "user" calling, set user to that from the parsed key
     try {
       const parsedKey = EditingSessionKeyFormat.parse(editing_session_key);
       context = {
         ...context,
         company: { id: parsedKey.companyId },
       };
+
+      if (context.user.id === context.user.application_id && context.user.application_id) {
+        context = {
+          ...context,
+          user: {
+            ...context.user,
+            id: userId || parsedKey.userId,
+          },
+        };
+      }
     } catch (e) {
       this.logger.error(
         "Invalid editing_session_key value: " + JSON.stringify(editing_session_key),

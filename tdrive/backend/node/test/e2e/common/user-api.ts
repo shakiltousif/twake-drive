@@ -409,17 +409,21 @@ export default class UserApi {
       });
   }
 
-  async endEditingDocument(
-    editingSessionKey: string
+  async updateEditingDocument(
+    editingSessionKey: string,
+    keepEditing: boolean = false,
+    userId: string | null = null,
   ): Promise<Response> {
     const fullPath = `${__dirname}/assets/${UserApi.ALL_FILES[0]}`;
     const readable= Readable.from(fs.createReadStream(fullPath));
     const form = formAutoContent({ file: readable });
     form.headers["authorization"] = `Bearer ${this.jwt}`;
-
+    let queryString = keepEditing ? "keepEditing=true" : "";
+    if (userId)
+      queryString += `${queryString.length ? "&" : ""}userId=${encodeURIComponent(userId)}`;
     return await this.platform.app.inject({
       method: "POST",
-      url: `${UserApi.DOC_URL}/editing_session/${editingSessionKey}`,
+      url: `${UserApi.DOC_URL}/editing_session/${encodeURIComponent(editingSessionKey)}${queryString ? "?" : ""}${queryString}`,
       headers: {
         authorization: `Bearer ${this.jwt}`
       },

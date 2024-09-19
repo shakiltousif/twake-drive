@@ -4,7 +4,6 @@ import { init, TestPlatform } from "../setup";
 import UserApi from "../common/user-api";
 
 import { DriveFile, TYPE as DriveFileType } from "../../../src/services/documents/entities/drive-file";
-import exp = require("node:constants");
 import ApplicationsApiService, { ApplicationEditingKeyStatus } from "../../../src/services/applications-api";
 import { afterEach } from "node:test";
 import Application from "../../../src/services/applications/entities/application";
@@ -135,7 +134,7 @@ describe("the Drive's documents' editing session kind-of-lock", () => {
     //given
     const editingSessionKey = await currentUser.beginEditingDocumentExpectOk(temporaryDocument.id, 'e2e_testing');
     //when
-    const response = await currentUser.endEditingDocument(editingSessionKey);
+    const response = await currentUser.updateEditingDocument(editingSessionKey);
 
     //then
     expect(response.statusCode).toBe(200);
