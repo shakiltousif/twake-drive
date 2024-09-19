@@ -918,6 +918,7 @@ export class DocumentsService {
 
       item.last_version_cache = driveItemVersion;
       item.size = driveItemVersion.file_size;
+      item.last_modified = driveItemVersion.date_added;
 
       await this.repository.save(item);
 
