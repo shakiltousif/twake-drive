@@ -89,7 +89,7 @@ class BrowserEditorController {
           drive_file_id,
           editing_session_key: editingSessionKey,
           file_id: file.id,
-          file_name: file.filename || file?.metadata?.name || '',
+          file_name: driveFile?.item?.name || file.filename || file.metadata?.name || '',
           preview: !!preview,
         } as OfficeToken,
         CREDENTIALS_SECRET,

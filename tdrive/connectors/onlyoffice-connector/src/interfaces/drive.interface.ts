@@ -1,6 +1,7 @@
 export type DriveFileType = {
   access: 'manage' | 'write' | 'read' | 'none';
   item: {
+    name: string;
     last_version_cache: {
       id: string;
       date_added: number;

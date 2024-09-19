@@ -549,7 +549,7 @@ export class DocumentsService {
       }
 
       const updatable = ["access_info", "name", "tags", "parent_id", "description", "is_in_trash"];
-
+      let renamedTo: string | undefined;
       for (const key of updatable) {
         if ((content as any)[key]) {
           if (
@@ -590,7 +590,7 @@ export class DocumentsService {
               }
             });
           } else if (key === "name") {
-            item.name = await getItemName(
+            renamedTo = item.name = await getItemName(
               content.parent_id || item.parent_id,
               item.id,
               content.name,
@@ -621,7 +621,17 @@ export class DocumentsService {
 
         await updateItemSize(oldParent, this.repository, context);
       }
-
+      if (renamedTo && item.editing_session_key)
+        ApplicationsApiService.getDefault()
+          .renameEditingKeyFilename(item.editing_session_key, renamedTo)
+          .catch(err => {
+            logger.error("Error rename editing session to new name", {
+              err,
+              editing_session_key: item.editing_session_key,
+              renamedTo,
+            });
+            /* Ignore errors, just throw it out there... */
+          });
       if (item.parent_id === this.TRASH) {
         //When moving to trash we recompute the access level to make them flat
         item.access_info = await makeStandaloneAccessLevel(
