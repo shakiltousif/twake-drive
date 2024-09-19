@@ -47,15 +47,23 @@ async function report(platform: TdrivePlatform, args: ListArguments) {
   const versionsRepo = await platform
     .getProvider<DatabaseServiceAPI>("database")
     .getRepository<FileVersion>(FileVersion_TYPE, FileVersion);
-  const filter = {};
+  const filter = {
+    is_in_trash: false,
+  };
   if (!args.all) filter["editing_session_key"] = { $ne: null };
   const opts: FindOptions = { sort: { name: "asc" } };
   if (args.name) filter["name"] = args.name;
   const editedFiles = (await drivesRepo.find(filter, opts)).getEntities();
+  const formatDate = (date: Date) => date.toISOString();
+  const formatTS = (ts: number) => formatDate(new Date(ts));
   console.error(`DriveFiles${args.all ? "" : " with non-null editing_session_key"}:`);
   console.error("");
   for (const dfile of editedFiles) {
-    console.error(`- ${dfile.name} (${dfile.id}) has key:`);
+    console.error(`- ${dfile.name} (${dfile.id}) of ${await formatUser(dfile.creator)}`);
+    if (dfile.scope !== "personal") console.error(`  - scope:    ${dfile.scope}`);
+    if (dfile.is_directory) console.error("  - directory !");
+    if (dfile.is_in_trash) console.error("  - in trash !");
+    console.error(`  - modified: ${formatTS(dfile.last_modified)}`);
     if (dfile.editing_session_key) {
       const parsed = EditingSessionKeyFormat.parse(dfile.editing_session_key);
       console.error("  - editing_session_key:");
@@ -69,7 +77,7 @@ async function report(platform: TdrivePlatform, args: ListArguments) {
         })`,
       );
       console.error(
-        `    - timestamp:     ${parsed.timestamp.toISOString()} (${Math.floor(
+        `    - timestamp:     ${formatDate(parsed.timestamp)} (${Math.floor(
           (new Date().getTime() - parsed.timestamp.getTime()) / 1000,
         )}s ago)`,
       );
@@ -79,12 +87,11 @@ async function report(platform: TdrivePlatform, args: ListArguments) {
       await versionsRepo.find({ drive_item_id: dfile.id }, { sort: { date_added: "asc" } })
     ).getEntities();
     let previousSize = 0;
+    let lastVersion: FileVersion;
     console.error("  - Versions:");
     for (const version of versions) {
       console.error(
-        `    - ${new Date(version.date_added).toISOString()} by ${await formatUser(
-          version.creator_id,
-        )}`,
+        `    - ${formatTS(version.date_added)} by ${await formatUser(version.creator_id)}`,
       );
       console.error(`        - id:          ${version.id}`);
       console.error(
@@ -93,7 +100,35 @@ async function report(platform: TdrivePlatform, args: ListArguments) {
         }${version.file_metadata.size - previousSize})`,
       );
       previousSize = version.file_metadata.size;
+      lastVersion = version;
       console.error(`        - application: ${JSON.stringify(version.application_id)}`);
+    }
+    if (previousSize != dfile.size)
+      console.error(
+        `  - mismatched sizes: DriveFile.size is ${dfile.size} but last Version.file_metadata is ${previousSize}`,
+      );
+    if (lastVersion) {
+      const lastTimestamp = lastVersion.date_added;
+      if (lastTimestamp != dfile.last_modified)
+        console.error(
+          `  - mismatched FileVersion.date_added (${formatTS(
+            lastTimestamp,
+          )}) != DriveFile.last_modified (${formatTS(dfile.last_modified)}) - delta: ${
+            (lastTimestamp - dfile.last_modified) / 1000
+          }s`,
+        );
+      if (lastTimestamp != dfile.last_version_cache.date_added)
+        console.error(
+          `  - mismatched FileVersion.date_added (${formatTS(
+            lastTimestamp,
+          )}) != DriveFile.last_version_cache.date_added (${formatTS(
+            dfile.last_version_cache.date_added,
+          )}) - delta: ${(lastTimestamp - dfile.last_version_cache.date_added) / 1000}s`,
+        );
+      if (lastVersion.file_size != dfile.size)
+        console.error(
+          `  - mismatched FileVersion.file_size (${lastVersion.file_size}) != DriveFile.dfile.size (${dfile.size})`,
+        );
     }
   }
   if (!editedFiles.length) console.error("  (no matching DriveFiles)");
