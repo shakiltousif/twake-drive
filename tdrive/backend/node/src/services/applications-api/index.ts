@@ -110,6 +110,7 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
     method: "GET" | "POST" | "DELETE",
     url: string,
     appId: string,
+    data?: unknown,
   ) {
     const app = this.requireApplicationConfig(appId);
     if (!app.internal_domain)
@@ -129,6 +130,7 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
     return axios.request({
       url: finalURL,
       method: method,
+      data,
       headers: {
         Authorization: signature,
       },
@@ -158,16 +160,17 @@ export default class ApplicationsApiService extends TdriveService<undefined> {
   }
 
   /**
-   * Remove any reference to the `editing_session_key` in the plugin
-   * @param editingSessionKey {@see DriveFile.editing_session_key} to delete
-   * @returns `true` if the key was deleted
+   * Change the filename in the external editing session
+   * @param editingSessionKey {@see DriveFile.editing_session_key} to change
+   * @param filename The new filename
    */
-  async deleteEditingKey(editingSessionKey: string): Promise<boolean> {
+  async renameEditingKeyFilename(editingSessionKey: string, filename: string): Promise<boolean> {
     const parsedKey = EditingSessionKeyFormat.parse(editingSessionKey);
     const response = await this.requestFromApplication(
-      "DELETE",
-      "tdriveApi/1/session/" + encodeURIComponent(editingSessionKey),
+      "POST",
+      `tdriveApi/1/session/${encodeURIComponent(editingSessionKey)}/title`,
       parsedKey.applicationId,
+      { title: filename },
     );
     return !!response.data.done as boolean;
   }

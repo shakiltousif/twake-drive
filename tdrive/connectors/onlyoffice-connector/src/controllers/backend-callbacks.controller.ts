@@ -9,6 +9,9 @@ import { registerHealthProvider } from '@/services/health-providers.service';
 interface RequestQuery {
   editing_session_key: string;
 }
+interface RenameRequestBody {
+  title: string;
+}
 const keyCheckLock = createSingleProcessorLock<[status: number, body: unknown]>();
 
 registerHealthProvider({
@@ -84,5 +87,14 @@ export default class TwakeDriveBackendCallbackController {
       }
     });
     await res.status(status).send(body);
+  }
+
+  public async updateSessionFilename(req: Request<RequestQuery, {}, RenameRequestBody>, res: Response): Promise<void> {
+    try {
+      await onlyofficeService.meta(req.params.editing_session_key, req.body.title);
+      res.send({ ok: 1 });
+    } catch (err) {
+      res.status(500).send({ error: -58650 });
+    }
   }
 }

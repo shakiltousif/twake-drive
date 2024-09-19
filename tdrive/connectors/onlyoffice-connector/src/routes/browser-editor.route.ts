@@ -10,7 +10,7 @@ import type { Router } from 'express';
 export const BrowserEditorRoutes = {
   mount(router: Router) {
     const controller = new BrowserEditorController();
-    router.get('/', requirementsMiddleware, authMiddleware, controller.index);
-    router.get('/editor', requirementsMiddleware, authMiddleware, controller.editor);
+    router.get('/', requirementsMiddleware, authMiddleware, controller.index.bind(controller));
+    router.get('/editor', requirementsMiddleware, authMiddleware, controller.editor.bind(controller));
   },
 };

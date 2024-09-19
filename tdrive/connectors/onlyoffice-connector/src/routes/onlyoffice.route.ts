@@ -9,7 +9,7 @@ import type { Router } from 'express';
 export const OnlyOfficeRoutes = {
   mount(router: Router) {
     const controller = new OnlyOfficeController();
-    router.get(`/:mode/read`, requirementsMiddleware, controller.read);
-    router.post(`/:mode/callback`, requirementsMiddleware, controller.ooCallback);
+    router.get(`/:mode/read`, requirementsMiddleware, controller.read.bind(controller));
+    router.post(`/:mode/callback`, requirementsMiddleware, controller.ooCallback.bind(controller));
   },
 };

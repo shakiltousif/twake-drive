@@ -196,6 +196,17 @@ namespace CommandService {
       }
     }
   }
+
+  export namespace Meta {
+    export interface Response extends SuccessResponse {
+      key: string;
+    }
+    export class Request extends BaseRequest<Response> {
+      constructor(public readonly key: string, public readonly meta: { title: string }) {
+        super('meta');
+      }
+    }
+  }
 }
 
 /**
@@ -354,6 +365,14 @@ class OnlyOfficeService implements IHealthProvider {
   /** Delete a forgotten document specified by its key in OnlyOffice's document editing service */
   async deleteForgotten(key: string): Promise<string> {
     return new CommandService.DeleteForgotten.Request(key).post().then(response => response.key);
+  }
+  /**
+   * Updates the meta information of the document for all collaborative editors.
+   *
+   * That's the official description. It send file renames to OO.
+   */
+  async meta(key: string, title: string): Promise<string> {
+    return new CommandService.Meta.Request(key, { title }).post().then(response => response.key);
   }
 }
 
