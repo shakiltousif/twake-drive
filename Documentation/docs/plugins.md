@@ -43,7 +43,7 @@ Links in top right drop down application grid can be configured in the `applicat
 
 Plugins are defined as entries under the `applications.plugins` array, with at least the following properties:
 
-- `id` is mandatory and must be unique to each plugin
+- `id` is mandatory and must be unique to each plugin. It must be rather short, and alphanumeric with `_`s only.
 - `internal_domain` is the internal domain of the plugin's server, it must be the same as the one in the docker-compose.yml file for ex. or resolvable and accessible to the Twake Drive backend server.
 - `external_prefix` is the external URL prefix of the plugin exposed by the backend and proxied to the `internal_domain`.
 - `api.private_key` is the shared secret used by the plugin's server to authentify to the backend
@@ -132,6 +132,36 @@ When a user requests a preview and then possibly to edit the file, an IFrame is 
   - `drive_file_id`: Optional internal (to Twake Drive) file identifier
 
 In the case of the OnlyOffice application, these URLs are pointing to the connector plugin, which then proxies back and forth with the OnlyOffice document server.
+
+#### Editing session key
+
+When editing a file, at first, a new session key is created on the file by the
+backend and atomically swapped.
+
+This session key uniquely identifies the user, company, and plugin and it is not encrypted.
+
+An editing session key prevents others from starting, can be updated with new versions, and
+ended with and without a new version.
+
+See operations `beginEditing` and `updateEditing` in `tdrive/backend/node/src/services/documents/services/index.ts` for operations available on that key.
+
+#### API to expose by the application
+
+Authentication from the Twake Drive backend is a JWT with the property `type` being
+`"tdriveToApplication"` and signed with the shared secret. The application must accept
+multiple parallel requests for the same key gracefully.
+
+- `POST /tdriveApi/1/session/${editing_session_key}/check`
+
+    Sent by Twake Drive backend when beginning a new editing session or investigating
+    stored keys. The application is expected to process the key if possible before responding,
+    and provide a response in JSON. The `error` key of that body should be truthy if the response
+    is not known. Otherwise it should respond:
+
+  - `{ status: 'unknown' }`: the key isn't known and maybe used for a new session
+  - `{ status: 'updated' }`: the key needed updating but is now invalid
+  - `{ status: 'expired' }`: the key was already used in a finished session and can't be used again
+  - `{ status: 'live' }`:    the key is valid and current and should be used again for the same file
 
 ### Example: OnlyOffice plugin
 
