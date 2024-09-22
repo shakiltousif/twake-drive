@@ -49,16 +49,16 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
 
   return (
     <ModalContent
-      title={Languages.t('compenents.ProprietiesModalContent_rename') + ' ' + item?.name}
+      title={Languages.t('components.PropertiesModalContent_rename') + ' ' + item?.name}
     >
       <InputLabel
         className="mt-4"
-        label={Languages.t('compenents.ProprietiesModalContent_name')}
+        label={Languages.t('components.PropertiesModalContent_name')}
         input={
           <Input
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder={Languages.t('compenents.ProprietiesModalContent_place_holder')}
+            placeholder={Languages.t('components.PropertiesModalContent_place_holder')}
           />
         }
       />
@@ -85,7 +85,7 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
           setLoading(false);
         }}
       >
-        {Languages.t('compenents.ProprietiesModalContent_update_button')}
+        {Languages.t('components.PropertiesModalContent_update_button')}
       </Button>
     </ModalContent>
   );
