@@ -4,7 +4,7 @@ import { Input } from '@atoms/input/input-text';
 import { Modal, ModalContent } from '@atoms/modal';
 import { useDriveActions } from '@features/drive/hooks/use-drive-actions';
 import { useDriveItem } from '@features/drive/hooks/use-drive-item';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { atom, useRecoilState } from 'recoil';
 import Languages from '@features/global/services/languages-service';
 
@@ -38,14 +38,45 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
   const { update } = useDriveActions();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     refresh(id);
   }, []);
 
   useEffect(() => {
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const lastDot = inputRef.current.value.lastIndexOf('.');
+        const endRange = lastDot >= 0 ? lastDot : inputRef.current.value.length;
+        inputRef.current.setSelectionRange(0, endRange);
+      }
+    }, 100);
+  }, []);
+
+  useEffect(() => {
     if (!name) setName(item?.name || '');
   }, [item?.name]);
+
+  const doSave = async () => {
+    setLoading(true);
+    if (item) {
+      let finalName = name;
+      //TODO: Confirm rename if extension changed ?
+      if (!item?.is_directory) {
+        //TODO: Why do we trim extensions on folders ?
+        const lastDotIndex = finalName.lastIndexOf('.');
+        if (lastDotIndex !== -1) {
+          const fileExtension = name.slice(lastDotIndex);
+          finalName = finalName.slice(0, lastDotIndex) + fileExtension;
+        }
+      }
+      await update({ name: finalName }, id, item.parent_id);
+    }
+    onClose();
+    setLoading(false);
+  }
 
   return (
     <ModalContent
@@ -57,7 +88,16 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
         input={
           <Input
             value={name}
+            inputRef={inputRef}
             onChange={e => setName(e.target.value)}
+            onKeyUp={({ key }) => {
+              if (!loading) {
+                if (key === 'Enter')
+                  doSave();
+                else if (key === "Escape")
+                  onClose();
+              }
+            }}
             placeholder={Languages.t('components.PropertiesModalContent_place_holder')}
           />
         }
@@ -68,22 +108,7 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
         className="float-right mt-4"
         theme="primary"
         loading={loading}
-        onClick={async () => {
-          setLoading(true);
-          if (item) {
-            let finalName = name;
-            if (!item?.is_directory) {
-              const lastDotIndex = finalName.lastIndexOf('.');
-              if (lastDotIndex !== -1) {
-                const fileExtension = name.slice(lastDotIndex);
-                finalName = finalName.slice(0, lastDotIndex) + fileExtension;
-              }
-            }
-            await update({ name: finalName }, id, item.parent_id);
-          }
-          onClose();
-          setLoading(false);
-        }}
+        onClick={doSave}
       >
         {Languages.t('components.PropertiesModalContent_update_button')}
       </Button>
