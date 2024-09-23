@@ -22,6 +22,7 @@ interface RequestEditorQuery {
   office_token: string;
   company_id: string;
   file_id: string;
+  drive_file_id: string;
 }
 
 /**
@@ -102,6 +103,7 @@ class BrowserEditorController {
         makeURLTo.editorAbsolute({
           token,
           file_id,
+          drive_file_id,
           editing_session_key: editingSessionKey,
           company_id,
           preview,
@@ -131,7 +133,7 @@ class BrowserEditorController {
         throw new Error('Cant start editing without "editing session key"');
       }
 
-      const initResponse = await editorService.init(company_id, file_name, file_id, user, preview, drive_file_id || file_id);
+      const initResponse = await editorService.init(company_id, file_name, file_id, user, preview, drive_file_id);
 
       const inPageToken = jwt.sign(
         {

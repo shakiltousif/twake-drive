@@ -11,6 +11,7 @@ import * as Utils from '@/utils';
 interface RequestQuery {
   company_id: string;
   file_id: string;
+  drive_file_id: string;
   token: string;
 }
 
@@ -29,15 +30,27 @@ class OnlyOfficeController {
       const { token } = req.query;
 
       const officeTokenPayload = jwt.verify(token, CREDENTIALS_SECRET) as OfficeToken;
-      const { company_id, file_id, in_page_token } = officeTokenPayload;
+      const { company_id, file_id, drive_file_id, in_page_token } = officeTokenPayload;
 
       // check token is an in_page_token
       if (!in_page_token) throw new Error('Invalid token, must be a in_page_token');
 
+      let fileId = file_id;
+      if (drive_file_id) {
+        //Get the drive file
+        const driveFile = await driveService.get({
+          company_id,
+          drive_file_id,
+        });
+        if (driveFile) {
+          fileId = driveFile?.item?.last_version_cache?.file_metadata?.external_id;
+        }
+      }
+
       if (!file_id) throw new Error(`File id is missing in the last version cache for ${JSON.stringify(file_id)}`);
       const file = await fileService.download({
         company_id,
-        file_id: file_id,
+        file_id: fileId,
       });
 
       file.pipe(res);

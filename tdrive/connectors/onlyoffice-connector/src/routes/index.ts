@@ -41,7 +41,15 @@ export function mountRoutes(app: Application) {
 export const makeURLTo = {
   rootAbsolute: () => Utils.joinURL([SERVER_ORIGIN, SERVER_PREFIX]),
   assets: () => Utils.joinURL([SERVER_PREFIX, 'assets']),
-  editorAbsolute(params: { token: string; file_id: string; editing_session_key: string; company_id: string; preview: string; office_token: string }) {
+  editorAbsolute(params: {
+    token: string;
+    drive_file_id: string;
+    file_id: string;
+    editing_session_key: string;
+    company_id: string;
+    preview: string;
+    office_token: string;
+  }) {
     return Utils.joinURL([SERVER_ORIGIN ?? '', SERVER_PREFIX, 'editor'], params);
   },
 };

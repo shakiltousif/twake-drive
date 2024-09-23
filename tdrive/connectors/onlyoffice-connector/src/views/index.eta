@@ -22,12 +22,13 @@
 
       $('#onlyoffice_container').html("<div id='onlyoffice_container_instance'></div>");
 
+      const callbackQueryString = '?drive_file_id=<%= it.drive_file_id %>&company_id=<%= it.company_id %>&token=<%= it.token %>';
       let doc = {
         title: "<%= it.filename %>",
-        url: `${window.baseURL}read?file_id=<%= it.file_id %>&company_id=<%= it.company_id %>&token=<%= it.token %>`,
+        url: `${window.baseURL}read${callbackQueryString}`,
         fileType: "<%= it.file_type %>",
         key: "<%= it.docId %>",
-        token: "<%= it.file_id %>",
+        token: "<%= it.drive_file_id %>",
         permissions: {
           download: true,
           edit: <%= it.editable %>,
@@ -41,10 +42,10 @@
         height: '100%',
         documentType: window.mode,
         document: doc,
-        token: "<%= it.file_id %>",
+        token: "<%= it.drive_file_id %>",
         type: screen.width < 600 ? 'mobile' : 'desktop',
         editorConfig: {
-          callbackUrl: `${window.baseURL}callback?file_id=<%= it.file_id %>&company_id=<%= it.company_id %>&token=<%= it.token %>`,
+          callbackUrl: `${window.baseURL}callback${callbackQueryString}`,
           lang: window.user.language,
           user: {
             id: window.user.id,
