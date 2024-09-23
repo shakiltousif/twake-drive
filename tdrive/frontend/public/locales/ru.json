@@ -328,7 +328,6 @@
     "components.item_context_menu.clear_selection": "Снять выделение",
     "components.item_context_menu.delete_multiple": "Удалить",
     "components.item_context_menu.to_trash_multiple": "Удалить",
-    "components.item_context_menu.trash.exit": "Выйти из корзины",
     "components.item_context_menu.trash.empty": "Очистить корзину",
     "components.item_context_menu.add_documents": "Добавить документ в папку",
     "components.item_context_menu.download_folder": "Скачать папку",

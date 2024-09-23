@@ -338,7 +338,6 @@
     "components.item_context_menu.clear_selection": "Clear selection",
     "components.item_context_menu.delete_multiple": "Delete",
     "components.item_context_menu.to_trash_multiple": "Move selected items to trash",
-    "components.item_context_menu.trash.exit": "Exit trash",
     "components.item_context_menu.trash.empty": "Empty trash",
     "components.item_context_menu.add_documents": "Add document or folder",
     "components.item_context_menu.download_folder": "Download folder",

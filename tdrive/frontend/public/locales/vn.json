@@ -326,7 +326,6 @@
     "components.item_context_menu.clear_selection": "Xóa lựa chọn",
     "components.item_context_menu.delete_multiple": "Xóa",
     "components.item_context_menu.to_trash_multiple": "Di chuyển các mục đã chọn vào thùng rác",
-    "components.item_context_menu.trash.exit": "Thoát thùng rác",
     "components.item_context_menu.trash.empty": "Làm trống thùng rác",
     "components.item_context_menu.add_documents": "Thêm tài liệu hoặc thư mục",
     "components.item_context_menu.download_folder": "Tải xuống thư mục",

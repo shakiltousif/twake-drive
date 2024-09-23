@@ -329,7 +329,6 @@
     "components.item_context_menu.clear_selection": "Annuler la sélection",
     "components.item_context_menu.delete_multiple": "Supprimer",
     "components.item_context_menu.to_trash_multiple": "Supprimer",
-    "components.item_context_menu.trash.exit": "Quitter la corbeille",
     "components.item_context_menu.trash.empty": "Vider la corbeille",
     "components.item_context_menu.add_documents": "Ajouter un document ou un dossier",
     "components.item_context_menu.download_folder": "Télécharger le dossier",
