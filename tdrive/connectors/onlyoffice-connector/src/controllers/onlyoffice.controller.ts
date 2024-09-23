@@ -15,6 +15,10 @@ interface RequestQuery {
   token: string;
 }
 
+interface RenameRequestBody {
+  name: string;
+}
+
 /** These expose a OnlyOffice document storage service methods, called by the OnlyOffice document editing service
  * to load and save files
  */
@@ -142,6 +146,25 @@ class OnlyOfficeController {
       return respondToOO(0);
     } catch (error) {
       logger.error(`OO Callback root error`, { error });
+      next(error || 'error');
+    }
+  };
+
+  /** This route is called directly by the inline JS in the editor page, called by the client-side OO editor component */
+  public rename = async (req: Request<{}, {}, RenameRequestBody, RequestQuery>, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token } = req.query;
+      const officeTokenPayload = jwt.verify(token, CREDENTIALS_SECRET) as OfficeToken;
+      const { company_id, drive_file_id } = officeTokenPayload;
+      const { name } = req.body;
+
+      if (!drive_file_id) throw new Error('OO Rename request missing drive_file_id');
+      if (!name) throw new Error('OO Rename request missing name');
+
+      const result = await driveService.update({ company_id, drive_file_id, changes: { name } });
+      res.send(result);
+    } catch (error) {
+      logger.error(`OO Rename request root error`, { error });
       next(error || 'error');
     }
   };

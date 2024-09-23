@@ -5,6 +5,7 @@
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
   <script type="text/javascript" src="<%= it.onlyoffice_server %>web-apps/apps/api/documents/api.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,shrink-to-fit=no" />
+  <title>Twake Drive</title>
 </head>
 
 <body style="height: 100%">
@@ -35,6 +36,11 @@
           preview: <%= it.preview %>,
         }
       }
+      function updateTitle(title) {
+        const el = document.querySelector('head title');
+        if (el) el.innerText = title + ' — Twake Drive';
+      }
+      updateTitle(doc.title);
 
       window.docEditor = new DocsAPI.DocEditor('onlyoffice_container_instance', {
         scrollSensitivity: window.mode === 'text' ? 100 : 40,
@@ -44,6 +50,24 @@
         document: doc,
         token: "<%= it.drive_file_id %>",
         type: screen.width < 600 ? 'mobile' : 'desktop',
+        events: {
+          onRequestRename: function (event) {
+            let name = event.data;
+            const prevExtension = /\.[^.]+$/.exec(doc.title);
+            if (prevExtension) name += prevExtension[0];
+            $.
+            post(`${window.baseURL}rename${callbackQueryString}`, { name }).
+            done((changed) => {
+              if (changed.name != name)
+                window.docEditor.showMessage(`✅ Renamed to: ${changed.name}`);
+            }).
+            fail(() => window.docEditor.showMessage('🚨 Error renaming the file'));
+          },
+          onMetaChange: function (event) {
+            const { title } = event.data;
+            if (title) updateTitle(title);
+          },
+        },
         editorConfig: {
           callbackUrl: `${window.baseURL}callback${callbackQueryString}`,
           lang: window.user.language,

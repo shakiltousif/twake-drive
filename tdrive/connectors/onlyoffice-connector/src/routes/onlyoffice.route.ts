@@ -11,5 +11,6 @@ export const OnlyOfficeRoutes = {
     const controller = new OnlyOfficeController();
     router.get(`/:mode/read`, requirementsMiddleware, controller.read.bind(controller));
     router.post(`/:mode/callback`, requirementsMiddleware, controller.ooCallback.bind(controller));
+    router.post(`/:mode/rename`, requirementsMiddleware, controller.rename.bind(controller));
   },
 };
