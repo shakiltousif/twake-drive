@@ -11,7 +11,12 @@ import * as Utils from '@/utils';
 interface RequestQuery {
   company_id: string;
   file_id: string;
+  drive_file_id: string;
   token: string;
+}
+
+interface RenameRequestBody {
+  name: string;
 }
 
 /** These expose a OnlyOffice document storage service methods, called by the OnlyOffice document editing service
@@ -29,15 +34,27 @@ class OnlyOfficeController {
       const { token } = req.query;
 
       const officeTokenPayload = jwt.verify(token, CREDENTIALS_SECRET) as OfficeToken;
-      const { company_id, file_id, in_page_token } = officeTokenPayload;
+      const { company_id, file_id, drive_file_id, in_page_token } = officeTokenPayload;
 
       // check token is an in_page_token
       if (!in_page_token) throw new Error('Invalid token, must be a in_page_token');
 
+      let fileId = file_id;
+      if (drive_file_id) {
+        //Get the drive file
+        const driveFile = await driveService.get({
+          company_id,
+          drive_file_id,
+        });
+        if (driveFile) {
+          fileId = driveFile?.item?.last_version_cache?.file_metadata?.external_id;
+        }
+      }
+
       if (!file_id) throw new Error(`File id is missing in the last version cache for ${JSON.stringify(file_id)}`);
       const file = await fileService.download({
         company_id,
-        file_id: file_id,
+        file_id: fileId,
       });
 
       file.pipe(res);
@@ -129,6 +146,25 @@ class OnlyOfficeController {
       return respondToOO(0);
     } catch (error) {
       logger.error(`OO Callback root error`, { error });
+      next(error || 'error');
+    }
+  };
+
+  /** This route is called directly by the inline JS in the editor page, called by the client-side OO editor component */
+  public rename = async (req: Request<{}, {}, RenameRequestBody, RequestQuery>, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token } = req.query;
+      const officeTokenPayload = jwt.verify(token, CREDENTIALS_SECRET) as OfficeToken;
+      const { company_id, drive_file_id } = officeTokenPayload;
+      const { name } = req.body;
+
+      if (!drive_file_id) throw new Error('OO Rename request missing drive_file_id');
+      if (!name) throw new Error('OO Rename request missing name');
+
+      const result = await driveService.update({ company_id, drive_file_id, changes: { name } });
+      res.send(result);
+    } catch (error) {
+      logger.error(`OO Rename request root error`, { error });
       next(error || 'error');
     }
   };

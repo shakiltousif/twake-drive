@@ -36,6 +36,28 @@ class DriveService implements IDriveService {
     }
   };
 
+  public update = async (params: {
+    company_id: string;
+    drive_file_id: string;
+    changes: Partial<DriveFileType['item']>;
+    completeResult?: boolean;
+  }): Promise<(typeof params)['changes']> => {
+    try {
+      const { company_id, drive_file_id } = params;
+      const resource = await apiService.post<(typeof params)['changes'], ReturnType<DriveService['update']>>({
+        url: makeNonEditingSessionItemUrl(company_id, drive_file_id),
+        payload: params.changes,
+      });
+      if (params.completeResult) return resource;
+      const result = {};
+      Object.keys(params.changes).forEach(k => (result[k] = resource[k]));
+      return result;
+    } catch (error) {
+      logger.error('Failed to update file metadata: ', error.stack);
+      return Promise.reject();
+    }
+  };
+
   public createVersion = async (params: {
     company_id: string;
     drive_file_id: string;
