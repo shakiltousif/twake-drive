@@ -62,7 +62,7 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
   const doSave = async () => {
     setLoading(true);
     if (item) {
-      let finalName = name;
+      let finalName = (name || '').trim();
       //TODO: Confirm rename if extension changed ?
       if (!item?.is_directory) {
         //TODO: Why do we trim extensions on folders ?
@@ -104,7 +104,7 @@ const PropertiesModalContent = ({ id, onClose }: { id: string; onClose: () => vo
       />
       <br />
       <Button
-        disabled={!name}
+        disabled={!((name || '').trim())}
         className="float-right mt-4"
         theme="primary"
         loading={loading}
