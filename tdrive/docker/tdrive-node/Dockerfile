@@ -23,11 +23,11 @@ FROM node-base AS installed-libs
 
 COPY backend/node/ .
 #Install dev dependancies for build
-RUN export NODE_ENV=development
+ENV NODE_ENV=development
 RUN npm ci
 
 #Build in production mode
-RUN export NODE_ENV=production
+ENV NODE_ENV=production
 RUN npm run build
 RUN rm -rf node_modules
 #Install prod dependancies after build
