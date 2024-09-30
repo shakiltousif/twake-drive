@@ -21,14 +21,19 @@ jobs:
           filters: |
             backend:
               - "tdrive/backend/node/**"
+              - "tdrive/docker/tdrive-node/Dockerfile"
             frontend:
               - "tdrive/frontend/**"
+              - "tdrive/docker/tdrive-frontend/**"
             onlyoffice-connector:
               - "tdrive/connectors/onlyoffice-connector/**"
+              - "tdrive/docker/onlyoffice-connector/Dockerfile"
             ldap-sync:
               - "tdrive/backend/utils/ldap-sync/**"
+              - "tdrive/docker/tdrive-ldap-sync/Dockerfile"
             nextcloud-migration:
               - "tdrive/backend/utils/nextcloud-migration/**"
+              - "tdrive/docker/tdrive-nextcloud-migration/Dockerfile"
 
   publish-feature:
     runs-on: ubuntu-latest
