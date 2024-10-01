@@ -31,7 +31,11 @@ import { hasAnyPublicLinkAccess } from '@features/files/utils/access-info-helper
 /**
  * This will build the context menu in different contexts
  */
-export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: string) => {
+export const useOnBuildContextMenu = (
+  children: DriveItem[],
+  initialParentId?: string,
+  inPublicSharing?: boolean,
+) => {
   const [checkedIds, setChecked] = useRecoilState(DriveItemSelectedList);
   const checked = children.filter(c => checkedIds[c.id]);
 
@@ -55,7 +59,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
   const company = useRouterCompany();
 
   function getIdsFromArray(arr: DriveItem[]): string[] {
-    return arr.map((obj) => obj.id);
+    return arr.map(obj => obj.id);
   }
 
   return useCallback(
@@ -63,7 +67,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
       if (!parent || !parent.access) return [];
 
       try {
-        const inTrash = parent.path?.[0]?.id.includes('trash') || viewId?.includes("trash");
+        const inTrash = parent.path?.[0]?.id.includes('trash') || viewId?.includes('trash');
         const isPersonal = item?.scope === 'personal';
         const selectedCount = checked.length;
 
@@ -88,7 +92,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               hide: access === 'read' || getPublicLinkToken() || inTrash,
               onClick: () => setAccessModalState({ open: true, id: item.id }),
             },
-            { type: 'separator' },
+            { type: 'separator', hide: inTrash },
             {
               type: 'menu',
               icon: 'download-alt',
@@ -100,7 +104,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                 } else {
                   download(item.id);
                 }
-              }
+              },
             },
             /*TODO: fix loading of preview in new window and uncomment. See https://github.com/linagora/twake-drive/issues/603 .
             {
@@ -144,13 +148,16 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               icon: 'file-edit-alt',
               text: Languages.t('components.item_context_menu.rename'),
               hide: access === 'read' || inTrash,
-              onClick: () => setPropertiesModalState({ open: true, id: item.id }),
+              onClick: () => setPropertiesModalState({ open: true, id: item.id, inPublicSharing }),
             },
             {
               type: 'menu',
               icon: 'link',
               text: Languages.t('components.item_context_menu.copy_link'),
-              hide: !item.access_info.public?.level || item.access_info.public?.level === 'none' || inTrash,
+              hide:
+                !item.access_info.public?.level ||
+                item.access_info.public?.level === 'none' ||
+                inTrash,
               onClick: () => {
                 copyToClipboard(getPublicLink(item || parent?.item));
                 ToasterService.success(
@@ -165,7 +172,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               hide: item.is_directory || inTrash,
               onClick: () => setVersionModal({ open: true, id: item.id }),
             },
-            { type: 'separator', hide: access !== 'manage' || inTrash, },
+            { type: 'separator', hide: access !== 'manage' || inTrash },
             {
               type: 'menu',
               icon: 'trash',
@@ -304,10 +311,12 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                     if (parent.children && parent.children.length > 0) {
                       downloadZip([parent.item!.id]);
                     } else if (parent.item) {
-                      console.log("Download folder itself");
+                      console.log('Download folder itself');
                       download(parent.item.id);
                     } else {
-                      console.error("Very strange, everything is null, you are trying to download undefined");
+                      console.error(
+                        'Very strange, everything is null, you are trying to download undefined',
+                      );
                     }
                   },
                 },
@@ -322,13 +331,13 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                     );
                   },
                 },
-                { type: 'separator', hide: parent.item!.id != 'root', },
+                { type: 'separator', hide: parent.item!.id != 'root' },
                 {
                   type: 'menu',
                   text: Languages.t('components.item_context_menu.manage_users'),
                   hide: parent.item!.id != 'root',
                   onClick: () => setUsersModalState({ open: true }),
-                }
+                },
               ];
           if (menu.length && newMenuActions.filter(a => !a.hide).length) {
             menu = [...menu, { type: 'separator' }];

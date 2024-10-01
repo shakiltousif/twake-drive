@@ -68,7 +68,7 @@ export default () => {
             <Avatar avatar={group.logo} className="inline-block mr-3" size="sm" type="square" />
           )}
           <span className="text-white font-semibold" style={{ lineHeight: '32px' }}>
-            {group.name}
+            Twake Drive
           </span>
         </div>
         <div className="shrink-0">
@@ -82,7 +82,7 @@ export default () => {
       </div>
       <div className="h-full main-view public p-4 pb-16">
         <AccessChecker folderId={documentId} token={token}>
-          <Drive initialParentId={documentId} inPublicSharing />
+          <Drive initialParentId={documentId} inPublicSharing={true} />
         </AccessChecker>
       </div>
       <MenusBodyLayer />
