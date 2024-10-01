@@ -75,6 +75,14 @@ async function builder(nephele: any) {
       });
       fastify.use(`${webdavUrl}`, webdavMiddleware);
     });
+    // DO NOT REMOVE THESE ROUTES
+    // I think fastify doesn't run the middleware if there isn't a matching route
+    fastify.all("webdav/*", (request, reply) => {
+      reply.send({ error: "Unexpected route" });
+    });
+    fastify.all("webdav", (request, reply) => {
+      reply.send({ error: "Unexpected route" });
+    });
     next();
   };
 
