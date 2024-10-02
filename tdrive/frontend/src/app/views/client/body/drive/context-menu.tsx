@@ -277,12 +277,6 @@ export const useOnBuildContextMenu = (
             ? [
                 {
                   type: 'menu',
-                  text: Languages.t('components.item_context_menu.trash.exit'),
-                  onClick: () => setParentId('root'),
-                },
-                { type: 'separator' },
-                {
-                  type: 'menu',
                   text: Languages.t('components.item_context_menu.trash.empty'),
                   className: 'error',
                   hide: !inTrash,
