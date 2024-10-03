@@ -28,14 +28,18 @@ class ForgottenProcessor implements IHealthProvider {
   }
 
   public async getHealthData() {
-    const keys = await onlyofficeService.getForgottenList();
-    return {
-      forgotten: {
-        timeSinceLastStartS: this.lastStart ? ~~((new Date().getTime() - this.lastStart) / 1000) : -1,
-        count: keys?.length ?? 0,
-        locks: this.forgottenSynchroniser.getWorstStats(),
-      },
-    };
+    try {
+      const keys = await onlyofficeService.getForgottenList();
+      return {
+        forgotten: {
+          timeSinceLastStartS: this.lastStart ? ~~((new Date().getTime() - this.lastStart) / 1000) : -1,
+          count: keys?.length ?? 0,
+          locks: this.forgottenSynchroniser.getWorstStats(),
+        },
+      };
+    } catch (e) {
+      return { forgotten: 'Error' };
+    }
   }
 
   /**
