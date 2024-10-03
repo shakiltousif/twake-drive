@@ -24,6 +24,7 @@ import {
 import { DriveFileDTO } from "../dto/drive-file-dto";
 import { DriveFileDTOBuilder } from "../../services/drive-file-dto-builder";
 import config from "config";
+import { formatAttachmentContentDispositionHeader } from "../../../files/utils";
 
 export class DocumentsController {
   private driveFileDTOBuilder = new DriveFileDTOBuilder();
@@ -510,9 +511,9 @@ export class DocumentsController {
         return response;
       } else if (archiveOrFile.file) {
         const data = archiveOrFile.file;
-        const filename = encodeURIComponent(data.name.replace(/[^\p{L}0-9 _.-]/gu, ""));
 
-        response.header("Content-disposition", `attachment; filename="${filename}"`);
+        response.header("Content-Disposition", formatAttachmentContentDispositionHeader(data.name));
+
         if (data.size) response.header("Content-Length", data.size);
         response.type(data.mime);
         return response.send(data.file);
@@ -565,7 +566,10 @@ export class DocumentsController {
 
     try {
       const archive = await globalResolver.services.documents.documents.createZip(ids, context);
-      reply.raw.setHeader("content-disposition", 'attachment; filename="twake_drive.zip"');
+      reply.raw.setHeader(
+        "content-disposition",
+        formatAttachmentContentDispositionHeader("twake_drive.zip"),
+      );
 
       archive.on("finish", () => {
         reply.status(200);
