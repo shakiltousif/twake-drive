@@ -210,7 +210,7 @@ export const useOnBuildContextMenu = (
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.move_multiple'),
-              hide: parent.access === 'read',
+              hide: parent.access === 'read' || inTrash,
               onClick: () =>
                 setSelectorModalState({
                   open: true,
@@ -234,6 +234,7 @@ export const useOnBuildContextMenu = (
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.download_multiple'),
+              hide: inTrash,
               onClick: () =>
                 selectedCount === 1 ? download(checked[0].id) : downloadZip(checked.map(c => c.id)),
             },
