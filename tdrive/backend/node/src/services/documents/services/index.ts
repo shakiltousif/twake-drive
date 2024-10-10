@@ -79,6 +79,9 @@ export class DocumentsService {
   defaultQuota: number = config.has("drive.defaultUserQuota")
     ? config.get("drive.defaultUserQuota")
     : 0;
+  manageAccessEnabled: boolean = config.has("drive.featureManageAccess")
+    ? config.get("drive.featureManageAccess")
+    : false;
   logger: TdriveLogger = getLogger("Documents Service");
 
   async init(): Promise<this> {
@@ -556,33 +559,38 @@ export class DocumentsService {
             oldParent = item.parent_id;
           }
           if (key === "access_info") {
-            const sharedWith = content.access_info.entities.filter(
-              info =>
-                info.type === "user" &&
-                info.id !== context.user.id &&
-                !item.access_info.entities.find(entity => entity.id === info.id),
-            );
+            // if manage access is disabled, we don't allow changing access level
+            if (!this.manageAccessEnabled) {
+              delete content.access_info;
+            } else if (content.access_info) {
+              const sharedWith = content.access_info.entities.filter(
+                info =>
+                  info.type === "user" &&
+                  info.id !== context.user.id &&
+                  !item.access_info.entities.find(entity => entity.id === info.id),
+              );
 
-            item.access_info = content.access_info;
+              item.access_info = content.access_info;
 
-            if (sharedWith.length > 0) {
-              // Notify the user that the document has been shared with them
-              this.logger.info("Notifying user that the document has been shared with them: ", {
-                sharedWith,
-              });
-              gr.services.documents.engine.notifyDocumentShared({
-                context,
-                item,
-                notificationEmitter: context.user.id,
-                notificationReceiver: sharedWith[0].id,
+              if (sharedWith.length > 0) {
+                // Notify the user that the document has been shared with them
+                this.logger.info("Notifying user that the document has been shared with them: ", {
+                  sharedWith,
+                });
+                gr.services.documents.engine.notifyDocumentShared({
+                  context,
+                  item,
+                  notificationEmitter: context.user.id,
+                  notificationReceiver: sharedWith[0].id,
+                });
+              }
+
+              item.access_info.entities.forEach(info => {
+                if (!info.grantor) {
+                  info.grantor = context.user.id;
+                }
               });
             }
-
-            item.access_info.entities.forEach(info => {
-              if (!info.grantor) {
-                info.grantor = context.user.id;
-              }
-            });
           } else if (key === "name") {
             renamedTo = item.name = await getItemName(
               content.parent_id || item.parent_id,

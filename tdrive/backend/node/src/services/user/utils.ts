@@ -54,10 +54,6 @@ export function formatCompany(
       [CompanyFeaturesEnum.CHAT_EDIT_FILES]: true,
       [CompanyFeaturesEnum.CHAT_UNLIMITED_STORAGE]: true,
       [CompanyFeaturesEnum.COMPANY_INVITE_MEMBER]: true,
-      // use the config value for this one
-      [CompanyFeaturesEnum.COMPANY_SEARCH_USERS]: JSON.parse(
-        config.get("drive.featureSearchUsers") || "true",
-      ),
       [CompanyFeaturesEnum.COMPANY_SHARED_DRIVE]: JSON.parse(
         config.get("drive.featureSharedDrive") || "true",
       ),
@@ -67,6 +63,9 @@ export function formatCompany(
       [CompanyFeaturesEnum.COMPANY_USER_QUOTA]: JSON.parse(
         config.get("drive.featureUserQuota") || "false",
       ),
+      [CompanyFeaturesEnum.COMPANY_MANAGE_ACCESS]: JSON.parse(
+        config.get("drive.featureManageAccess") || "true",
+      ),
     },
     {
       ...(res.plan?.features || {}),
@@ -75,8 +74,6 @@ export function formatCompany(
         res.stats.total_members < res.plan?.limits[CompanyLimitsEnum.COMPANY_MEMBERS_LIMIT],
     },
   );
-
-  console.log("🚀🚀 res.plan.features: ", res.plan.features);
 
   return res;
 }

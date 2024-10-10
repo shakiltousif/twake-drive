@@ -111,7 +111,7 @@ export default () => {
             <CloudIcon className="w-5 h-5 mr-4" /> {Languages.t('components.side_menu.home')}
           </Button>
         )}
-        {FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_SEARCH_USERS) && (
+        {FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_MANAGE_ACCESS) && (
           <Button
             onClick={() => {
               history.push(
