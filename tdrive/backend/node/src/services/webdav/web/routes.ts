@@ -5,6 +5,7 @@ import fastifyExpress from "@fastify/express";
 import { adapterServiceReady, getAdapterService } from "./adapter";
 import gr from "../../global-resolver";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
+import { DeviceTypesEnum } from "../../user/entities/device";
 
 const webdavUrl = "webdav";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -12,18 +13,19 @@ async function builder(nephele: any) {
   const routes: FastifyPluginCallback = async (fastify, options, next) => {
     const authenticator = {
       authenticate: async (request: express.Request, response: AuthResponse): Promise<User> => {
-        // console.log(request.headers, request.cookies, request.body, request.secret);
         if (request.headers.authorization) {
-          // TODO: make auth just via login and password and not id's
           try {
-            const base64Credentials = request.headers.authorization.split(" ")[1];
+            const [, ...base64CredentialsParts] = request.headers.authorization.split(" ");
+            const base64Credentials = base64CredentialsParts.join(" ");
             const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
-            const device_id = credentials.split(":")[0];
-            const device_password = credentials.split(":")[1];
+            const [deviceId, ...devicePasswordParts] = credentials.split(":");
+            const devicePassword = devicePasswordParts.join(":");
             const device = await gr.services.users.getDevice({
-              id: device_id,
-              password: device_password,
+              id: deviceId,
+              password: devicePassword,
             });
+            if (device.type !== DeviceTypesEnum.WebDAV)
+              throw new Error(`Invalid device ${deviceId} type, expected WebDAV`);
             response.locals.user = {
               username: device.user_id,
               groupname: device.company_id,
@@ -53,14 +55,12 @@ async function builder(nephele: any) {
     await adapterServiceReady;
     const adapter = getAdapterService();
     fastify.register(fastifyExpress).after(() => {
-      // Create Nephele server
       const server = nephele.createServer({
         adapter: adapter, // You need to define this
         authenticator: authenticator, // You need to define this
         plugins: {},
       });
 
-      // Create an Express middleware that uses the Nephele server
       const webdavMiddleware = express.Router();
       webdavMiddleware.use(express.urlencoded({ extended: true }));
       webdavMiddleware.use((req, res, next) => {
