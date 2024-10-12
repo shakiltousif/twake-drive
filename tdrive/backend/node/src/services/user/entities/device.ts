@@ -4,6 +4,10 @@ import { uuid } from "../../../utils/types";
 
 export const TYPE = "devices";
 
+/* Warning: mirror- in
+  - tdrive/backend/node/src/services/user/web/schemas.ts
+  - tdrive/frontend/src/app/features/users/types/user.ts
+*/
 export enum DeviceTypesEnum {
   /** Firebase Cloud Messaging - for devices than can receive notifications */
   FCM = "FCM",

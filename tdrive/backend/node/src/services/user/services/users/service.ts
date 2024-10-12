@@ -310,33 +310,37 @@ export class UserServiceImpl {
     password?: string,
     company_id?: string,
     context?: ExecutionContext,
-  ): Promise<string> {
+  ): Promise<Device> {
     await this.deregisterUserDevice(id);
 
     const user = await this.get(userPrimaryKey);
     if (!user) {
       throw CrudException.notFound(`User ${userPrimaryKey} not found`);
     }
+    if (userPrimaryKey.id !== context.user.id) {
+      //TODO: can company admin add a device for another user ?
+      throw CrudException.forbidden(
+        `User ${userPrimaryKey} doesn't match logged in ${context.user.id}`,
+      );
+    }
 
     if (!password) {
       password = randomUUID();
     }
     await this.repository.save(user, context);
-    await this.deviceRepository.save(
-      getDeviceInstance({
-        id: id,
-        password: password,
-        type: type,
-        version: version,
-        user_id: user.id,
-        company_id: company_id,
-      }),
-      context,
-    );
+    const device = getDeviceInstance({
+      id: id,
+      password: password,
+      type: type,
+      version: version,
+      user_id: user.id,
+      company_id: company_id,
+    });
+    await this.deviceRepository.save(device, context);
     user.devices = user.devices || [];
     user.devices.push(id);
     await this.repository.save(user, context);
-    return password;
+    return device;
   }
 
   async deregisterUserDevice(id: string, context?: ExecutionContext): Promise<void> {
@@ -398,8 +402,28 @@ export class UserServiceImpl {
       userPrimaryKey,
       randomUUID(),
       type,
-      "undefined",
+      "",
       randomUUID(),
+      company_id,
+      context,
+    );
+  }
+
+  async ensureHaveDeviceType(
+    userPrimaryKey: UserPrimaryKey,
+    type: Device["type"],
+    company_id?: string,
+    context?: ExecutionContext,
+  ): Promise<Device> {
+    const devices = await this.getUserDevices(userPrimaryKey, context);
+    const foundDevice = devices.find(device => type === device.type);
+    if (foundDevice) return foundDevice;
+    return this.registerUserDevice(
+      userPrimaryKey,
+      randomUUID(),
+      type,
+      "",
+      undefined,
       company_id,
       context,
     );

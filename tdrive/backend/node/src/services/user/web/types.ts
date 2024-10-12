@@ -134,8 +134,16 @@ export interface CompanyObject {
   identity_provider_id: string;
 }
 
-export interface RegisterDeviceBody {
-  resource: RegisterDeviceParams;
+/* Warning: mirror in tdrive/backend/node/src/services/user/web/types.ts */
+export interface EnsureDeviceByKindParams {
+  companyId: string;
+  type: DeviceTypesEnum;
+}
+
+/* Warning: mirror in tdrive/backend/node/src/services/user/web/types.ts */
+export interface EnsureDeviceByKindResponse {
+  id: string;
+  password: string;
 }
 
 export interface RegisterDeviceParams {
@@ -143,6 +151,10 @@ export interface RegisterDeviceParams {
   value: string;
   version: string;
   password?: string;
+}
+
+export interface RegisterDeviceBody {
+  resource: RegisterDeviceParams;
 }
 
 export interface DeregisterDeviceParams {

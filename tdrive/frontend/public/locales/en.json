@@ -79,6 +79,7 @@
     "scenes.apps.account.account.password_modal.bad_old_password": "Old password is not correct.",
     "scenes.apps.account.account.password_modal.bad_password": "Your passwords do not match or they are too short. Please type a password with at least 8 characters.",
     "scenes.apps.account.languages.text": "Change Tdrive language.",
+    "scenes.apps.account-webdav.title": "WebDAV access",
     "scenes.apps.parameters.workspace_sections.members.invite": "Invite new user",
     "scenes.apps.parameters.workspace_sections.members.invite_btn": "Add user",
     "scenes.login.footer.go_to_tdrive": "Go to tdriveapp.com",

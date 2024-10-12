@@ -22,6 +22,8 @@ import {
   CompanyUserObject,
   CompanyUsersParameters,
   DeregisterDeviceParams,
+  EnsureDeviceByKindParams,
+  EnsureDeviceByKindResponse,
   RegisterDeviceBody,
   RegisterDeviceParams,
   UserListQueryParameters,
@@ -257,7 +259,7 @@ export class UsersCrudController
     }
     const context = getExecutionContext(request);
 
-    const password = await gr.services.users.registerUserDevice(
+    const device = await gr.services.users.registerUserDevice(
       { id: context.user.id },
       resource.value,
       resource.type,
@@ -271,7 +273,31 @@ export class UsersCrudController
         type: resource.type,
         value: resource.value,
         version: resource.version,
-        password: password,
+        password: device.password,
+      },
+    };
+  }
+
+  async ensureHaveDeviceType(
+    request: FastifyRequest<{ Params: EnsureDeviceByKindParams }>,
+    _reply: FastifyReply,
+  ): Promise<ResourceGetResponse<EnsureDeviceByKindResponse>> {
+    if (!(request.params.type in DeviceTypesEnum)) {
+      throw CrudException.badRequest("Type should be a value of DeviceTypesEnum");
+    }
+    const context = getExecutionContext(request);
+
+    const device = await gr.services.users.ensureHaveDeviceType(
+      { id: context.user.id },
+      request.params.type,
+      request.params.companyId,
+      context,
+    );
+
+    return {
+      resource: {
+        id: device.id,
+        password: device.password,
       },
     };
   }

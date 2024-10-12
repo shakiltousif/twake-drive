@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginCallback } from "fastify";
 import { UsersCrudController } from "./controller";
 import {
   deleteDeviceSchema,
+  ensureHaveDeviceKindSchema,
   getCompanySchema,
   getDevicesSchema,
   getQuotaSchema,
@@ -114,6 +115,15 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, options, next) 
     preValidation: [fastify.authenticate],
     schema: getDevicesSchema,
     handler: usersController.getRegisteredDevices.bind(usersController),
+  });
+
+  fastify.route({
+    method: "POST",
+    url: "/companies/:companyId/devices/:type",
+    preHandler: accessControl,
+    preValidation: [fastify.authenticate],
+    schema: ensureHaveDeviceKindSchema,
+    handler: usersController.ensureHaveDeviceType.bind(usersController),
   });
 
   fastify.route({
