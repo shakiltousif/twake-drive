@@ -317,7 +317,7 @@ export class UserServiceImpl {
     if (!user) {
       throw CrudException.notFound(`User ${userPrimaryKey} not found`);
     }
-    if (userPrimaryKey.id !== context.user.id) {
+    if (userPrimaryKey.id !== context?.user?.id) {
       //TODO: can company admin add a device for another user ?
       throw CrudException.forbidden(
         `User ${userPrimaryKey} doesn't match logged in ${context.user.id}`,
