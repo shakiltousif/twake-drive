@@ -5,6 +5,7 @@ import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
 import formbody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
+import corsPlugin, { FastifyCorsOptions } from "@fastify/cors";
 import { serverErrorHandler } from "./error";
 import WebServerAPI from "./provider";
 import jwtPlugin from "../auth/web/jwt";
@@ -115,7 +116,8 @@ export default class WebServerService extends TdriveService<WebServerAPI> implem
       },
     });
     this.server.register(formbody);
-    // this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
+    //TODO Check that this doesn't cause issues, it may block the OPTIONS verb on the WebDAV path
+    this.server.register(corsPlugin, this.configuration.get<FastifyCorsOptions>("cors", {}));
 
     return this;
   }
