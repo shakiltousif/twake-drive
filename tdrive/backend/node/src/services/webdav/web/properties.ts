@@ -41,9 +41,11 @@ export class PropertiesService implements Properties {
    */
   get = async (_name: string): Promise<string | object | object[] | undefined> => {
     // const versions = await this.resource.getVersions();
+    const replyWithDate = (ts?: number) =>
+      (typeof ts === "number" ? new Date(ts) : new Date()).toISOString();
     switch (_name) {
       case "creationdate":
-        return (this.resource.file.added || new Date().toISOString()).toString();
+        return replyWithDate(this.resource.file.added);
       case "displayname":
         return this.resource.getCanonicalName();
       case "getcontentlanguage":
@@ -58,7 +60,7 @@ export class PropertiesService implements Properties {
         }
         return mediaType;
       case "getlastmodified":
-        return (this.resource.file.last_modified || new Date().toISOString()).toString();
+        return replyWithDate(this.resource.file.last_modified);
       case "resourcetype":
         if (await this.resource.isCollection()) {
           return { collection: {} };
@@ -218,11 +220,11 @@ export class PropertiesService implements Properties {
       "supportedlock",
     ];
     const result: { [k: string]: string | object | object[] } = {};
-    for (const property in properties) {
+    for (const property of properties) {
       try {
-        result.property = await this.get(property);
+        result[property] = await this.get(property);
       } catch (e) {
-        result.property = e;
+        result[property] = e;
       }
     }
     return result;
@@ -232,7 +234,7 @@ export class PropertiesService implements Properties {
    * Same as getAll, but for a specific user.
    */
   getAllByUser = (_user: User): Promise<{ [k: string]: string | object | object[] }> => {
-    return Promise.resolve({ ["noname"]: "undefined" });
+    return this.getAll();
   };
 
   /**
