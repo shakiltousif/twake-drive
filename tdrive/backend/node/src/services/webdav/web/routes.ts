@@ -1,7 +1,7 @@
 import { FastifyPluginCallback } from "fastify";
 import * as express from "express";
 import fastifyExpress from "@fastify/express";
-import { adapterServiceReady, getAdapterService } from "./adapter";
+import { adapterServiceReady, getAdapterService } from "../nephele/adapter";
 import gr from "../../global-resolver";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 import { DeviceTypesEnum } from "../../user/entities/device";

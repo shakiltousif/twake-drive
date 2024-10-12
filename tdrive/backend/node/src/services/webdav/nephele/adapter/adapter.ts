@@ -1,9 +1,9 @@
-import { DriveExecutionContext } from "../../documents/types";
+import { DriveExecutionContext } from "../../../documents/types";
 import { Request } from "express";
-import * as types from "../../../utils/types";
-import gr from "../../global-resolver";
+import * as types from "../../../../utils/types";
+import gr from "../../../global-resolver";
 import { Resource } from "./resource";
-import { executionStorage } from "../../../core/platform/framework/execution-storage";
+import { executionStorage } from "../../../../core/platform/framework/execution-storage";
 
 import {
   INepheleAdapter,
@@ -13,7 +13,7 @@ import {
   Method,
   NepheleModule,
   NephelePromise,
-} from "../nephele/loader";
+} from "../loader";
 
 let AdapterService: INepheleAdapter;
 

@@ -1,4 +1,4 @@
-import type { INepheleProperties, INepheleUser, NepheleModule } from "../nephele/loader";
+import type { INepheleProperties, INepheleUser, NepheleModule } from "../loader";
 import { Resource } from "./resource";
 
 export class PropertiesService implements INepheleProperties {

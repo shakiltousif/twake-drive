@@ -5,21 +5,21 @@ import {
   INepheleResource,
   INepheleUser,
   NepheleModule,
-} from "../nephele/loader";
+} from "../loader";
 
 import { Readable } from "stream";
 import { PropertiesService } from "./properties";
 import { Lock } from "./lock";
 
-import gr from "../../global-resolver";
-import { calculateItemSize } from "../../documents/utils";
-import { DriveFile } from "../../documents/entities/drive-file";
-import { DriveExecutionContext } from "../../documents/types";
-import { checkAccess } from "../../documents/services/access-check";
-import { FileVersion } from "../../documents/entities/file-version";
+import gr from "../../../global-resolver";
+import { calculateItemSize } from "../../../documents/utils";
+import { DriveFile } from "../../../documents/entities/drive-file";
+import { DriveExecutionContext } from "../../../documents/types";
+import { checkAccess } from "../../../documents/services/access-check";
+import { FileVersion } from "../../../documents/entities/file-version";
 import { MultipartFile } from "@fastify/multipart";
 import { BusboyFileStream } from "@fastify/busboy";
-import { UploadOptions } from "../../files/types";
+import { UploadOptions } from "../../../files/types";
 import { lookup } from "mrmime";
 import _ from "lodash";
 

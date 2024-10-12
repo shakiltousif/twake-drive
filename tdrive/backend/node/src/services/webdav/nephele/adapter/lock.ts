@@ -1,6 +1,6 @@
-import { INepheleLock, NepheleModule } from "../nephele/loader";
-import gr from "../../global-resolver";
-import { DriveExecutionContext } from "../../documents/types";
+import { INepheleLock, NepheleModule } from "../loader";
+import gr from "../../../global-resolver";
+import { DriveExecutionContext } from "../../../documents/types";
 import { Resource } from "./resource";
 
 export class Lock implements INepheleLock {
