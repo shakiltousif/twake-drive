@@ -2,7 +2,7 @@ import { DriveExecutionContext } from "../../documents/types";
 import { Request } from "express";
 import * as types from "../../../utils/types";
 import gr from "../../global-resolver";
-import { FileResourceService } from "./file-resource";
+import { Resource } from "./resource";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 
 import {
@@ -13,7 +13,7 @@ import {
   Method,
   NepheleModule,
   NephelePromise,
-} from "../nephele-loader";
+} from "../nephele/loader";
 
 let AdapterService: INepheleAdapter;
 
@@ -127,7 +127,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
       if (pathname == "") {
         return null;
       }
-      const resource = new FileResourceService(nephele, {
+      const resource = new Resource(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),
@@ -157,7 +157,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new FileResourceService(nephele, {
+      const resource = new Resource(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr,
@@ -186,7 +186,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new FileResourceService(nephele, {
+      const resource = new Resource(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),

@@ -1,13 +1,13 @@
-import type { INepheleProperties, INepheleUser, NepheleModule } from "../nephele-loader";
-import { FileResourceService } from "./file-resource";
+import type { INepheleProperties, INepheleUser, NepheleModule } from "../nephele/loader";
+import { Resource } from "./resource";
 
 export class PropertiesService implements INepheleProperties {
   /**
    * The resource these properties belong to.
    */
-  resource: FileResourceService;
+  resource: Resource;
 
-  constructor(private readonly nephele: NepheleModule, resource: FileResourceService) {
+  constructor(private readonly nephele: NepheleModule, resource: Resource) {
     this.resource = resource;
   }
   /**

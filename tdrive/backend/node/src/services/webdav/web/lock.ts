@@ -1,9 +1,9 @@
-import { INepheleLock, NepheleModule } from "../nephele-loader";
+import { INepheleLock, NepheleModule } from "../nephele/loader";
 import gr from "../../global-resolver";
 import { DriveExecutionContext } from "../../documents/types";
-import { FileResourceService } from "./file-resource";
+import { Resource } from "./resource";
 
-export class DriveLock implements INepheleLock {
+export class Lock implements INepheleLock {
   /**
    * A unique token representing this lock.
    */
@@ -62,7 +62,7 @@ export class DriveLock implements INepheleLock {
     /**
      * The lock-root resource of this lock.
      */
-    public readonly resource: FileResourceService,
+    public readonly resource: Resource,
     private readonly context: DriveExecutionContext,
     options: {
       token?: string;
@@ -114,7 +114,7 @@ export class DriveLock implements INepheleLock {
       lock =>
         !lock.provisional &&
         (this.scope === "exclusive" || lock.scope === "exclusive") &&
-        !DriveLock.isLockExpired(lock),
+        !Lock.isLockExpired(lock),
     );
 
     if (conflictingLock) {
@@ -122,7 +122,7 @@ export class DriveLock implements INepheleLock {
     }
 
     // Remove expired locks
-    driveFile.locks = driveFile.locks.filter(lock => !DriveLock.isLockExpired(lock));
+    driveFile.locks = driveFile.locks.filter(lock => !Lock.isLockExpired(lock));
 
     // Add or update the current lock
     const lockData = this.toLockData();
@@ -172,11 +172,11 @@ export class DriveLock implements INepheleLock {
 
   static fromLockData(
     nephele: NepheleModule,
-    resource: FileResourceService,
+    resource: Resource,
     context: DriveExecutionContext,
     lockData: any,
-  ): DriveLock {
-    return new DriveLock(nephele, resource, context, {
+  ): Lock {
+    return new Lock(nephele, resource, context, {
       token: lockData.token,
       date: new Date(lockData.date),
       timeout: lockData.timeout,

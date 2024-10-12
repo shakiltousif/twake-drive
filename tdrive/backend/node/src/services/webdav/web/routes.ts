@@ -11,7 +11,7 @@ import {
   INepheleUser,
   NepheleModule,
   NephelePromise,
-} from "../nephele-loader";
+} from "../nephele/loader";
 
 const webdavUrl = "webdav";
 function builder(nephele: NepheleModule): FastifyPluginCallback {

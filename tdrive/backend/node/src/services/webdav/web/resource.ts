@@ -5,11 +5,11 @@ import {
   INepheleResource,
   INepheleUser,
   NepheleModule,
-} from "../nephele-loader";
+} from "../nephele/loader";
 
 import { Readable } from "stream";
 import { PropertiesService } from "./properties";
-import { DriveLock } from "./drivelock";
+import { Lock } from "./lock";
 
 import gr from "../../global-resolver";
 import { calculateItemSize } from "../../documents/utils";
@@ -23,7 +23,7 @@ import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
 import _ from "lodash";
 
-export class FileResourceService implements INepheleResource {
+export class Resource implements INepheleResource {
   /**
    * This is implementation of Resource from nephele package
    *
@@ -141,7 +141,7 @@ export class FileResourceService implements INepheleResource {
     if (!this.file || !this.file.locks) return [];
 
     return this.file.locks.map(lock =>
-      DriveLock.fromLockData(
+      Lock.fromLockData(
         this.nephele,
         this,
         { user: { id: lock.user_id }, company: { id: lock.company_id } },
@@ -162,7 +162,7 @@ export class FileResourceService implements INepheleResource {
     if (!this.file || !this.file.locks) return [];
     return this.file.locks.map(
       lock =>
-        new DriveLock(this.nephele, this, this.context, {
+        new Lock(this.nephele, this, this.context, {
           token: lock.token,
           timeout: lock.timeout,
           scope: lock.scope,
@@ -180,7 +180,7 @@ export class FileResourceService implements INepheleResource {
    * before being saved to storage.
    */
   createLockForUser = async (user: INepheleUser): Promise<INepheleLock> => {
-    const lock = new DriveLock(this.nephele, this, this.getUserContext(user), {
+    const lock = new Lock(this.nephele, this, this.getUserContext(user), {
       owner: { name: user.username },
     });
     return lock;
@@ -357,7 +357,7 @@ export class FileResourceService implements INepheleResource {
       throw new this.nephele.ResourceExistsError("ResourceExistsError: cannot create root");
     let parent_resource = null;
     {
-      parent_resource = new FileResourceService(this.nephele, {
+      parent_resource = new Resource(this.nephele, {
         adapter: this.adapter,
         baseUrl: this.baseUrl,
         pathname: path_to_parent,
@@ -678,7 +678,7 @@ export class FileResourceService implements INepheleResource {
 
       return item.children.map(
         child =>
-          new FileResourceService(this.nephele, {
+          new Resource(this.nephele, {
             adapter: this.adapter,
             baseUrl: this.baseUrl,
             pathname: this.pathname.concat([child.name]),
