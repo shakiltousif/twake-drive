@@ -1,20 +1,27 @@
-import type { Adapter, AuthResponse, Resource, Method, User } from "nephele";
 import { DriveExecutionContext } from "../../documents/types";
 import { Request } from "express";
-import * as URL from "node:url";
 import * as types from "../../../utils/types";
 import gr from "../../global-resolver";
 import { FileResourceService } from "./file-resource";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 
-let AdapterService;
+import {
+  INepheleAdapter,
+  INepheleAuthResponse,
+  INepheleResource,
+  INepheleUser,
+  Method,
+  NepheleModule,
+  NephelePromise,
+} from "../nephele-loader";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const build_adapter = (nephele: any): Adapter => {
+let AdapterService: INepheleAdapter;
+
+const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
   /**
    * WebDAVAdapter implements Adapter interface from nephele module using Drive files
    */
-  class WebDAVAdapter implements Adapter {
+  class WebDAVAdapter implements INepheleAdapter {
     /**
      * Get a list of compliance classes that this adapter supports.
      *
@@ -25,7 +32,11 @@ const build_adapter = (nephele: any): Adapter => {
      * (the string "2") in the returned array to indicate that the "LOCK" and
      * "UNLOCK" methods should be included in the "Allow" header.
      */
-    getComplianceClasses = async (_url: URL, _request: Request, _response: AuthResponse) => {
+    getComplianceClasses = async (
+      _url: URL,
+      _request: Request,
+      _response: INepheleAuthResponse,
+    ) => {
       // "2" - means that the Adapter ( i.e. file system supports lock / unlock function )
       return ["2"];
       // return Promise.resolve([]);
@@ -48,7 +59,7 @@ const build_adapter = (nephele: any): Adapter => {
      * Any methods this function returns are entirely the responsibility of the
      * adapter to fulfill, beyond simple authorization and error responses.
      */
-    getAllowedMethods = async (url: URL, request: Request, response: AuthResponse) => {
+    getAllowedMethods = async (url: URL, request: Request, response: INepheleAuthResponse) => {
       if ("2" in (await this.getComplianceClasses(url, request, response))) {
         return ["LOCK", "UNLOCK"];
       } else {
@@ -69,7 +80,7 @@ const build_adapter = (nephele: any): Adapter => {
     getOptionsResponseCacheControl = async (
       _url: URL,
       _request: Request,
-      _response: AuthResponse,
+      _response: INepheleAuthResponse,
     ) => {
       return "max-age=604800";
     };
@@ -85,7 +96,12 @@ const build_adapter = (nephele: any): Adapter => {
      * @param baseUrl The root of the WebDav server's namespace on the server.
      * @param user The user to check authorization for.
      */
-    isAuthorized = async (url: URL, method: string, baseUrl: URL, user: User): Promise<boolean> => {
+    isAuthorized = async (
+      url: URL,
+      method: string,
+      baseUrl: URL,
+      user: INepheleUser,
+    ): Promise<boolean> => {
       const UserByUsername = await gr.services.users.get({ id: user.username });
       return UserByUsername != null;
     };
@@ -101,7 +117,7 @@ const build_adapter = (nephele: any): Adapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    getResource = async (url: URL, baseUrl: URL): Promise<Resource> => {
+    getResource = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
       const context = getDriveExecutionContext(baseUrl);
       let pathname = url.pathname;
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -111,7 +127,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname == "") {
         return null;
       }
-      const resource = new FileResourceService({
+      const resource = new FileResourceService(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),
@@ -131,7 +147,7 @@ const build_adapter = (nephele: any): Adapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    newResource = async (url: URL, baseUrl: URL): Promise<Resource> => {
+    newResource = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
       const context = getDriveExecutionContext(url);
       let pathname = decodeURI(url.pathname);
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -141,7 +157,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new FileResourceService({
+      const resource = new FileResourceService(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr,
@@ -160,7 +176,7 @@ const build_adapter = (nephele: any): Adapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    newCollection = async (url: URL, baseUrl: URL): Promise<Resource> => {
+    newCollection = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
       const context = getDriveExecutionContext(url);
       let pathname = url.pathname;
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -170,7 +186,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new FileResourceService({
+      const resource = new FileResourceService(nephele, {
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),
@@ -195,16 +211,16 @@ const build_adapter = (nephele: any): Adapter => {
      */
     getMethod = (method: string): typeof Method => {
       if (method === "PROPATCH") {
-        throw new Error("Method not supported!");
+        throw new nephele.MethodNotSupportedError();
       }
-      throw new Error("Method not implemented.");
+      throw new nephele.MethodNotImplementedError();
     };
   }
   return new WebDAVAdapter();
 };
 
 const initializeAdapterService = async () => {
-  AdapterService = await eval("import('nephele').then(build_adapter)");
+  return (AdapterService = await NephelePromise.then(build_adapter));
 };
 
 // Export a function that returns the resolved service
@@ -214,6 +230,7 @@ export function getAdapterService() {
   }
   return AdapterService;
 }
+
 export const adapterServiceReady = initializeAdapterService();
 
 export const getDriveExecutionContext = (url: URL): DriveExecutionContext => ({

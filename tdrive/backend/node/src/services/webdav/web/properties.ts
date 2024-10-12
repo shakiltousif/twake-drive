@@ -1,13 +1,13 @@
-import type { PropertyNotFoundError, Properties, User } from "nephele";
+import type { INepheleProperties, INepheleUser, NepheleModule } from "../nephele-loader";
 import { FileResourceService } from "./file-resource";
 
-export class PropertiesService implements Properties {
+export class PropertiesService implements INepheleProperties {
   /**
    * The resource these properties belong to.
    */
   resource: FileResourceService;
 
-  constructor(resource: FileResourceService) {
+  constructor(private readonly nephele: NepheleModule, resource: FileResourceService) {
     this.resource = resource;
   }
   /**
@@ -56,7 +56,7 @@ export class PropertiesService implements Properties {
       case "getcontenttype":
         const mediaType = await this.resource.getMediaType();
         if (mediaType == null) {
-          return "PropertyNotFoundError";
+          throw new this.nephele.PropertyNotFoundError();
         }
         return mediaType;
       case "getlastmodified":
@@ -88,7 +88,7 @@ export class PropertiesService implements Properties {
       case "quota-used-bytes":
         return `${await this.resource.getTotalSpace()}`;
       default:
-        throw new Error("PropertyNotFoundError") as PropertyNotFoundError;
+        throw new this.nephele.PropertyNotFoundError();
     }
   };
 
@@ -97,7 +97,7 @@ export class PropertiesService implements Properties {
    */
   getByUser = async (
     name: string,
-    _user: User,
+    _user: INepheleUser,
   ): Promise<string | object | object[] | undefined> => {
     // TODO: implement get property by user
     return this.get(name);
@@ -137,7 +137,7 @@ export class PropertiesService implements Properties {
   setByUser = (
     _name: string,
     _value: string | object | object[] | undefined,
-    _user: User,
+    _user: INepheleUser,
   ): Promise<void> => {
     return Promise.resolve();
   };
@@ -152,7 +152,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as remove, but for a specific user.
    */
-  removeByUser = (_name: string, _user: User): Promise<void> => {
+  removeByUser = (_name: string, _user: INepheleUser): Promise<void> => {
     return Promise.resolve();
   };
 
@@ -187,7 +187,7 @@ export class PropertiesService implements Properties {
    */
   runInstructionsByUser = (
     _instructions: ["set" | "remove", string, any][],
-    _user: User,
+    _user: INepheleUser,
   ): Promise<undefined | [string, Error][]> => {
     return Promise.resolve(undefined);
   };
@@ -233,7 +233,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as getAll, but for a specific user.
    */
-  getAllByUser = (_user: User): Promise<{ [k: string]: string | object | object[] }> => {
+  getAllByUser = (_user: INepheleUser): Promise<{ [k: string]: string | object | object[] }> => {
     return this.getAll();
   };
 
@@ -253,7 +253,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as list, but for a specific user.
    */
-  listByUser = (_user: User): Promise<string[]> => {
+  listByUser = (_user: INepheleUser): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 
@@ -273,7 +273,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as listLive, but for a specific user.
    */
-  listLiveByUser = (_user: User): Promise<string[]> => {
+  listLiveByUser = (_user: INepheleUser): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 
@@ -287,7 +287,7 @@ export class PropertiesService implements Properties {
   /**
    * Same as listDead, but for a specific user.
    */
-  listDeadByUser = (_user: User): Promise<string[]> => {
+  listDeadByUser = (_user: INepheleUser): Promise<string[]> => {
     return Promise.resolve(["undefined"]);
   };
 }

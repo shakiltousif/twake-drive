@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRegisterOptions } from "fastify";
+import { FastifyInstance, FastifyPluginCallback, FastifyRegisterOptions } from "fastify";
 
 import { routes } from "./routes";
 
@@ -8,5 +8,7 @@ export default async (
     prefix: string;
   }>,
 ): Promise<void> => {
-  fastify.register(routes, options);
+  // awaiting the routes promise here, as would be appropriate,
+  // makes fastify fail loading and changes applied after "root" plugin is loaded
+  fastify.register(routes as unknown as FastifyPluginCallback, options);
 };

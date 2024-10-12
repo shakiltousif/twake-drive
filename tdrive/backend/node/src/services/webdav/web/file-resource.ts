@@ -1,19 +1,12 @@
 import {
-  Adapter,
-  BadGatewayError,
-  ForbiddenError,
-  InternalServerError,
-  Lock,
-  MethodNotSupportedError,
-  Properties,
-  RangeNotSatisfiableError,
-  Resource,
-  ResourceExistsError,
-  ResourceNotFoundError,
-  ResourceTreeNotCompleteError,
-  UnauthorizedError,
-  User,
-} from "nephele";
+  INepheleAdapter,
+  INepheleLock,
+  INepheleProperties,
+  INepheleResource,
+  INepheleUser,
+  NepheleModule,
+} from "../nephele-loader";
+
 import { Readable } from "stream";
 import { PropertiesService } from "./properties";
 import { DriveLock } from "./drivelock";
@@ -31,7 +24,7 @@ import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
 import _ from "lodash";
 
-export class FileResourceService implements Resource {
+export class FileResourceService implements INepheleResource {
   /**
    * This is implementation of Resource from nephele package
    *
@@ -42,30 +35,33 @@ export class FileResourceService implements Resource {
    * @file - DriveItem if exists. Assumed that if it is null, then the file does not exist
    * @pathIds - path to the DriveItem represented as an Array of ids of parent files
    */
-  adapter: Adapter;
+  adapter: INepheleAdapter;
   pathname: string[];
   baseUrl: URL;
   context: DriveExecutionContext;
   file?: DriveFile | null;
   pathIds?: string[] | null;
   is_collection?: boolean = false;
-  constructor({
-    adapter,
-    baseUrl,
-    pathname,
-    context,
-    file,
-    pathIds,
-    is_collection,
-  }: {
-    adapter: Adapter;
-    baseUrl: URL;
-    pathname: string[];
-    context: DriveExecutionContext;
-    file?: DriveFile | null;
-    pathIds?: string[] | null;
-    is_collection?: boolean;
-  }) {
+  constructor(
+    private readonly nephele: NepheleModule,
+    {
+      adapter,
+      baseUrl,
+      pathname,
+      context,
+      file,
+      pathIds,
+      is_collection,
+    }: {
+      adapter: INepheleAdapter;
+      baseUrl: URL;
+      pathname: string[];
+      context: DriveExecutionContext;
+      file?: DriveFile | null;
+      pathIds?: string[] | null;
+      is_collection?: boolean;
+    },
+  ) {
     this.adapter = adapter;
     this.baseUrl = baseUrl;
     this.pathname = pathname;
@@ -127,7 +123,7 @@ export class FileResourceService implements Resource {
    *
    * @param _user
    */
-  getUserContext = (_user: User): DriveExecutionContext => {
+  getUserContext = (_user: INepheleUser): DriveExecutionContext => {
     const context = this.context;
     context.user.id = _user.username;
     context.company.id = _user.groupname;
@@ -142,11 +138,12 @@ export class FileResourceService implements Resource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocks = async (): Promise<Lock[]> => {
+  getLocks = async (): Promise<INepheleLock[]> => {
     if (!this.file || !this.file.locks) return [];
 
     return this.file.locks.map(lock =>
       DriveLock.fromLockData(
+        this.nephele,
         this,
         { user: { id: lock.user_id }, company: { id: lock.company_id } },
         lock,
@@ -162,11 +159,11 @@ export class FileResourceService implements Resource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocksByUser = async (_user: User): Promise<Lock[]> => {
+  getLocksByUser = async (_user: INepheleUser): Promise<INepheleLock[]> => {
     if (!this.file || !this.file.locks) return [];
     return this.file.locks.map(
       lock =>
-        new DriveLock(this, this.context, {
+        new DriveLock(this.nephele, this, this.context, {
           token: lock.token,
           timeout: lock.timeout,
           scope: lock.scope,
@@ -183,8 +180,8 @@ export class FileResourceService implements Resource {
    * The defaults for the lock don't matter. They will be assigned by Nephele
    * before being saved to storage.
    */
-  createLockForUser = async (user: User): Promise<Lock> => {
-    const lock = new DriveLock(this, this.getUserContext(user), {
+  createLockForUser = async (user: INepheleUser): Promise<INepheleLock> => {
+    const lock = new DriveLock(this.nephele, this, this.getUserContext(user), {
       owner: { name: user.username },
     });
     return lock;
@@ -193,8 +190,8 @@ export class FileResourceService implements Resource {
   /**
    * Return a properties object for this resource.
    */
-  getProperties = async (): Promise<Properties> => {
-    return new PropertiesService(this);
+  getProperties = async (): Promise<INepheleProperties> => {
+    return new PropertiesService(this.nephele, this);
   };
 
   /**
@@ -208,7 +205,7 @@ export class FileResourceService implements Resource {
    * or streams.
    */
   getStream = async (range?: { start: number; end: number }): Promise<Readable> => {
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     const downloadObject = await gr.services.documents.documents.download(
       this.file.id,
       null,
@@ -216,12 +213,12 @@ export class FileResourceService implements Resource {
     );
     const file = downloadObject.file;
     if (!file || !file.file) {
-      throw new Error("File not found or file content is empty") as ResourceNotFoundError;
+      throw new this.nephele.ResourceNotFoundError("File not found or file content is empty");
     }
     let stream: Readable = file.file;
     if (range) {
       if (range.start < 0 || range.end < range.start) {
-        throw new Error("Invalid range specified") as RangeNotSatisfiableError;
+        throw new this.nephele.RangeNotSatisfiableError("Invalid range specified");
       }
       const end = range.end !== undefined ? Math.min(range.end, file.size - 1) : file.size - 1;
       let rangeSize = end - range.start + 1;
@@ -270,7 +267,7 @@ export class FileResourceService implements Resource {
    * If the resource is a collection, and it can't accept a stream (like a
    * folder on a filesystem), a MethodNotSupportedError may be thrown.
    */
-  setStream = async (input: Readable, user: User, mediaType?: string): Promise<void> => {
+  setStream = async (input: Readable, user: INepheleUser, mediaType?: string): Promise<void> => {
     try {
       assert(await this.exists());
     } catch (error) {
@@ -284,12 +281,12 @@ export class FileResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      new Error("User does not have access to this resource") as UnauthorizedError,
+      new this.nephele.UnauthorizedError("User does not have access to this resource"),
     );
 
     assert(
       !(await this.isCollection()),
-      new Error("Collection doesn't support this operation") as MethodNotSupportedError,
+      new this.nephele.MethodNotSupportedError("Collection doesn't support this operation"),
     );
 
     const uploadOptions: UploadOptions = {
@@ -357,19 +354,19 @@ export class FileResourceService implements Resource {
    *
    * If the resource already exists, a ResourceExistsError should be thrown.
    */
-  create = async (user: User): Promise<void> => {
+  create = async (user: INepheleUser): Promise<void> => {
     // TODO: check for shared files
-    assert(!(await this.exists()), new Error("ResourceExistsError") as ResourceExistsError);
+    assert(!(await this.exists()), new this.nephele.ResourceExistsError());
 
     const user_context = this.getUserContext(user);
     const path_to_parent = this.pathname.slice(0, this.pathname.length - 1);
     assert(
       path_to_parent.length > 0,
-      new Error("ResourceExistsError: cannot create root") as ResourceExistsError,
+      new this.nephele.ResourceExistsError("ResourceExistsError: cannot create root"),
     );
     let parent_resource = null;
     {
-      parent_resource = new FileResourceService({
+      parent_resource = new FileResourceService(this.nephele, {
         adapter: this.adapter,
         baseUrl: this.baseUrl,
         pathname: path_to_parent,
@@ -378,7 +375,7 @@ export class FileResourceService implements Resource {
       });
       assert(
         await parent_resource.exists(),
-        new Error("ResourceTreeNotCompleteError") as ResourceTreeNotCompleteError,
+        new this.nephele.ResourceTreeNotCompleteError("ResourceTreeNotCompleteError"),
       );
     }
     const new_content = {
@@ -406,8 +403,8 @@ export class FileResourceService implements Resource {
    * If no one has permission to delete the resource, a ForbiddenError should be
    * thrown.
    */
-  delete = async (user: User): Promise<void> => {
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+  delete = async (user: INepheleUser): Promise<void> => {
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     assert(
       checkAccess(
         this.file.id,
@@ -416,11 +413,13 @@ export class FileResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      new Error("User cannot delete this resource") as UnauthorizedError,
+      new this.nephele.UnauthorizedError("User cannot delete this resource"),
     );
     // cannot delete not empty collection
     if (this.is_collection && (await this.getInternalMembers(user)).length != 0) {
-      throw new Error("Method not supported: collection is not empty!") as MethodNotSupportedError;
+      throw new this.nephele.MethodNotSupportedError(
+        "Method not supported: collection is not empty!",
+      );
     }
     // this check is needed for nephele moving/copying handling in case the resource was moved (updated name)
     // but the file id remains the same
@@ -434,7 +433,7 @@ export class FileResourceService implements Resource {
           this.getUserContext(user),
         );
       } catch (error) {
-        throw new Error("Failed to delete the resource!") as InternalServerError;
+        throw new this.nephele.InternalServerError("Failed to delete the resource!");
       }
     }
   };
@@ -467,18 +466,18 @@ export class FileResourceService implements Resource {
    * be thrown.
    */
   //TODO: check copying collection into itself
-  copy = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
+  copy = async (destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> => {
     // remove trailing slashes and make an array from it
     let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
     pathname = pathname.replace(/^\/+|\/+$/g, "");
     const dest_path = pathname.split("/");
 
-    assert(dest_path.length > 0, new Error("Destination cannot be null") as BadGatewayError);
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(dest_path.length > 0, new this.nephele.BadGatewayError("Destination cannot be null"));
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     assert(
       !destination.pathname.includes(await this.getCanonicalPath()),
-      new Error("Cannot copy into itself") as ForbiddenError,
+      new this.nephele.ForbiddenError("Cannot copy into itself"),
     );
     assert(
       checkAccess(
@@ -488,14 +487,14 @@ export class FileResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      new Error("User cannot delete this resource") as UnauthorizedError,
+      new this.nephele.UnauthorizedError("User cannot delete this resource"),
     );
     let parent_path = null;
     try {
       // now we need to check that there is parent of destination File
       parent_path = await this.loadPath(dest_path.slice(0, -1));
     } catch (error) {
-      throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
+      throw new this.nephele.ResourceTreeNotCompleteError("Resource tree not completed");
     }
 
     const new_content = {
@@ -538,18 +537,18 @@ export class FileResourceService implements Resource {
    * or the destination falls under the source itself, a ForbiddenError should
    * be thrown.
    */
-  move = async (destination: URL, baseUrl: URL, user: User): Promise<void> => {
+  move = async (destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> => {
     // remove trailing slashes and make an array from it
     let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
     pathname = pathname.replace(/^\/+|\/+$/g, "");
     const dest_path = pathname.split("/");
 
-    assert(dest_path.length > 0, new Error("Destination cannot be null") as BadGatewayError);
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(dest_path.length > 0, new this.nephele.BadGatewayError("Destination cannot be null"));
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     assert(
       !destination.pathname.includes(await this.getCanonicalPath()),
-      new Error("Cannot move into itself") as ForbiddenError,
+      new this.nephele.ForbiddenError("Cannot move into itself"),
     );
     assert(
       checkAccess(
@@ -559,14 +558,14 @@ export class FileResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      new Error("User cannot delete this resource") as UnauthorizedError,
+      new this.nephele.UnauthorizedError("User cannot delete this resource"),
     );
     let parent_path = null;
     try {
       // now we need to check that there is parent of destination File
       parent_path = await this.loadPath(dest_path.slice(0, -1));
     } catch (error) {
-      throw new Error("Resource tree not completed") as ResourceTreeNotCompleteError;
+      throw new this.nephele.ResourceTreeNotCompleteError("Resource tree not completed");
     }
 
     const new_content = {
@@ -624,7 +623,7 @@ export class FileResourceService implements Resource {
    * The canonical name of the resource. (The basename of its path.)
    */
   getCanonicalName = async (): Promise<string> => {
-    assert(await this.exists(), "ResourceNotFoundError");
+    assert(await this.exists());
 
     return this.file.name;
   };
@@ -635,7 +634,7 @@ export class FileResourceService implements Resource {
    * This should **not** be URL encoded.
    */
   getCanonicalPath = async (): Promise<string> => {
-    // assert(await this.exists(), "ResourceNotFoundError");
+    // assert(await this.exists(), );
 
     return this.pathname.join("/");
   };
@@ -675,10 +674,10 @@ export class FileResourceService implements Resource {
    * If the user doesn't have permission to see the internal members, an
    * UnauthorizedError should be thrown.
    */
-  getInternalMembers = async (user: User): Promise<Resource[]> => {
+  getInternalMembers = async (user: INepheleUser): Promise<INepheleResource[]> => {
     // console.log("ResourceService::getInternalMembers called()");
     // console.log(this.file);
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     assert(
       await checkAccess(
         this.file.id,
@@ -687,18 +686,18 @@ export class FileResourceService implements Resource {
         gr.services.documents.documents.repository,
         this.getUserContext(user),
       ),
-      new Error("User does not have access to this folder") as UnauthorizedError,
+      new this.nephele.UnauthorizedError("User does not have access to this folder"),
     );
     assert(
       this.file.is_directory,
-      new Error("Files do not support this method") as MethodNotSupportedError,
+      new this.nephele.MethodNotSupportedError("Files do not support this method"),
     );
     try {
       const item = await gr.services.documents.documents.get(this.file.id, undefined, this.context);
 
       return item.children.map(
         child =>
-          new FileResourceService({
+          new FileResourceService(this.nephele, {
             adapter: this.adapter,
             baseUrl: this.baseUrl,
             pathname: this.pathname.concat([child.name]),
@@ -710,14 +709,14 @@ export class FileResourceService implements Resource {
       );
     } catch (err) {
       console.error(err);
-      throw new Error(err) as BadGatewayError;
+      throw new this.nephele.BadGatewayError(err);
     }
   };
   /**
    * Returns last version about the resource
    */
   getVersions = async (): Promise<FileVersion[]> => {
-    assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
+    assert(await this.exists(), new this.nephele.ResourceNotFoundError());
     return (await gr.services.documents.documents.get(this.file.id, undefined, this.context))
       .versions;
   };

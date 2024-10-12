@@ -1,13 +1,9 @@
-import { Lock } from "nephele";
+import { INepheleLock, NepheleModule } from "../nephele-loader";
 import gr from "../../global-resolver";
 import { DriveExecutionContext } from "../../documents/types";
 import { FileResourceService } from "./file-resource";
 
-export class DriveLock implements Lock {
-  /**
-   * The lock-root resource of this lock.
-   */
-  resource: FileResourceService;
+export class DriveLock implements INepheleLock {
   /**
    * A unique token representing this lock.
    */
@@ -60,11 +56,14 @@ export class DriveLock implements Lock {
    * contact the owner of the lock.
    */
   owner: any;
-  context: DriveExecutionContext;
 
   constructor(
-    resource: FileResourceService,
-    context: DriveExecutionContext,
+    private readonly nephele: NepheleModule,
+    /**
+     * The lock-root resource of this lock.
+     */
+    public readonly resource: FileResourceService,
+    private readonly context: DriveExecutionContext,
     options: {
       token?: string;
       date?: Date;
@@ -75,8 +74,6 @@ export class DriveLock implements Lock {
       owner?: any;
     },
   ) {
-    this.resource = resource;
-    this.context = context;
     this.token = options.token || "";
     this.date = options.date || new Date();
     this.timeout = options.timeout || 3600000; // Default to 1 hour
@@ -121,7 +118,7 @@ export class DriveLock implements Lock {
     );
 
     if (conflictingLock) {
-      throw new Error("Conflicting lock exists");
+      throw new this.nephele.LockedError("Conflicting lock exists");
     }
 
     // Remove expired locks
@@ -140,7 +137,7 @@ export class DriveLock implements Lock {
     try {
       await gr.services.documents.documents.update(driveFile.id, driveFile, this.resource.context);
     } catch (error) {
-      throw new Error("Failed to save the lock");
+      throw new this.nephele.InternalServerError("Failed to save the lock");
     }
   }
 
@@ -174,11 +171,12 @@ export class DriveLock implements Lock {
   }
 
   static fromLockData(
+    nephele: NepheleModule,
     resource: FileResourceService,
     context: DriveExecutionContext,
     lockData: any,
   ): DriveLock {
-    return new DriveLock(resource, context, {
+    return new DriveLock(nephele, resource, context, {
       token: lockData.token,
       date: new Date(lockData.date),
       timeout: lockData.timeout,
