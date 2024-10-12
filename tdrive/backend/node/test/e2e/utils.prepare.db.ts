@@ -13,7 +13,7 @@ import { v1 as uuidv1 } from "uuid";
 import CompanyUser from "../../src/services/user/entities/company_user";
 import { DatabaseServiceAPI } from "../../src/core/platform/services/database/api";
 import Repository from "../../src/core/platform/services/database/services/orm/repository/repository";
-import Device from "../../src/services/user/entities/device";
+import Device, { DeviceTypesEnum } from "../../src/services/user/entities/device";
 
 import gr from "../../src/services/global-resolver";
 
@@ -204,14 +204,14 @@ export class TestDbService {
 
   async createDevice(
     options: {
-      id?: string;
-      password?: string;
-      user_id?: string;
-      company_id?: string;
-      type?: string;
-      version?: string;
-      push_notifications?: boolean;
-    } = {},
+      id: string;
+      password: string;
+      user_id: string;
+      company_id: string;
+      type: DeviceTypesEnum;
+      version: string;
+      push_notifications: boolean;
+    },
   ): Promise<void> {
     const user = await gr.services.users.get( {id: options.user_id } );
     const device = new Device();

@@ -22,14 +22,14 @@
     "serve:watch": "nodemon dist/server.js | pino-pretty",
     "serve:debug": "nodemon --inspect dist/server.js | pino-pretty",
     "start": "npm run serve",
-    "test": "jest --forceExit --coverage --detectOpenHandles --runInBand --verbose false --experimental-vm-modules | pino-pretty",
+    "test": "jest --forceExit --coverage --detectOpenHandles --runInBand --verbose false | pino-pretty",
     "test:local": "jest --forceExit --detectOpenHandles --runInBand mock.spec.ts",
     "test:watch": "npm run test -- --watchAll --verbose false | pino-pretty",
-    "test:unit": "jest test/unit --forceExit --coverage --detectOpenHandles --maxWorkers=1 --testTimeout=30000 --verbose false --experimental-vm-modules > coverage/coverage-report.txt",
+    "test:unit": "jest test/unit --forceExit --coverage --detectOpenHandles --maxWorkers=1 --testTimeout=30000 --verbose false > coverage/coverage-report.txt",
     "test:unit:watch": "npm run test:unit -- --watchAll --verbose false | pino-pretty",
     "test:merge:json": "npx istanbul report --dir coverage/merged --include 'coverage/**/coverage-final.json' json-summary",
     "test:merge:text": "npx istanbul report --dir coverage/merged --include 'coverage/**/coverage-final.json' text > coverage/merged/coverage-report.txt",
-    "test:all": "jest test --forceExit --coverage --detectOpenHandles --testTimeout=600000 --verbose false --runInBand --experimental-vm-modules",
+    "test:all": "jest test --forceExit --coverage --detectOpenHandles --testTimeout=600000 --verbose false --runInBand",
     "kill": "kill $(lsof -t -i:3000) | exit 0"
   },
   "jest": {
