@@ -1,13 +1,13 @@
 import { Lock } from "nephele";
 import gr from "../../global-resolver";
 import { DriveExecutionContext } from "../../documents/types";
-import { ResourceService } from "./fileResource";
+import { FileResourceService } from "./file-resource";
 
 export class DriveLock implements Lock {
   /**
    * The lock-root resource of this lock.
    */
-  resource: ResourceService;
+  resource: FileResourceService;
   /**
    * A unique token representing this lock.
    */
@@ -63,7 +63,7 @@ export class DriveLock implements Lock {
   context: DriveExecutionContext;
 
   constructor(
-    resource: ResourceService,
+    resource: FileResourceService,
     context: DriveExecutionContext,
     options: {
       token?: string;
@@ -174,7 +174,7 @@ export class DriveLock implements Lock {
   }
 
   static fromLockData(
-    resource: ResourceService,
+    resource: FileResourceService,
     context: DriveExecutionContext,
     lockData: any,
   ): DriveLock {

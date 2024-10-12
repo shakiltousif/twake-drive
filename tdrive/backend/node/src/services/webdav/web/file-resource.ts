@@ -31,7 +31,7 @@ import { UploadOptions } from "../../files/types";
 import { lookup } from "mrmime";
 import _ from "lodash";
 
-export class ResourceService implements Resource {
+export class FileResourceService implements Resource {
   /**
    * This is implementation of Resource from nephele package
    *
@@ -368,7 +368,7 @@ export class ResourceService implements Resource {
     );
     let parent_resource = null;
     {
-      parent_resource = new ResourceService({
+      parent_resource = new FileResourceService({
         adapter: this.adapter,
         baseUrl: this.baseUrl,
         pathname: path_to_parent,
@@ -697,7 +697,7 @@ export class ResourceService implements Resource {
 
       return item.children.map(
         child =>
-          new ResourceService({
+          new FileResourceService({
             adapter: this.adapter,
             baseUrl: this.baseUrl,
             pathname: this.pathname.concat([child.name]),

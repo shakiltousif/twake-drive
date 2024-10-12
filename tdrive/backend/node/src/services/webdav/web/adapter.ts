@@ -4,7 +4,7 @@ import { Request } from "express";
 import * as URL from "node:url";
 import * as types from "../../../utils/types";
 import gr from "../../global-resolver";
-import { ResourceService } from "./fileResource";
+import { FileResourceService } from "./file-resource";
 import { executionStorage } from "../../../core/platform/framework/execution-storage";
 
 let AdapterService;
@@ -111,7 +111,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname == "") {
         return null;
       }
-      const resource = new ResourceService({
+      const resource = new FileResourceService({
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),
@@ -141,7 +141,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new ResourceService({
+      const resource = new FileResourceService({
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr,
@@ -170,7 +170,7 @@ const build_adapter = (nephele: any): Adapter => {
       if (pathname_arr.length == 0) {
         throw new nephele.BadGatewayError("This resource is not managed by this adapter");
       }
-      const resource = new ResourceService({
+      const resource = new FileResourceService({
         adapter: this,
         baseUrl: baseUrl,
         pathname: pathname_arr.map(name => decodeURI(name)),

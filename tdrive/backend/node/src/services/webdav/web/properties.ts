@@ -1,13 +1,13 @@
 import type { PropertyNotFoundError, Properties, User } from "nephele";
-import { ResourceService } from "./fileResource";
+import { FileResourceService } from "./file-resource";
 
 export class PropertiesService implements Properties {
   /**
    * The resource these properties belong to.
    */
-  resource: ResourceService;
+  resource: FileResourceService;
 
-  constructor(resource: ResourceService) {
+  constructor(resource: FileResourceService) {
     this.resource = resource;
   }
   /**
