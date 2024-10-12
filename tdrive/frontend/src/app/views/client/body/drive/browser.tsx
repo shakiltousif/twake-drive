@@ -160,7 +160,7 @@ export default memo(
 
     const selectedCount = Object.values(checked).filter(v => v).length;
 
-    const onBuildContextMenu = useOnBuildContextMenu(children, initialParentId);
+    const onBuildContextMenu = useOnBuildContextMenu(children, initialParentId, inPublicSharing);
     const onBuildSortContextMenu = useOnBuildSortContextMenu();
 
     const handleDragOver = (event: { preventDefault: () => void }) => {
@@ -227,8 +227,8 @@ export default memo(
       const commonProps = {
         key: index,
         className:
-          (index === 0 ? 'rounded-t-md ' : '') +
-          (index === documents.length - 1 ? 'rounded-b-md ' : ''),
+          (index === 0 ? 'rounded-t-md ' : '-mt-px ') +
+          (index === items.length - 1 ? 'rounded-b-md ' : ''),
         item: child,
         checked: checked[child.id] || false,
         onCheck: (v: boolean) => setChecked(_.pickBy({ ...checked, [child.id]: v }, _.identity)),
@@ -238,7 +238,7 @@ export default memo(
       return isMobile ? (
         <DocumentRow {...commonProps} />
       ) : (
-        <Draggable id={index}>
+        <Draggable id={index} key={index}>
           <DocumentRow {...commonProps} />
         </Draggable>
       );
@@ -402,7 +402,7 @@ export default memo(
                         sortLabel.order === 'asc' ? 'transform rotate-180' : ''
                       }`}
                     />
-                    <span>By {sortLabel.by}</span>
+                    <span>{Languages.t('components.item_context_menu.sorting.selected.' + sortLabel.by)}</span>
                     <ChevronDownIcon className="h-4 w-4 ml-2 -mr-1" />
                   </Button>
                 </Menu>
@@ -450,7 +450,7 @@ export default memo(
                         <FolderRow
                           key={index}
                           className={
-                            (index === 0 ? 'rounded-t-md ' : '') +
+                            (index === 0 ? 'rounded-t-md ' : '-mt-px ') +
                             (index === items.length - 1 ? 'rounded-b-md ' : '')
                           }
                           item={child}
@@ -476,7 +476,7 @@ export default memo(
                     {activeIndex ? (
                       <DocumentRowOverlay
                         className={
-                          (activeIndex === 0 ? 'rounded-t-md ' : '') +
+                          (activeIndex === 0 ? 'rounded-t-md ' : '-mt-px ') +
                           (activeIndex === items.length - 1 ? 'rounded-b-md ' : '')
                         }
                         item={activeChild}

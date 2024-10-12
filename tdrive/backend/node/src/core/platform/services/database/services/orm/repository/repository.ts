@@ -43,6 +43,11 @@ export type FindOptions = {
   sort?: SortOption;
 };
 
+export type AtomicCompareAndSetResult<FieldValueType> = {
+  didSet: boolean;
+  currentValue: FieldValueType | null;
+};
+
 /**
  * Repository to work with entities. Each entity type has its own repository instance.
  */
@@ -129,31 +134,23 @@ export default class Repository<EntityType> {
     fieldName: keyof EntityType,
     previousValue: FieldValueType | null,
     newValue: FieldValueType | null,
-  ): Promise<{
-    didSet: boolean;
-    currentValue: FieldValueType | null;
-  }> {
+  ): Promise<AtomicCompareAndSetResult<FieldValueType>> {
     if (previousValue === newValue)
       throw new Error(`Previous and new values are identical: ${JSON.stringify(previousValue)}`);
-    await this.manager.flush().then(manager => manager.reset());
     return this.connector.atomicCompareAndSet(entity, fieldName, previousValue, newValue);
   }
 
   async save(entity: EntityType, _context?: ExecutionContext): Promise<void> {
-    this.manager.persist(entity);
-    return this.manager.flush().then(manager => manager.reset());
+    await this.manager.persist(entity);
   }
 
   async saveAll(entities: EntityType[] = [], _context?: ExecutionContext): Promise<void> {
     logger.debug("services.database.repository - Saving entities");
-
-    entities.forEach(entity => this.manager.persist(entity));
-    return this.manager.flush().then(manager => manager.reset());
+    await Promise.all(entities.map(entity => this.manager.persist(entity)));
   }
 
   async remove(entity: EntityType, _context?: ExecutionContext): Promise<void> {
-    this.manager.remove(entity);
-    return this.manager.flush().then(manager => manager.reset());
+    await this.manager.remove(entity);
   }
 
   //Avoid using this except when no choice

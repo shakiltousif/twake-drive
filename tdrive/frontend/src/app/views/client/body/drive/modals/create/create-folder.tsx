@@ -23,7 +23,7 @@ export const CreateFolder = () => {
   }, []);
 
   const createFolderHandler = async () => {
-    await create({ name, parent_id: state.parent_id, is_directory: true }, {});
+    await create({ name: (name || '').trim(), parent_id: state.parent_id, is_directory: true }, {});
     setState({ ...state, open: false });
   }
 
@@ -46,7 +46,7 @@ export const CreateFolder = () => {
         />
       </div>
       <Button
-        disabled={!name}
+        disabled={!(name || '').trim()}
         loading={loading}
         className="mt-4 float-right"
         onClick={createFolderHandler}

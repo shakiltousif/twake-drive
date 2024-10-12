@@ -137,21 +137,19 @@ export default class StorageService extends TdriveService<StorageAPI> implements
     try {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this;
-
       const chunks = options?.totalChunks || 1;
       let count = 1;
 
-      //check that the file a really exists
+      // Check if the first chunk or file exists
       await self._read(options?.totalChunks ? `${path}/chunk${count}` : path);
 
-      let stream: any;
       async function factory(callback: (err?: Error, stream?: Stream) => unknown) {
         if (count > chunks) {
           callback();
           return;
         }
 
-        let decipher: Decipher;
+        let decipher: Decipher | undefined;
         if (options?.encryptionKey) {
           const [key, iv] = options.encryptionKey.split(".");
           decipher = createDecipheriv(options.encryptionAlgo || this.algorithm, key, iv);
@@ -161,17 +159,15 @@ export default class StorageService extends TdriveService<StorageAPI> implements
         count += 1;
 
         try {
-          stream = await self._read(chunk);
+          let stream = await self._read(chunk); // Read the chunk
           if (decipher) {
-            stream = stream.pipe(decipher);
+            stream = stream.pipe(decipher); // Apply decipher if necessary
           }
-          callback(null, stream);
+          callback(null, stream); // Return the stream only once
         } catch (err) {
           logger.error(err);
           callback(err, null);
         }
-        callback(null, stream);
-        return;
       }
 
       return new Multistream(factory);

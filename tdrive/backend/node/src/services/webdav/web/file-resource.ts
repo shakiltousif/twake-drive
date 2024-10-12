@@ -109,6 +109,7 @@ export class FileResourceService implements Resource {
         this.file = (
           await gr.services.documents.documents.get(
             this.pathIds[this.pathIds.length - 1],
+            undefined,
             this.context,
           )
         ).item;
@@ -693,7 +694,7 @@ export class FileResourceService implements Resource {
       new Error("Files do not support this method") as MethodNotSupportedError,
     );
     try {
-      const item = await gr.services.documents.documents.get(this.file.id, this.context);
+      const item = await gr.services.documents.documents.get(this.file.id, undefined, this.context);
 
       return item.children.map(
         child =>
@@ -717,7 +718,8 @@ export class FileResourceService implements Resource {
    */
   getVersions = async (): Promise<FileVersion[]> => {
     assert(await this.exists(), new Error("ResourceNotFoundError") as ResourceNotFoundError);
-    return (await gr.services.documents.documents.get(this.file.id, this.context)).versions;
+    return (await gr.services.documents.documents.get(this.file.id, undefined, this.context))
+      .versions;
   };
 
   /**

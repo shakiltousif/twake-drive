@@ -27,11 +27,18 @@ import useRouterCompany from '@features/router/hooks/use-router-company';
 import _, { set } from 'lodash';
 import Languages from 'features/global/services/languages-service';
 import { hasAnyPublicLinkAccess } from '@features/files/utils/access-info-helpers';
+import FeatureTogglesService, {
+  FeatureNames,
+} from '@features/global/services/feature-toggles-service';
 
 /**
  * This will build the context menu in different contexts
  */
-export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: string) => {
+export const useOnBuildContextMenu = (
+  children: DriveItem[],
+  initialParentId?: string,
+  inPublicSharing?: boolean,
+) => {
   const [checkedIds, setChecked] = useRecoilState(DriveItemSelectedList);
   const checked = children.filter(c => checkedIds[c.id]);
 
@@ -55,7 +62,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
   const company = useRouterCompany();
 
   function getIdsFromArray(arr: DriveItem[]): string[] {
-    return arr.map((obj) => obj.id);
+    return arr.map(obj => obj.id);
   }
 
   return useCallback(
@@ -63,7 +70,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
       if (!parent || !parent.access) return [];
 
       try {
-        const inTrash = parent.path?.[0]?.id.includes('trash') || viewId?.includes("trash");
+        const inTrash = parent.path?.[0]?.id.includes('trash') || viewId?.includes('trash');
         const isPersonal = item?.scope === 'personal';
         const selectedCount = checked.length;
 
@@ -85,10 +92,14 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               type: 'menu',
               icon: 'users-alt',
               text: Languages.t('components.item_context_menu.manage_access'),
-              hide: access === 'read' || getPublicLinkToken() || inTrash,
+              hide:
+                access === 'read' ||
+                getPublicLinkToken() ||
+                inTrash ||
+                !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_MANAGE_ACCESS),
               onClick: () => setAccessModalState({ open: true, id: item.id }),
             },
-            { type: 'separator' },
+            { type: 'separator', hide: inTrash },
             {
               type: 'menu',
               icon: 'download-alt',
@@ -100,7 +111,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                 } else {
                   download(item.id);
                 }
-              }
+              },
             },
             /*TODO: fix loading of preview in new window and uncomment. See https://github.com/linagora/twake-drive/issues/603 .
             {
@@ -144,13 +155,16 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               icon: 'file-edit-alt',
               text: Languages.t('components.item_context_menu.rename'),
               hide: access === 'read' || inTrash,
-              onClick: () => setPropertiesModalState({ open: true, id: item.id }),
+              onClick: () => setPropertiesModalState({ open: true, id: item.id, inPublicSharing }),
             },
             {
               type: 'menu',
               icon: 'link',
               text: Languages.t('components.item_context_menu.copy_link'),
-              hide: !item.access_info.public?.level || item.access_info.public?.level === 'none' || inTrash,
+              hide:
+                !item.access_info.public?.level ||
+                item.access_info.public?.level === 'none' ||
+                inTrash,
               onClick: () => {
                 copyToClipboard(getPublicLink(item || parent?.item));
                 ToasterService.success(
@@ -165,7 +179,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
               hide: item.is_directory || inTrash,
               onClick: () => setVersionModal({ open: true, id: item.id }),
             },
-            { type: 'separator', hide: access !== 'manage' || inTrash, },
+            { type: 'separator', hide: access !== 'manage' || inTrash },
             {
               type: 'menu',
               icon: 'trash',
@@ -203,7 +217,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.move_multiple'),
-              hide: parent.access === 'read',
+              hide: parent.access === 'read' || inTrash,
               onClick: () =>
                 setSelectorModalState({
                   open: true,
@@ -227,6 +241,7 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.download_multiple'),
+              hide: inTrash,
               onClick: () =>
                 selectedCount === 1 ? download(checked[0].id) : downloadZip(checked.map(c => c.id)),
             },
@@ -270,12 +285,6 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
             ? [
                 {
                   type: 'menu',
-                  text: Languages.t('components.item_context_menu.trash.exit'),
-                  onClick: () => setParentId('root'),
-                },
-                { type: 'separator' },
-                {
-                  type: 'menu',
                   text: Languages.t('components.item_context_menu.trash.empty'),
                   className: 'error',
                   hide: !inTrash,
@@ -304,10 +313,12 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                     if (parent.children && parent.children.length > 0) {
                       downloadZip([parent.item!.id]);
                     } else if (parent.item) {
-                      console.log("Download folder itself");
+                      console.log('Download folder itself');
                       download(parent.item.id);
                     } else {
-                      console.error("Very strange, everything is null, you are trying to download undefined");
+                      console.error(
+                        'Very strange, everything is null, you are trying to download undefined',
+                      );
                     }
                   },
                 },
@@ -322,13 +333,13 @@ export const useOnBuildContextMenu = (children: DriveItem[], initialParentId?: s
                     );
                   },
                 },
-                { type: 'separator', hide: parent.item!.id != 'root', },
+                { type: 'separator', hide: parent.item!.id != 'root' },
                 {
                   type: 'menu',
                   text: Languages.t('components.item_context_menu.manage_users'),
                   hide: parent.item!.id != 'root',
                   onClick: () => setUsersModalState({ open: true }),
-                }
+                },
               ];
           if (menu.length && newMenuActions.filter(a => !a.hide).length) {
             menu = [...menu, { type: 'separator' }];
@@ -525,7 +536,7 @@ export const useOnBuildSortContextMenu = () => {
     const menuItems = [
       {
         type: 'menu',
-        text: 'Date',
+        text: Languages.t('components.item_context_menu.sorting.by.date'),
         icon: sortItem.by === 'date' ? 'check' : 'sort-check',
         onClick: () => {
           // keep the old value for sortItem and change the by value
@@ -540,7 +551,7 @@ export const useOnBuildSortContextMenu = () => {
       },
       {
         type: 'menu',
-        text: 'Name',
+        text: Languages.t('components.item_context_menu.sorting.by.name'),
         icon: sortItem.by === 'name' ? 'check' : 'sort-check',
         onClick: () => {
           setSortItem(prevSortItem => {
@@ -554,7 +565,7 @@ export const useOnBuildSortContextMenu = () => {
       },
       {
         type: 'menu',
-        text: 'Size',
+        text: Languages.t('components.item_context_menu.sorting.by.size'),
         icon: sortItem.by === 'size' ? 'check' : 'sort-check',
         onClick: () => {
           setSortItem(prevSortItem => {
@@ -569,7 +580,7 @@ export const useOnBuildSortContextMenu = () => {
       {type:"separator"},
       {
         type: 'menu',
-        text: 'Ascending',
+        text: Languages.t('components.item_context_menu.sorting.order.asc'),
         icon: sortItem.order === 'asc' ? 'check' : 'sort-check',
         onClick: () => {
           setSortItem(prevSortItem => {
@@ -583,7 +594,7 @@ export const useOnBuildSortContextMenu = () => {
       },
       {
         type: 'menu',
-        text: 'Descending',
+        text: Languages.t('components.item_context_menu.sorting.order.desc'),
         icon: sortItem.order === 'desc' ? 'check' : 'sort-check',
         onClick: () => {
           setSortItem(prevSortItem => {

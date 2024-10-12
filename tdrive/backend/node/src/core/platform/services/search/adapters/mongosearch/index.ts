@@ -211,7 +211,12 @@ export default class MongoSearch extends SearchAdapter implements SearchAdapterI
     logger.info(`Search query: ${JSON.stringify(query)}`);
     console.log(query);
 
-    let cursor = collection.find(query).sort(sort);
+    const sortMapped: any = sort
+      ? Object.fromEntries(
+          Object.entries(sort).map(([field, direction]) => [field, direction === "asc" ? 1 : -1]),
+        )
+      : {};
+    let cursor = collection.find(query).sort(sortMapped);
     if (project) {
       cursor = cursor.project(project);
     }

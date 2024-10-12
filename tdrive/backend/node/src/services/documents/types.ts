@@ -61,8 +61,8 @@ export type SearchDocumentsOptions = {
 
 export type BrowseDocumentsOptions = {
   filter?: SearchDocumentsBody;
-  sort?: SortDocumentsBody;
-  paginate?: PaginateDocumentBody;
+  sort?: SortType;
+  paginate?: Paginable;
 };
 
 export type SearchDocumentsBody = {
@@ -85,7 +85,7 @@ export type SortDocumentsBody = {
 };
 
 export type PaginateDocumentBody = {
-  page: number;
+  page?: string;
   limit: number;
 };
 

@@ -71,7 +71,7 @@ const ChangePublicLinkAccessLevelRow = (props: {
       subtitle={Languages.t("components.public-link-access-level-update-subtitle")}
       suffix={
         <AccessLevelDropdown
-          className='!p-0 leading-tight text-end !pr-8 border-none bg-transparent dark:bg-transparent'
+          className='leading-tight text-end !pl-5 !pr-8 border-none bg-white dark:bg-zinc-900'
           disabled={props.disabled}
           size={'sm'}
           noRedWhenLevelNone={true}
