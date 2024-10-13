@@ -70,7 +70,7 @@ export class Resource implements INepheleResource {
     this.is_collection = is_collection;
   }
 
-  loadPath = async (pathname: string[]): Promise<string[]> => {
+  private async loadPath(pathname: string[]): Promise<string[]> {
     // const path: string[] = [];
     // TODO[ASH] remove the next two lines and do actual rooting
     const root = pathname.shift();
@@ -87,12 +87,12 @@ export class Resource implements INepheleResource {
       return path;
     }
     return [undefined];
-  };
+  }
 
   /**
    * Check if the resource exists
    */
-  exists = async (): Promise<boolean> => {
+  async exists(): Promise<boolean> {
     if (!this.file) {
       // try to load by pathname
       try {
@@ -115,19 +115,19 @@ export class Resource implements INepheleResource {
       }
     }
     return true;
-  };
+  }
 
   /**
    * Returns execution context for the user based on the execution context of the resource
    *
-   * @param _user
+   * @param user
    */
-  getUserContext = (_user: INepheleUser): DriveExecutionContext => {
+  getUserContext(user: INepheleUser): DriveExecutionContext {
     const context = this.context;
-    context.user.id = _user.username;
-    context.company.id = _user.groupname;
+    context.user.id = user.username;
+    context.company.id = user.groupname;
     return context;
-  };
+  }
 
   /**
    * Return any locks currently saved for this resource.
@@ -137,7 +137,7 @@ export class Resource implements INepheleResource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocks = async (): Promise<INepheleLock[]> => {
+  async getLocks(): Promise<INepheleLock[]> {
     if (!this.file || !this.file.locks) return [];
 
     return this.file.locks.map(lock =>
@@ -148,7 +148,7 @@ export class Resource implements INepheleResource {
         lock,
       ),
     );
-  };
+  }
 
   /**
    * Return any locks currently saved for this resource for the given user.
@@ -158,7 +158,7 @@ export class Resource implements INepheleResource {
    * Don't worry about timed out locks. Nephele will check for them and delete
    * them.
    */
-  getLocksByUser = async (_user: INepheleUser): Promise<INepheleLock[]> => {
+  async getLocksByUser(_user: INepheleUser): Promise<INepheleLock[]> {
     if (!this.file || !this.file.locks) return [];
     return this.file.locks.map(
       lock =>
@@ -171,7 +171,7 @@ export class Resource implements INepheleResource {
           provisional: lock.provisional,
         }),
     );
-  };
+  }
 
   /**
    * Create a new lock for this user.
@@ -179,19 +179,19 @@ export class Resource implements INepheleResource {
    * The defaults for the lock don't matter. They will be assigned by Nephele
    * before being saved to storage.
    */
-  createLockForUser = async (user: INepheleUser): Promise<INepheleLock> => {
+  async createLockForUser(user: INepheleUser): Promise<INepheleLock> {
     const lock = new Lock(this.nephele, this, this.getUserContext(user), {
       owner: { name: user.username },
     });
     return lock;
-  };
+  }
 
   /**
    * Return a properties object for this resource.
    */
-  getProperties = async (): Promise<INepheleProperties> => {
+  async getProperties(): Promise<INepheleProperties> {
     return new PropertiesService(this.nephele, this);
-  };
+  }
 
   /**
    * Get a readable stream of the content of the resource.
@@ -203,7 +203,7 @@ export class Resource implements INepheleResource {
    * stream. You should listen for this event and clean up any open file handles
    * or streams.
    */
-  getStream = async (range?: { start: number; end: number }): Promise<Readable> => {
+  async getStream(range?: { start: number; end: number }): Promise<Readable> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
     const downloadObject = await gr.services.documents.documents.download(
       this.file.id,
@@ -258,7 +258,7 @@ export class Resource implements INepheleResource {
       }
     });
     return stream;
-  };
+  }
 
   /**
    * Put the input stream into the resource.
@@ -266,7 +266,7 @@ export class Resource implements INepheleResource {
    * If the resource is a collection, and it can't accept a stream (like a
    * folder on a filesystem), a MethodNotSupportedError may be thrown.
    */
-  setStream = async (input: Readable, user: INepheleUser, mediaType?: string): Promise<void> => {
+  async setStream(input: Readable, user: INepheleUser, mediaType?: string): Promise<void> {
     if (!(await this.exists())) await this.create(user);
     if (
       !(await checkAccess(
@@ -335,7 +335,8 @@ export class Resource implements INepheleResource {
       console.error("Error saveChunk:", error);
       throw error;
     }
-  };
+  }
+
   /**
    * Create the resource.
    *
@@ -347,7 +348,7 @@ export class Resource implements INepheleResource {
    *
    * If the resource already exists, a ResourceExistsError should be thrown.
    */
-  create = async (user: INepheleUser): Promise<void> => {
+  async create(user: INepheleUser): Promise<void> {
     // TODO: check for shared files
     if (await this.exists()) throw new this.nephele.ResourceExistsError();
 
@@ -377,7 +378,7 @@ export class Resource implements INepheleResource {
     // TODO: when creating file needed to create an empty file
     // TODO: move it to the create function in documents service
     await gr.services.documents.documents.getAccess(this.file.id, user.username, user_context);
-  };
+  }
 
   /**
    * Delete the resource.
@@ -392,7 +393,7 @@ export class Resource implements INepheleResource {
    * If no one has permission to delete the resource, a ForbiddenError should be
    * thrown.
    */
-  delete = async (user: INepheleUser): Promise<void> => {
+  async delete(user: INepheleUser): Promise<void> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
     if (
       !checkAccess(
@@ -425,7 +426,7 @@ export class Resource implements INepheleResource {
         throw new this.nephele.InternalServerError("Failed to delete the resource!");
       }
     }
-  };
+  }
 
   /**
    * Copy the resource to the destination.
@@ -454,8 +455,8 @@ export class Resource implements INepheleResource {
    * or the destination falls under the source itself, a ForbiddenError should
    * be thrown.
    */
-  //TODO: check copying collection into itself
-  copy = async (destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> => {
+  async copy(destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> {
+    //TODO: check copying collection into itself
     // remove trailing slashes and make an array from it
     let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
@@ -495,7 +496,7 @@ export class Resource implements INepheleResource {
       new_content,
       this.getUserContext(user),
     );
-  };
+  }
 
   /**
    * Move the resource to the destination.
@@ -524,7 +525,7 @@ export class Resource implements INepheleResource {
    * or the destination falls under the source itself, a ForbiddenError should
    * be thrown.
    */
-  move = async (destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> => {
+  async move(destination: URL, baseUrl: URL, user: INepheleUser): Promise<void> {
     // remove trailing slashes and make an array from it
     let pathname = decodeURI(destination.pathname);
     pathname = pathname.replace(baseUrl.pathname, "");
@@ -564,31 +565,31 @@ export class Resource implements INepheleResource {
       new_content,
       this.getUserContext(user),
     );
-  };
+  }
 
   /**
    * Return the length, in bytes, of this resource's content (what would be
    * returned from getStream).
    */
-  getLength = async (): Promise<number> => {
+  async getLength(): Promise<number> {
     if (!(await this.exists()) || (await this.isCollection())) {
       return Promise.resolve(0);
     }
 
     return calculateItemSize(this.file, gr.services.documents.documents.repository, this.context);
-  };
+  }
 
   /**
    * Return the current ETag for this resource.
    */
-  getEtag = async (): Promise<string> => {
+  async getEtag(): Promise<string> {
     try {
       return this.file.last_version_cache.id;
     } catch (err) {
       // console.log("No Version Cache for ", this);
       return "none";
     }
-  };
+  }
 
   /**
    * MIME type.
@@ -598,31 +599,31 @@ export class Resource implements INepheleResource {
    * If the resource doesn't have a media type (like a folder in a filesystem),
    * return null.
    */
-  getMediaType = async (): Promise<string | null> => {
+  async getMediaType(): Promise<string | null> {
     return !(await this.exists()) || (await this.isCollection())
       ? null
       : this.file.last_version_cache.file_metadata.mime;
-  };
+  }
 
   /**
    * The canonical name of the resource. (The basename of its path.)
    */
-  getCanonicalName = async (): Promise<string> => {
+  async getCanonicalName(): Promise<string> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
 
     return this.file.name;
-  };
+  }
 
   /**
    * The canonical path relative to the root of the adapter.
    *
    * This should **not** be URL encoded.
    */
-  getCanonicalPath = async (): Promise<string> => {
+  async getCanonicalPath(): Promise<string> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
 
     return this.pathname.join("/");
-  };
+  }
 
   /**
    * The canonical URL must be within the adapter's namespace, and must
@@ -631,7 +632,7 @@ export class Resource implements INepheleResource {
    * The adapter's namespace in the current request is provided to the adapter
    * as `baseUrl` when the resource is requested.
    */
-  getCanonicalUrl = async (): Promise<URL> => {
+  async getCanonicalUrl(): Promise<URL> {
     return new URL(
       (await this.getCanonicalPath())
         .split("/")
@@ -640,14 +641,14 @@ export class Resource implements INepheleResource {
         .replace(/^\//, () => ""),
       this.baseUrl,
     );
-  };
+  }
 
   /**
    * Return whether this resource is a collection.
    */
-  isCollection = async (): Promise<boolean> => {
+  async isCollection(): Promise<boolean> {
     return this.is_collection;
-  };
+  }
 
   /**
    * Get the internal members of the collection.
@@ -659,7 +660,7 @@ export class Resource implements INepheleResource {
    * If the user doesn't have permission to see the internal members, an
    * UnauthorizedError should be thrown.
    */
-  getInternalMembers = async (user: INepheleUser): Promise<INepheleResource[]> => {
+  async getInternalMembers(user: INepheleUser): Promise<INepheleResource[]> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
     if (
       !(await checkAccess(
@@ -692,27 +693,28 @@ export class Resource implements INepheleResource {
       console.error(err);
       throw new this.nephele.BadGatewayError(err);
     }
-  };
+  }
+
   /**
    * Returns last version about the resource
    */
-  getVersions = async (): Promise<FileVersion[]> => {
+  async getVersions(): Promise<FileVersion[]> {
     if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
     return (await gr.services.documents.documents.get(this.file.id, undefined, this.context))
       .versions;
-  };
+  }
 
   /**
    * Returns total space used by user
    */
-  getTotalSpace = async (): Promise<number> => {
+  async getTotalSpace(): Promise<number> {
     return await gr.services.documents.documents.userQuota(this.context);
-  };
+  }
 
   /**
    * Returns free space for the user
    */
-  getFreeSpace = async (): Promise<number> => {
+  async getFreeSpace(): Promise<number> {
     return gr.services.documents.documents.defaultQuota - (await this.getTotalSpace());
-  };
+  }
 }

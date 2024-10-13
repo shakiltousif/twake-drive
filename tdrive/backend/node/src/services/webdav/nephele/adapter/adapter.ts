@@ -32,15 +32,10 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * (the string "2") in the returned array to indicate that the "LOCK" and
      * "UNLOCK" methods should be included in the "Allow" header.
      */
-    getComplianceClasses = async (
-      _url: URL,
-      _request: Request,
-      _response: INepheleAuthResponse,
-    ) => {
+    async getComplianceClasses(_url: URL, _request: Request, _response: INepheleAuthResponse) {
       // "2" - means that the Adapter ( i.e. file system supports lock / unlock function )
       return ["2"];
-      // return Promise.resolve([]);
-    };
+    }
 
     /**
      * Get a list of allowed methods that this adapter supports.
@@ -59,13 +54,13 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * Any methods this function returns are entirely the responsibility of the
      * adapter to fulfill, beyond simple authorization and error responses.
      */
-    getAllowedMethods = async (url: URL, request: Request, response: INepheleAuthResponse) => {
+    async getAllowedMethods(url: URL, request: Request, response: INepheleAuthResponse) {
       if ("2" in (await this.getComplianceClasses(url, request, response))) {
         return ["LOCK", "UNLOCK"];
       } else {
         return [];
       }
-    };
+    }
 
     /**
      * Get the "Cache-Control" header for the OPTIONS response.
@@ -77,13 +72,13 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * that information to determine whether resources exist on a server and what
      * features they support.
      */
-    getOptionsResponseCacheControl = async (
+    async getOptionsResponseCacheControl(
       _url: URL,
       _request: Request,
       _response: INepheleAuthResponse,
-    ) => {
+    ) {
       return "max-age=604800";
-    };
+    }
 
     /**
      * See whether the request is authorized, based on a URL and a method.
@@ -96,15 +91,15 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * @param baseUrl The root of the WebDav server's namespace on the server.
      * @param user The user to check authorization for.
      */
-    isAuthorized = async (
+    async isAuthorized(
       url: URL,
       method: string,
       baseUrl: URL,
       user: INepheleUser,
-    ): Promise<boolean> => {
+    ): Promise<boolean> {
       const UserByUsername = await gr.services.users.get({ id: user.username });
       return UserByUsername != null;
-    };
+    }
 
     /**
      * Get a resource's object.
@@ -117,7 +112,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    getResource = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
+    async getResource(url: URL, baseUrl: URL): Promise<INepheleResource> {
       const context = getDriveExecutionContext(baseUrl);
       let pathname = url.pathname;
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -137,7 +132,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
         throw new nephele.ResourceNotFoundError("Resource not found");
       }
       return resource;
-    };
+    }
     /**
      * Create a new non-collection resource object.
      *
@@ -147,7 +142,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    newResource = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
+    async newResource(url: URL, baseUrl: URL): Promise<INepheleResource> {
       const context = getDriveExecutionContext(url);
       let pathname = decodeURI(url.pathname);
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -165,7 +160,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
         is_collection: false,
       });
       return resource;
-    };
+    }
 
     /**
      * Create a new collection resource object.
@@ -176,7 +171,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * @param url Resource URL.
      * @param baseUrl The root of the adapter's namespace on the server.
      */
-    newCollection = async (url: URL, baseUrl: URL): Promise<INepheleResource> => {
+    async newCollection(url: URL, baseUrl: URL): Promise<INepheleResource> {
       const context = getDriveExecutionContext(url);
       let pathname = url.pathname;
       pathname = pathname.replace(baseUrl.pathname, "");
@@ -194,7 +189,7 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
         is_collection: true,
       });
       return resource;
-    };
+    }
 
     /**
      * Get a handler class for an additional method.
@@ -209,12 +204,12 @@ const build_adapter = (nephele: NepheleModule): INepheleAdapter => {
      * be thrown. If the method is not recognized, a MethodNotImplementedError
      * should be thrown.
      */
-    getMethod = (method: string): typeof Method => {
+    getMethod(method: string): typeof Method {
       if (method === "PROPATCH") {
         throw new nephele.MethodNotSupportedError();
       }
       throw new nephele.MethodNotImplementedError();
-    };
+    }
   }
   return new WebDAVAdapter();
 };

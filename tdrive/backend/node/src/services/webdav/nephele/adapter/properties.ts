@@ -39,11 +39,11 @@ export class PropertiesService implements INepheleProperties {
    * Any property not in the DAV: namespace will have its namespace and the
    * string '%%' prepended to its name, like "LCGDM:%%mode".
    */
-  get = async (_name: string): Promise<string | object | object[] | undefined> => {
+  async get(name: string): Promise<string | object | object[] | undefined> {
     // const versions = await this.resource.getVersions();
     const replyWithDate = (ts?: number) =>
       (typeof ts === "number" ? new Date(ts) : new Date()).toISOString();
-    switch (_name) {
+    switch (name) {
       case "creationdate":
         return replyWithDate(this.resource.file.added);
       case "displayname":
@@ -88,20 +88,20 @@ export class PropertiesService implements INepheleProperties {
       case "quota-used-bytes":
         return `${await this.resource.getTotalSpace()}`;
       default:
-        throw new this.nephele.PropertyNotFoundError();
+        throw new this.nephele.PropertyNotFoundError(`Unknown property ${JSON.stringify(name)}`);
     }
-  };
+  }
 
   /**
    * Same as get, but for a specific user.
    */
-  getByUser = async (
+  async getByUser(
     name: string,
     _user: INepheleUser,
-  ): Promise<string | object | object[] | undefined> => {
+  ): Promise<string | object | object[] | undefined> {
     // TODO: implement get property by user
     return this.get(name);
-  };
+  }
 
   /**
    * Set a property's value.
@@ -127,34 +127,34 @@ export class PropertiesService implements INepheleProperties {
    *
    * - lockdiscovery
    */
-  set = (_name: string, _value: string | object | object[] | undefined): Promise<void> => {
+  set(_name: string, _value: string | object | object[] | undefined): Promise<void> {
     return Promise.resolve();
-  };
+  }
 
   /**
    * Same as set, but for a specific user.
    */
-  setByUser = (
+  setByUser(
     _name: string,
     _value: string | object | object[] | undefined,
     _user: INepheleUser,
-  ): Promise<void> => {
+  ): Promise<void> {
     return Promise.resolve();
-  };
+  }
 
   /**
    * Completely remove a property.
    */
-  remove = (_name: string): Promise<void> => {
+  remove(_name: string): Promise<void> {
     return Promise.resolve();
-  };
+  }
 
   /**
    * Same as remove, but for a specific user.
    */
-  removeByUser = (_name: string, _user: INepheleUser): Promise<void> => {
+  removeByUser(_name: string, _user: INepheleUser): Promise<void> {
     return Promise.resolve();
-  };
+  }
 
   /**
    * Perform the given instructions, atomically.
@@ -176,21 +176,21 @@ export class PropertiesService implements INepheleProperties {
    * - The value of the property if it is being set, or `undefined` if it is
    *   being removed.
    */
-  runInstructions = (
+  runInstructions(
     _instructions: ["set" | "remove", string, any][],
-  ): Promise<undefined | [string, Error][]> => {
+  ): Promise<undefined | [string, Error][]> {
     return Promise.resolve(undefined);
-  };
+  }
 
   /**
    * Same as runInstructions, but for a specific user.
    */
-  runInstructionsByUser = (
+  runInstructionsByUser(
     _instructions: ["set" | "remove", string, any][],
     _user: INepheleUser,
-  ): Promise<undefined | [string, Error][]> => {
+  ): Promise<undefined | [string, Error][]> {
     return Promise.resolve(undefined);
-  };
+  }
 
   /**
    * Return all the defined properties.
@@ -207,7 +207,7 @@ export class PropertiesService implements INepheleProperties {
    *
    * - lockdiscovery
    */
-  getAll = async (): Promise<{ [k: string]: string | object | object[] }> => {
+  async getAll(): Promise<{ [k: string]: string | object | object[] }> {
     const properties = [
       "creationdate",
       "displayname",
@@ -228,14 +228,14 @@ export class PropertiesService implements INepheleProperties {
       }
     }
     return result;
-  };
+  }
 
   /**
    * Same as getAll, but for a specific user.
    */
-  getAllByUser = (_user: INepheleUser): Promise<{ [k: string]: string | object | object[] }> => {
+  getAllByUser(_user: INepheleUser): Promise<{ [k: string]: string | object | object[] }> {
     return this.getAll();
-  };
+  }
 
   /**
    * Return the names of all properties.
@@ -246,16 +246,16 @@ export class PropertiesService implements INepheleProperties {
    *
    * - lockdiscovery
    */
-  list = (): Promise<string[]> => {
+  list(): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 
   /**
    * Same as list, but for a specific user.
    */
-  listByUser = (_user: INepheleUser): Promise<string[]> => {
+  listByUser(_user: INepheleUser): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 
   /**
    * Return the names of all live properties.
@@ -266,28 +266,28 @@ export class PropertiesService implements INepheleProperties {
    *
    * - lockdiscovery
    */
-  listLive = (): Promise<string[]> => {
+  listLive(): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 
   /**
    * Same as listLive, but for a specific user.
    */
-  listLiveByUser = (_user: INepheleUser): Promise<string[]> => {
+  listLiveByUser(_user: INepheleUser): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 
   /**
    * Return the names of all dead properties.
    */
-  listDead = (): Promise<string[]> => {
+  listDead(): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 
   /**
    * Same as listDead, but for a specific user.
    */
-  listDeadByUser = (_user: INepheleUser): Promise<string[]> => {
+  listDeadByUser(_user: INepheleUser): Promise<string[]> {
     return Promise.resolve(["undefined"]);
-  };
+  }
 }
