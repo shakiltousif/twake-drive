@@ -5,6 +5,8 @@ import { executionStorage } from "../../../core/platform/framework/execution-sto
 import { INepheleAuthenticator, INepheleAuthResponse, INepheleUser, NepheleModule } from "./loader";
 
 export function createAuthenticator(nephele: NepheleModule): INepheleAuthenticator {
+  const setAuthenticateHeader = (response: INepheleAuthResponse) =>
+    response.setHeader("WWW-Authenticate", 'Basic realm="Twake Drive WebDAV", charset="UTF-8"');
   return {
     authenticate: async (
       request: express.Request,
@@ -22,21 +24,21 @@ export function createAuthenticator(nephele: NepheleModule): INepheleAuthenticat
             password: devicePassword,
           });
           if (device.type !== DeviceTypesEnum.WebDAV)
-            throw new Error(`Invalid device ${deviceId} type, expected WebDAV`);
+            throw new nephele.UnauthorizedError(`Invalid device ${deviceId} type, expected WebDAV`);
           response.locals.user = {
             username: device.user_id,
             groupname: device.company_id,
           } as INepheleUser;
           executionStorage.getStore().user_id = device.user_id;
           executionStorage.getStore().company_id = device.company_id;
-          response.setHeader("WWW-Authenticate", "Basic");
+          setAuthenticateHeader(response);
           return response.locals.user;
         } catch (error) {
           throw new nephele.UnauthorizedError("Error while authorising");
         }
       } else {
         response.statusCode = 401;
-        response.setHeader("WWW-Authenticate", "Basic");
+        setAuthenticateHeader(response);
         throw new nephele.UnauthorizedError("Unauthorized user!");
       }
     },
@@ -45,7 +47,7 @@ export function createAuthenticator(nephele: NepheleModule): INepheleAuthenticat
       response: INepheleAuthResponse,
     ): Promise<void> => {
       // TODO: think about cleaning the user
-      response.set("WWW-Authenticate", "Basic");
+      setAuthenticateHeader(response);
     },
   };
 }
