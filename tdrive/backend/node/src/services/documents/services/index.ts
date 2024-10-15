@@ -79,6 +79,9 @@ export class DocumentsService {
   defaultQuota: number = config.has("drive.defaultUserQuota")
     ? config.get("drive.defaultUserQuota")
     : 0;
+  manageAccessEnabled: boolean = config.has("drive.featureManageAccess")
+    ? config.get("drive.featureManageAccess")
+    : false;
   logger: TdriveLogger = getLogger("Documents Service");
 
   async init(): Promise<this> {
@@ -222,18 +225,12 @@ export class DocumentsService {
     if (options?.sort) {
       sortField = this.getSortFieldMapping(options.sort);
     }
-    const dbType = await globalResolver.database.getConnector().getType();
 
     // Initialize pagination
     let pagination;
 
-    if (options?.pagination) {
-      const { page_token, limitStr } = options.pagination;
-      const pageNumber =
-        dbType === "mongodb" ? parseInt(page_token) : parseInt(page_token) / parseInt(limitStr);
-
-      pagination = new Pagination(`${pageNumber}`, `${limitStr}`, false);
-    }
+    if (options?.pagination)
+      pagination = globalResolver.database.getConnector().getOffsetPagination(options.pagination);
 
     let children = isDirectory
       ? (
@@ -562,33 +559,38 @@ export class DocumentsService {
             oldParent = item.parent_id;
           }
           if (key === "access_info") {
-            const sharedWith = content.access_info.entities.filter(
-              info =>
-                info.type === "user" &&
-                info.id !== context.user.id &&
-                !item.access_info.entities.find(entity => entity.id === info.id),
-            );
+            // if manage access is disabled, we don't allow changing access level
+            if (!this.manageAccessEnabled) {
+              delete content.access_info;
+            } else if (content.access_info) {
+              const sharedWith = content.access_info.entities.filter(
+                info =>
+                  info.type === "user" &&
+                  info.id !== context.user.id &&
+                  !item.access_info.entities.find(entity => entity.id === info.id),
+              );
 
-            item.access_info = content.access_info;
+              item.access_info = content.access_info;
 
-            if (sharedWith.length > 0) {
-              // Notify the user that the document has been shared with them
-              this.logger.info("Notifying user that the document has been shared with them: ", {
-                sharedWith,
-              });
-              gr.services.documents.engine.notifyDocumentShared({
-                context,
-                item,
-                notificationEmitter: context.user.id,
-                notificationReceiver: sharedWith[0].id,
+              if (sharedWith.length > 0) {
+                // Notify the user that the document has been shared with them
+                this.logger.info("Notifying user that the document has been shared with them: ", {
+                  sharedWith,
+                });
+                gr.services.documents.engine.notifyDocumentShared({
+                  context,
+                  item,
+                  notificationEmitter: context.user.id,
+                  notificationReceiver: sharedWith[0].id,
+                });
+              }
+
+              item.access_info.entities.forEach(info => {
+                if (!info.grantor) {
+                  info.grantor = context.user.id;
+                }
               });
             }
-
-            item.access_info.entities.forEach(info => {
-              if (!info.grantor) {
-                info.grantor = context.user.id;
-              }
-            });
           } else if (key === "name") {
             renamedTo = item.name = await getItemName(
               content.parent_id || item.parent_id,
@@ -1148,7 +1150,15 @@ export class DocumentsService {
     }
 
     if (file) {
-      const fileEntity = await globalResolver.services.files.save(null, file, options, context);
+      const fileEntity = await globalResolver.services.files.save(
+        null,
+        file,
+        {
+          ...options,
+          filename: options.filename ?? driveFile.name,
+        },
+        context,
+      );
 
       await globalResolver.services.documents.documents.createVersion(
         driveFile.id,
@@ -1158,6 +1168,7 @@ export class DocumentsService {
           file_metadata: {
             external_id: fileEntity.id,
             source: "internal",
+            name: file.filename ?? driveFile.name,
           },
         },
         context,
@@ -1184,8 +1195,14 @@ export class DocumentsService {
             )}`,
           );
       } catch (error) {
-        logger.error({ error: `${error}` }, "Failed to cancel editing Drive item");
-        CrudException.throwMe(error, new CrudException("Failed to cancel editing Drive item", 500));
+        logger.error(
+          { error: `${error}` },
+          `Failed to ${keepEditing ? "update" : "end"} editing Drive item`,
+        );
+        CrudException.throwMe(
+          error,
+          new CrudException(`Failed to ${keepEditing ? "update" : "end"} editing Drive item`, 500),
+        );
       }
     }
   };

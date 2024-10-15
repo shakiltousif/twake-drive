@@ -24,6 +24,7 @@ import {
 import { DriveFileDTO } from "../dto/drive-file-dto";
 import { DriveFileDTOBuilder } from "../../services/drive-file-dto-builder";
 import config from "config";
+import { formatAttachmentContentDispositionHeader } from "../../../files/utils";
 
 export class DocumentsController {
   private driveFileDTOBuilder = new DriveFileDTOBuilder();
@@ -421,7 +422,7 @@ export class DocumentsController {
         totalChunks: parseInt(q.resumableTotalChunks || q.total_chunks) || 1,
         totalSize: parseInt(q.resumableTotalSize || q.total_size) || 0,
         chunkNumber: parseInt(q.resumableChunkNumber || q.chunk_number) || 1,
-        filename: q.resumableFilename || q.filename || file?.filename || undefined,
+        filename: q.filename || undefined,
         type: q.resumableType || q.type || file?.mimetype || undefined,
         waitForThumbnail: !!q.thumbnail_sync,
         ignoreThumbnails: false,
@@ -510,9 +511,9 @@ export class DocumentsController {
         return response;
       } else if (archiveOrFile.file) {
         const data = archiveOrFile.file;
-        const filename = encodeURIComponent(data.name.replace(/[^\p{L}0-9 _.-]/gu, ""));
 
-        response.header("Content-disposition", `attachment; filename="${filename}"`);
+        response.header("Content-Disposition", formatAttachmentContentDispositionHeader(data.name));
+
         if (data.size) response.header("Content-Length", data.size);
         response.type(data.mime);
         return response.send(data.file);
@@ -565,7 +566,10 @@ export class DocumentsController {
 
     try {
       const archive = await globalResolver.services.documents.documents.createZip(ids, context);
-      reply.raw.setHeader("content-disposition", 'attachment; filename="twake_drive.zip"');
+      reply.raw.setHeader(
+        "content-disposition",
+        formatAttachmentContentDispositionHeader("twake_drive.zip"),
+      );
 
       archive.on("finish", () => {
         reply.status(200);
