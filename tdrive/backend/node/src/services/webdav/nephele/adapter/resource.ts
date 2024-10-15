@@ -586,8 +586,7 @@ export class Resource implements INepheleResource {
     try {
       return this.file.last_version_cache.id;
     } catch (err) {
-      // console.log("No Version Cache for ", this);
-      return "none";
+      return "";
     }
   }
 
@@ -609,9 +608,7 @@ export class Resource implements INepheleResource {
    * The canonical name of the resource. (The basename of its path.)
    */
   async getCanonicalName(): Promise<string> {
-    if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
-
-    return this.file.name;
+    return this.pathname[this.pathname.length - 1];
   }
 
   /**
@@ -620,8 +617,6 @@ export class Resource implements INepheleResource {
    * This should **not** be URL encoded.
    */
   async getCanonicalPath(): Promise<string> {
-    if (!(await this.exists())) throw new this.nephele.ResourceNotFoundError();
-
     return this.pathname.join("/");
   }
 
