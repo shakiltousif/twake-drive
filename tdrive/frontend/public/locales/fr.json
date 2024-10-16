@@ -47,7 +47,7 @@
     "components.create_modal.upload_folders": "Télécharger des dossiers depuis l'appareil",
     "components.disk_usage.in_trash": "dans la corbeille",
     "components.disk_usage.of": "sur",
-    "components.disk_usage.used": "utilisé",
+    "components.disk_usage.used": "utilisé(s)",
     "components.dragndrop_info_move_to": "déplacé vers",
     "components.drive_dropzone.uploading": "Téléchargement...",
     "components.header_path.my_trash": "Ma corbeille",
