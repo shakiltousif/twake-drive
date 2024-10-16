@@ -41,8 +41,11 @@ export class PropertiesService implements INepheleProperties {
    */
   async get(name: string): Promise<string | object | object[] | undefined> {
     // const versions = await this.resource.getVersions();
-    const replyWithDate = (ts?: number) =>
-      (typeof ts === "number" ? new Date(ts) : new Date()).toISOString();
+    const replyWithDate = (ts?: number) => {
+      // Check if ts is a valid number and greater than 0 to ensure it's a valid timestamp
+      const date = typeof ts === "number" && ts > 0 ? new Date(ts) : new Date();
+      return date.toUTCString(); // Format as HTTP date
+    };
     switch (name) {
       case "creationdate":
         return replyWithDate(this.resource.file.added);
