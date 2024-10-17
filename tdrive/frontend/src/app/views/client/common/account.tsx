@@ -1,5 +1,4 @@
 import Avatar from '@atoms/avatar';
-import { Base, Info } from '@atoms/text';
 import Menu from '@components/menus/menu';
 import LoginService from '@features/auth/login-service';
 import { useCurrentUser } from '@features/users/hooks/use-current-user';
@@ -21,6 +20,18 @@ export default ({ sidebar }: { sidebar?: boolean }): JSX.Element => {
       className="flex flex-row items-center max-w-xs cursor-pointer"
       position="bottom"
       menu={[
+        // user name / email
+        {
+          type: 'text',
+          text: currentUserService.getFullName(user),
+        },
+        {
+          type: 'text',
+          text: user.email,
+          icon: 'envelope-info',
+          hide: !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_DISPLAY_EMAIL),
+        },
+        { type: 'separator' },
         {
           type: 'menu',
           icon: 'user',
@@ -47,19 +58,6 @@ export default ({ sidebar }: { sidebar?: boolean }): JSX.Element => {
         avatar={user.thumbnail}
         title={currentUserService.getFullName(user)}
       />
-      <div
-        className={'sm:block ml-2 mr-2 flex flex-col overflow-hidden ' + (sidebar ? '' : 'hidden')}
-      >
-        <Base className="font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full block -mb-1">
-          {currentUserService.getFullName(user)}
-        </Base>
-
-        { !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_DISPLAY_EMAIL) && (
-          <Info className="font-semibold overflow-hidden text-ellipsis whitespace-nowrap w-full">
-            {user.email}
-          </Info>
-        )}
-      </div>
     </Menu>
   );
 };
