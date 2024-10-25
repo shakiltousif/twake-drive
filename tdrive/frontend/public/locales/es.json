@@ -34,8 +34,6 @@
     "components.notifications.hidden_notifications_button.children": "Mensajes nuevos",
     "components.open_desktop_popup.open_here_link": "Abrir aquí en su lugar",
     "components.open_desktop_popup.subtitle": "abierto en la aplicación Tdrive",
-    "components.public-link-acess.info_acess_expired": "Expirado",
-    "components.public-link-acess.public_link_access": "Accesibilidad del enlace público",
     "components.public-link-copied-info": "Enlace público copiado en el portapapeles",
     "components.public-link-copy": "Copiar enlace en el portapapeles",
     "components.public-link-security": "Seguridad del enlace público",

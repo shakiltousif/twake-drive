@@ -113,8 +113,6 @@
     "components.pending_file_list.estimation.approximations": "Đang chờ ước tính thời gian...",
     "components.pending_file_list.estimation.end": "Sẽ kết thúc",
     "components.public-link-access-level-update-subtitle": "Bất kỳ ai có liên kết đều có quyền truy cập vào",
-    "components.public-link-acess.info_acess_expired": "Hết hạn",
-    "components.public-link-acess.public_link_access": "Chia sẻ bằng một liên kết",
     "components.public-link-copied-info": "Đã sao chép liên kết",
     "components.public-link-copy": "Sao chép đường dẫn",
     "components.public-link-get": "Tạo đường link",

@@ -124,8 +124,6 @@
     "components.pending_file_list.estimation.approximations": "En attente d'estimation de temps...",
     "components.pending_file_list.estimation.end": "Se terminera",
     "components.public-link-access-level-update-subtitle": "Toute personne disposant du lien y a accès à",
-    "components.public-link-acess.info_acess_expired": "Expiré",
-    "components.public-link-acess.public_link_access": "Partager avec un lien",
     "components.public-link-copied-info": "Copié",
     "components.public-link-copy": "Copier le lien",
     "components.public-link-get": "Créer un lien",
