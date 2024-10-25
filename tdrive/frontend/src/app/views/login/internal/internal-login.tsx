@@ -54,7 +54,7 @@ export default () => {
                   server_infos?.configuration?.branding?.name,
                   server_infos?.configuration?.branding.link || 'tdrive.app',
                 ])}
-              <Typography.Link onClick={() => window.open('https://tdriveapp.com', 'blank')}>
+              <Typography.Link onClick={() => window.open('https://drive.twake.app', 'blank')}>
                 {Languages.t('scenes.login.footer.go_to_tdrive')}
               </Typography.Link>
               {' - ' + Globals.version.version}
@@ -63,7 +63,7 @@ export default () => {
           {server_infos_loaded && !server_infos?.configuration?.branding?.name && (
             <Typography.Link
               className="fade_in"
-              onClick={() => window.open('https://tdriveapp.com', 'blank')}
+              onClick={() => window.open('https://drive.twake.app', 'blank')}
             >
               {Languages.t('scenes.login.footer.go_to_tdrive')}
             </Typography.Link>
