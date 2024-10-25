@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Käyttäjänimi",
     "scenes.login.create_account.username_already_exist": "Tämä käyttäjänimi on jo käytössä",
     "scenes.login.footer.branding": "Olet {{$1}} ({{$2}}) yksityisellä Tdrive-palvelimella. ",
-    "scenes.login.footer.go_to_tdrive": "Siirry osoitteeseen tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Siirry osoitteeseen drive.twake.app",
     "scenes.login.home.create_account": "Luo tili",
     "scenes.login.home.email": "Sähköpostiosoite",
     "scenes.login.home.login_btn": "Kirjaudu sisään",

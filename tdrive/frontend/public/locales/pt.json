@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Nome de usuário",
     "scenes.login.create_account.username_already_exist": "Este nome de usuário já está em uso",
     "scenes.login.footer.branding": "Você está em um servidor Tdrive privado {{$1}} ({{$2}}). ",
-    "scenes.login.footer.go_to_tdrive": "Acesse tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Acesse drive.twake.app",
     "scenes.login.home.create_account": "Crie uma conta",
     "scenes.login.home.email": "Email",
     "scenes.login.home.login_btn": "Entrar",

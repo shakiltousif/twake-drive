@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "ユーザー名",
     "scenes.login.create_account.username_already_exist": "このユーザー名は既に使用されています",
     "scenes.login.footer.branding": "{{$1}}（{{$2}}）プライベートTdriveサーバーを使用しています。 ",
-    "scenes.login.footer.go_to_tdrive": "tdriveapp.comにアクセス",
+    "scenes.login.footer.go_to_tdrive": "drive.twake.appにアクセス",
     "scenes.login.home.create_account": "アカウントを作成する",
     "scenes.login.home.email": "電子メイル",
     "scenes.login.home.login_btn": "ログイン",

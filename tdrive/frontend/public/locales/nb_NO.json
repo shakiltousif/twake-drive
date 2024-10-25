@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Brukernavn",
     "scenes.login.create_account.username_already_exist": "dette brukernavnet er allerede i bruk",
     "scenes.login.footer.branding": "Du er på en {{$1}} ({{$2}}) privat Tdrive-server. ",
-    "scenes.login.footer.go_to_tdrive": "Gå til tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Gå til drive.twake.app",
     "scenes.login.home.create_account": "Opprett en konto",
     "scenes.login.home.email": "E-post",
     "scenes.login.home.login_btn": "Logg Inn",

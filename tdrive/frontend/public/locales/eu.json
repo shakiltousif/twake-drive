@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Erabiltzaile izena",
     "scenes.login.create_account.username_already_exist": "Erabiltzaile-izen hau dagoeneko erabiltzen ari da",
     "scenes.login.footer.branding": "{{$1}} ({{$2}}) Tdrive zerbitzari pribatu batean zaude. ",
-    "scenes.login.footer.go_to_tdrive": "Joan tdriveapp.com helbidera",
+    "scenes.login.footer.go_to_tdrive": "Joan drive.twake.app helbidera",
     "scenes.login.home.create_account": "Kontu bat sortu",
     "scenes.login.home.email": "Posta elektronikoa",
     "scenes.login.home.login_btn": "Saioa hasi",

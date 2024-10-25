@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Kullanıcı adı",
     "scenes.login.create_account.username_already_exist": "Bu kullanıcı adı zaten kullanılıyor",
     "scenes.login.footer.branding": "Bir {{$1}} ({{$2}}) özel Tdrive sunucusundasınız. ",
-    "scenes.login.footer.go_to_tdrive": "tdriveapp.com'a gidin",
+    "scenes.login.footer.go_to_tdrive": "drive.twake.app'a gidin",
     "scenes.login.home.create_account": "Bir hesap oluşturun",
     "scenes.login.home.email": "e-posta",
     "scenes.login.home.login_btn": "Giriş yapmak",

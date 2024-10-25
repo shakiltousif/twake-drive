@@ -339,7 +339,7 @@
     "scenes.login.create_account.username": "Nom d'utilisateur",
     "scenes.login.create_account.username_already_exist": "Ce nom d'utilisateur est déjà utilisé",
     "scenes.login.footer.branding": "Vous êtes sur un serveur privé Twake Drive appartenant à {{$1}} ({{$2}}). ",
-    "scenes.login.footer.go_to_tdrive": "Aller à tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Aller à drive.twake.app",
     "scenes.login.home.create_account": "Créer un compte",
     "scenes.login.home.email": "Email",
     "scenes.login.home.login_btn": "S'identifier",

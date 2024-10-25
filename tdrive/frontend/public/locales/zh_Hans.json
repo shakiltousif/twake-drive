@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "用户名",
     "scenes.login.create_account.username_already_exist": "此用户名已被使用",
     "scenes.login.footer.branding": "您在 {{$1}} ({{$2}}) 私人 Tdrive 服务器上。 ",
-    "scenes.login.footer.go_to_tdrive": "去 tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "去 drive.twake.app",
     "scenes.login.home.create_account": "创建一个帐户",
     "scenes.login.home.email": "电子邮件",
     "scenes.login.home.login_btn": "登录",

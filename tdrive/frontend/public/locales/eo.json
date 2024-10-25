@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "Salutnomo",
     "scenes.login.create_account.username_already_exist": "Ĉi tiu uzantnomo jam estas uzata",
     "scenes.login.footer.branding": "Vi estas sur {{$1}} ({{$2}}) privata Tdrive-servilo. ",
-    "scenes.login.footer.go_to_tdrive": "Iru al tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Iru al drive.twake.app",
     "scenes.login.home.create_account": "Krei konton",
     "scenes.login.home.email": "Retpoŝto",
     "scenes.login.home.login_btn": "Ensaluti",

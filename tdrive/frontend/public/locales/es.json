@@ -204,7 +204,7 @@
     "scenes.login.create_account.username": "Nombre de usuario",
     "scenes.login.create_account.username_already_exist": "El nombre de usuario ya esta siendo usado",
     "scenes.login.footer.branding": "Estás en un servidor Tdrive privado de {{$1}} ({{$2}}). ",
-    "scenes.login.footer.go_to_tdrive": "Ir a tdriveapp.com",
+    "scenes.login.footer.go_to_tdrive": "Ir a drive.twake.app",
     "scenes.login.home.create_account": "Crea una cuenta",
     "scenes.login.home.email": "Correo electrónico",
     "scenes.login.home.login_btn": "Iniciar sesión",

@@ -192,7 +192,7 @@
     "scenes.login.create_account.username": "පරිශීලක නාමය",
     "scenes.login.create_account.username_already_exist": "පරිශීලක නාමය දැනටමත් භාවිතයේ ඇත",
     "scenes.login.footer.branding": "ඔබ සිටින්නේ {{$1}} ({{$2}}) පෞද්ගලික ට්වේක් සේවාදායකයක ය. ",
-    "scenes.login.footer.go_to_tdrive": "tdriveapp.com වෙත යන්න",
+    "scenes.login.footer.go_to_tdrive": "drive.twake.app වෙත යන්න",
     "scenes.login.home.create_account": "ගිණුමක් සාදන්න",
     "scenes.login.home.email": "වි-තැපෑල",
     "scenes.login.home.login_btn": "ඇතුල් වන්න",
