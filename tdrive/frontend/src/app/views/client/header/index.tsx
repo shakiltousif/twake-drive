@@ -7,7 +7,13 @@ import version from '../../../environment/version';
 
 export default ({ openSideMenu }: { openSideMenu: () => void }) => {
   return (
-    <div className="bg-white dark:bg-zinc-900 h-16 sm:h-20 p-4 sm:p-6 flex space-between items-center">
+    <div
+      className="bg-white dark:bg-zinc-900 h-16 sm:h-20 p-4 sm:p-6 flex space-between items-center"
+      style={{
+        paddingLeft: '1.875rem',
+        paddingRight: '1.875rem',
+      }}
+    >
       <div className="sm:block hidden shrink-0 w-2/6 max-w-xs" style={{ minWidth: 100 }}>
         <div className="sm:inline-grid">
           <img
@@ -21,7 +27,7 @@ export default ({ openSideMenu }: { openSideMenu: () => void }) => {
             alt="Tdrive"
           />
         </div>
-        <div className="sm:inline-grid">
+        <div className="sm:inline-grid pl-3">
           <Info className="font-bold overflow-hidden text-ellipsis whitespace-nowrap w-full block -mb-1">
             &nbsp;v{version.version}
           </Info>
