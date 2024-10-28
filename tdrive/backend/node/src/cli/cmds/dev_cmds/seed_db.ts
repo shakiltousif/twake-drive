@@ -37,7 +37,6 @@ const createTree = async (
   context: any,
   client: mongo.MongoClient,
 ) => {
-  const documentRepo = await gr.services.documents.documents.repository;
   // Create an array to hold promises
   const createFolderPromises = [];
 
@@ -101,8 +100,7 @@ const command: yargs.CommandModule<unknown, CLIArgs> = {
     const platform = await tdrive.run(services);
     await gr.doInit(platform);
 
-    let client: mongo.MongoClient;
-    client = (await gr.database.getConnector()).getClient();
+    const client = (await gr.database.getConnector()).getClient();
 
     // Manage the default company
     const companies = await gr.services.companies.getCompanies();
@@ -153,10 +151,8 @@ const command: yargs.CommandModule<unknown, CLIArgs> = {
     }
     console.log("✅ Users created");
 
-    let updateBegin = Date.now();
-    let createTreePromises = [];
+    const updateBegin = Date.now();
     for (const user of allUsers) {
-      // console.log progress percentage
       const context = { company, user };
       const parentDrive = `user_${user.id}`;
       const folderData = await getDefaultDriveItem(
@@ -171,7 +167,6 @@ const command: yargs.CommandModule<unknown, CLIArgs> = {
       await createTree(folderTreeDepth, folderData, parentDrive, context, client);
       console.log(`✅ User ${user.id} folder tree created`);
     }
-    // await Promise.all(createTreePromises);
     console.log("✅ Finished execution, took: ", (Date.now() - updateBegin) / 1000, "s");
   },
 };
