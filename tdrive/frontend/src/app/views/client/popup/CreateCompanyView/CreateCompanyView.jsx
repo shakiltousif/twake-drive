@@ -348,10 +348,10 @@ export default class CreateCompanyView extends Component {
           }}
         >
           <div className="subtitle bottom-margin">
-            {this.state.i18n.t('scenes.app.workspaces.create_company.importations.title_1')}{' '}
+            {this.state.i18n.t('scenes.app.workspaces.create_company.imports.title_1')}{' '}
             <Emojione type=":tools:" />
             <br />
-            {this.state.i18n.t('scenes.app.workspaces.create_company.importations.title_2')}
+            {this.state.i18n.t('scenes.app.workspaces.create_company.imports.title_2')}
           </div>
           <div className="integrations">
             {[0, 0, 0, 0, 0, 0, 0, 0, 0].map(item => {

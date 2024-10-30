@@ -49,11 +49,11 @@ const ConfirmTrashModalContent = ({ items }: { items: DriveItem[] }) => {
   return (
     <ModalContent
       title={
-        items.length === 1 ? Languages.t('compenents.ConfirmTrashModalContent_move') + "  '" + item?.name + "' " + Languages.t('compenents.ConfirmTrashModalContent_to_trash') : Languages.t('compenents.ConfirmTrashModalContent_move') + " " + items.length + " " + Languages.t('compenents.ConfirmTrashModalContent_items_to_trash')
+        items.length === 1 ? Languages.t('components.ConfirmTrashModalContent_move') + "  '" + item?.name + "' " + Languages.t('components.ConfirmTrashModalContent_to_trash') : Languages.t('components.ConfirmTrashModalContent_move') + " " + items.length + " " + Languages.t('components.ConfirmTrashModalContent_items_to_trash')
       }
     >
       <Base className="block my-3">
-        {Languages.t('compenents.ConfirmTrashModalContent_move_to_trash_desc')}
+        {Languages.t('components.ConfirmTrashModalContent_move_to_trash_desc')}
       </Base>
       <br />
       <Button
@@ -75,7 +75,7 @@ const ConfirmTrashModalContent = ({ items }: { items: DriveItem[] }) => {
           setState({ ...state, open: false });
         }}
       >
-        {Languages.t('compenents.ConfirmTrashModalContent_move_to_trash')}
+        {Languages.t('components.ConfirmTrashModalContent_move_to_trash')}
       </Button>
     </ModalContent>
   );
