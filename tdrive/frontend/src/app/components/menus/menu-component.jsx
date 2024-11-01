@@ -57,7 +57,7 @@ export default class MenuComponent extends React.Component {
       <div
         ref={node => (this.original_menu = node)}
         className={
-          'menu-list ' + (this.props.withFrame ? 'as_frame text-black bg-white dark:bg-zinc-800 dark:text-white rounded-lg ' : '') + this.props.animationClass
+          'menu-list ' + (this.props.withFrame ? 'as_frame text-black bg-white dark:bg-zinc-900 dark:text-white rounded-lg ' : '') + this.props.animationClass
         }
       >
         {(this.props.menu || [])
@@ -81,7 +81,12 @@ export default class MenuComponent extends React.Component {
                     this.hoverMenu(item.ref, item);
                   }}
                 >
-                  {item.text}
+                  {item.icon && (
+                    <div className="icon">
+                      {typeof item.icon === 'string' ? <Icon type={item.icon} /> : item.icon}
+                    </div>
+                  )}
+                  <div className="text">{item.text}</div>
                 </div>
               );
             } else if (item.type == 'react-element') {

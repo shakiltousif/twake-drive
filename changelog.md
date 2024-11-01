@@ -15,6 +15,13 @@
 - Fix OpenSearch e2e test
 - Fix build CI
 
+## Hotfixes
+  - `v1.0.4-hf1`:
+    - Fix typo in French translation
+  - `v1.0.4-hf3`:
+    - Add collation fix.
+    - Cli db seed tool
+
 # Twake Drive v1.0.3
 
 ## Features
@@ -40,7 +47,7 @@
 - New “Create” context menu new icons
 - CLI tool to reindex search database
 - Handling quota limit error
-- 
+-
 ## BugFixes and improvements
 - Handling quota limit error
 - Refactored starting docker-compose file
@@ -51,8 +58,8 @@
 ## Features
 
 - New Version Semantics
-- Usage quota settings 
-- PostgreSQL support as a metadata database 
+- Usage quota settings
+- PostgreSQL support as a metadata database
 - OpenSearch support as a search database
 - New API to check file storage consistency
 - UX improvements
