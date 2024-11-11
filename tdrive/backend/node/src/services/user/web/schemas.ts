@@ -191,6 +191,19 @@ export const setUserPreferencesSchema = {
   },
 };
 
+export const sendUserClientReportSchema = {
+  request: {
+    type: "object",
+    properties: {
+      message: { type: "string" },
+    },
+    required: ["message"],
+  },
+  response: {
+    "2xx": {},
+  },
+};
+
 export const getUsersSchema = {
   type: "object",
   properties: {
