@@ -8,8 +8,8 @@ import NodeCache from "node-cache";
 const emptyStats = () => ({ hits: 0, misses: 0, wrongIndex: 0, start: new Date() });
 const CACHE_DEFAULT_TTL_S = 5;
 const CACHE_DEFAULT_MAX_KEY_COUNT = 10000;
-const CACHE_PRINT_PERIOD_MS = 20 * 1000;
-const CACHE_PRINT_UPPER_THRESHOLD_MS = 5 * 60 * 1000;
+const CACHE_PRINT_PERIOD_MS = 3 * 60 * 1000;
+const CACHE_PRINT_UPPER_THRESHOLD_MS = 30 * 60 * 1000;
 
 /**
  * This is a passthrough for {@link Repository} that caches requests by a provided
@@ -24,28 +24,27 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
     setInterval(() => {
       const stats = this.cacheStats;
       const ageMs = new Date().getTime() - stats.start.getTime();
-      const prefix = `CachingRepository<${this.table}>(${this.keys.join(", ")})`;
+      const cacheName = `CachingRepository<${this.table}>(${this.keys.join(", ")})`;
       if (stats.hits + stats.misses + stats.wrongIndex === 0) {
         if (ageMs < CACHE_PRINT_UPPER_THRESHOLD_MS) return;
-        logger.info(`${prefix} - unused since ${ageMs / 1000}s`);
+        logger.info(`${cacheName} - unused since ${ageMs / 1000}s`);
         return;
       }
       const libCacheStats = this.cache.getStats();
       this.cacheStats = emptyStats();
       logger.info(
         {
+          cacheName,
           stats: {
             keyCount: libCacheStats.keys,
             valueSize: libCacheStats.vsize,
             ...stats,
           },
-          keys: this.keys,
-          table: this.table,
           ageMs,
         },
-        `${prefix} had ${stats.hits} hits and ${stats.misses} misses (${
+        `${cacheName} had ${stats.hits} hits and ${stats.misses} misses (${
           stats.wrongIndex
-        } mismatched key query) in ${ageMs / 1000}s`,
+        } mismatched keys) in ${ageMs / 1000}s`,
       );
     }, CACHE_PRINT_PERIOD_MS);
   }
@@ -67,20 +66,20 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
     this.startPrintingStats();
   }
 
-  private cacheFetEntityKey(entity: EntityType | FindFilter | undefined): string | undefined {
+  private cacheGetEntityKey(entity: EntityType | FindFilter | undefined): string | undefined {
     if (!entity) return undefined;
-    const indices = this.keys.map(k => entity[k] as string);
+    const indices = this.keys.map(k => entity[k] && encodeURIComponent(entity[k]));
     if (indices.some(x => !x)) return undefined;
-    return indices.map(x => encodeURIComponent(x)).join("&");
+    return indices.join("&");
   }
 
   private cacheInvalidateEntity(entity: EntityType | undefined) {
-    const key = this.cacheFetEntityKey(entity);
+    const key = this.cacheGetEntityKey(entity);
     if (key) this.cache.del(key);
   }
 
   private cacheGet(keys: FindFilter): EntityType | undefined {
-    const key = this.cacheFetEntityKey(keys);
+    const key = this.cacheGetEntityKey(keys);
     if (!key) {
       this.cacheStats.wrongIndex++;
       return undefined;
@@ -95,7 +94,7 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
   }
 
   private cacheSave(entity: EntityType) {
-    const key = entity && this.cacheFetEntityKey(entity);
+    const key = entity && this.cacheGetEntityKey(entity);
     if (!key) return;
     this.cache.set(key, entity);
   }
