@@ -4,13 +4,28 @@ import { ExecutionContext } from "../../../../../framework/api/crud-service";
 import { Connector } from "../connectors";
 import { EntityTarget } from "../types";
 import NodeCache from "node-cache";
+import config from "../../../../../../../core/config";
+
+/** Configuration structure in `database.localMemCache` */
+interface ICachingRepositoryConfig {
+  /** Maximum time in seconds to keep a given key */
+  ttlS: number;
+  /** Maximum total number of keys */
+  maxKeyCount: number;
+  /** Consider logging the statistics at this period, if active will log immediately */
+  printPeriodMs: number;
+  /** If during a print period, this time elapsed and it is still unused, print anyway */
+  printPeriodIdleMs: number;
+  /**
+   * Object with additional configuration for node-cache (overrides the other configuration fields here).
+   * https://www.npmjs.com/package/node-cache#initialize-init
+   */
+  extraNodeCacheConfig?: ConstructorParameters<typeof NodeCache>[0];
+}
+
+const loadConfig = () => config.get("database.localMemCache") as ICachingRepositoryConfig;
 
 const emptyStats = () => ({ hits: 0, misses: 0, wrongIndex: 0, start: new Date() });
-const CACHE_DEFAULT_TTL_S = 5;
-const CACHE_DEFAULT_MAX_KEY_COUNT = 10000;
-const CACHE_PRINT_PERIOD_MS = 3 * 60 * 1000;
-const CACHE_PRINT_UPPER_THRESHOLD_MS = 30 * 60 * 1000;
-
 /**
  * This is a passthrough for {@link Repository} that caches requests by a provided
  * `keys` list of fields that must be globally unique.
@@ -20,13 +35,13 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
   private readonly cache;
   private cacheStats = emptyStats();
 
-  private startPrintingStats() {
+  private startPrintingStats(configuration: ICachingRepositoryConfig) {
     setInterval(() => {
       const stats = this.cacheStats;
       const ageMs = new Date().getTime() - stats.start.getTime();
       const cacheName = `CachingRepository<${this.table}>(${this.keys.join(", ")})`;
       if (stats.hits + stats.misses + stats.wrongIndex === 0) {
-        if (ageMs < CACHE_PRINT_UPPER_THRESHOLD_MS) return;
+        if (ageMs < configuration.printPeriodIdleMs) return;
         logger.info(`${cacheName} - unused since ${ageMs / 1000}s`);
         return;
       }
@@ -46,7 +61,7 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
           stats.wrongIndex
         } mismatched keys) in ${ageMs / 1000}s`,
       );
-    }, CACHE_PRINT_PERIOD_MS);
+    }, configuration.printPeriodMs);
   }
 
   constructor(
@@ -54,16 +69,16 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
     table: string,
     entityType: EntityTarget<EntityType>,
     private readonly keys: string[],
-    cacheOptions?: ConstructorParameters<typeof NodeCache>[0],
   ) {
     super(connector, table, entityType);
+    const configuration = loadConfig();
     this.cache = new NodeCache({
-      stdTTL: CACHE_DEFAULT_TTL_S,
-      maxKeys: CACHE_DEFAULT_MAX_KEY_COUNT,
-      ...cacheOptions,
+      stdTTL: configuration.ttlS,
+      maxKeys: configuration.maxKeyCount,
+      ...(configuration.extraNodeCacheConfig ?? {}),
     });
     this.keys.sort();
-    this.startPrintingStats();
+    this.startPrintingStats(configuration);
   }
 
   private cacheGetEntityKey(entity: EntityType | FindFilter | undefined): string | undefined {
