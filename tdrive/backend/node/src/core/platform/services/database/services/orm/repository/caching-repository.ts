@@ -6,7 +6,7 @@ import { EntityTarget } from "../types";
 import NodeCache from "node-cache";
 import config from "../../../../../../../core/config";
 
-/** Configuration structure in `database.localMemCache` */
+/** Configuration structure in key {@link configKey} */
 interface ICachingRepositoryConfig {
   /** Maximum time in seconds to keep a given key */
   ttlS: number;
@@ -23,7 +23,9 @@ interface ICachingRepositoryConfig {
   extraNodeCacheConfig?: ConstructorParameters<typeof NodeCache>[0];
 }
 
-const loadConfig = () => config.get("database.localMemCache") as ICachingRepositoryConfig;
+const configKey = "database.localMemCache";
+export const loadConfig = () =>
+  config.has(configKey) ? (config.get(configKey) as ICachingRepositoryConfig) : undefined;
 
 const emptyStats = () => ({ hits: 0, misses: 0, wrongIndex: 0, start: new Date() });
 /**
@@ -71,7 +73,8 @@ export default class CachingRepository<EntityType> extends Repository<EntityType
     private readonly keys: string[],
   ) {
     super(connector, table, entityType);
-    const configuration = loadConfig();
+    // Safe because RepositoryManager checks it before creating this instance
+    const configuration = loadConfig()!;
     this.cache = new NodeCache({
       stdTTL: configuration.ttlS,
       maxKeys: configuration.maxKeyCount,

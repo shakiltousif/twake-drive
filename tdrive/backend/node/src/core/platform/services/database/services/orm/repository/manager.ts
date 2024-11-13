@@ -1,7 +1,7 @@
 import { logger } from "../../../../../../../core/platform/framework";
 import DatabaseService from "../..";
 import Repository from "./repository";
-import CachingRepository from "./caching-repository";
+import CachingRepository, { loadConfig as loadCachingConfig } from "./caching-repository";
 import { EntityTarget } from "../types";
 
 export class RepositoryManager {
@@ -20,7 +20,7 @@ export class RepositoryManager {
     entity: EntityTarget<Entity>,
   ): Promise<Repository<Entity>> {
     if (!this.repositories.has(table)) {
-      const cacheKeys = RepositoryManager.toCacheEntities.get(table);
+      const cacheKeys = loadCachingConfig() && RepositoryManager.toCacheEntities.get(table);
       const repository = cacheKeys
         ? new CachingRepository<Entity>(
             this.databaseService.getConnector(),
