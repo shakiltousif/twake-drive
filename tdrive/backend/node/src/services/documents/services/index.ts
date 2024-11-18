@@ -470,7 +470,7 @@ export class DocumentsService {
           }
         }
       } catch (error) {
-        console.error("🚀🚀 error:", error);
+        logger.error(error, "🚀🚀 error:");
       }
 
       await this.repository.save(driveItem);
@@ -557,6 +557,16 @@ export class DocumentsService {
             throw Error("Move operation not permitted");
           } else {
             oldParent = item.parent_id;
+            const newParentId = content.parent_id;
+            const needRenameTo = await getItemName(
+              newParentId,
+              item.id,
+              item.name,
+              item.is_directory,
+              this.repository,
+              context,
+            );
+            if (needRenameTo !== item.name) renamedTo = item.name = needRenameTo;
           }
           if (key === "access_info") {
             // if manage access is disabled, we don't allow changing access level
