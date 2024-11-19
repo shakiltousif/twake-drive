@@ -306,8 +306,6 @@ export default memo(
                 parentId,
               });
             }}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
             disabled={inTrash || access === 'read'}
           >
             {role == 'admin' && <UsersModal />}

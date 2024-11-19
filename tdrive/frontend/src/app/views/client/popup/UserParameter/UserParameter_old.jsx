@@ -60,16 +60,15 @@ export default class UserParameter extends Component {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     var that = this;
     event.preventDefault();
-    getFilesTree(event, function (tree) {
-      var first = tree[Object.keys(tree)[0]];
-      if (first.constructor.name !== 'Object') {
-        //A file
+    getFilesTree(event, function (jobs) {
+      const first = jobs.roots.map(r => r.titleItem).filter(i => i.isFile)[0];
+      if (first) {
         var reader = new FileReader();
         reader.onload = function (e) {
           that.thumbnail.style.backgroundImage = "url('" + e.target.result + "')";
         };
         that.setState({ thumbnail: first });
-        reader.readAsDataURL(first);
+        first.getFile().then(file => reader.readAsDataURL(first));
       }
     });
   }

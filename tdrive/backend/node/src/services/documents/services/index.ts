@@ -370,9 +370,72 @@ export class DocumentsService {
     context: DriveExecutionContext,
   ): Promise<DriveFile> => {
     try {
-      const driveItem = getDefaultDriveItem(content, context);
-      const driveItemVersion = getDefaultDriveItemVersion(version, context);
+      const driveItem = getDefaultDriveItem(content, context) as DriveFile; //TODO Why is this cast needed
+      const driveItemVersion = getDefaultDriveItemVersion(version, context) as FileVersion; //TODO Why is this cast needed
       driveItem.scope = await getItemScope(driveItem, this.repository, context);
+
+      const createdFolderIds = [];
+      const pathComponents = driveItem.name.split("/"); //TODO Better path management
+      if (pathComponents[0] === "") pathComponents.shift(); // tolerate prefix /
+      if (
+        driveItem.is_directory &&
+        pathComponents.length &&
+        pathComponents[pathComponents.length - 1] === ""
+      )
+        pathComponents.pop(); // tolerate suffix / but only for directories
+      if (pathComponents.length === 0 || pathComponents.some(x => !x || x === "." || x === ".."))
+        throw new Error(`Invalid path: ${JSON.stringify(driveItem.name)}`);
+      if (pathComponents.length > 1) {
+        driveItem.name = pathComponents.pop();
+        if (!driveItem.name?.length)
+          throw new Error(`Invalid path ${JSON.stringify(driveItem.name)}: cannot end with a /`);
+        let lastParentId = driveItem.parent_id;
+        let couldNextExist = true;
+        logger.info(
+          { path: driveItem.name, pathComponents, parentId: lastParentId },
+          "Creating intermediary folders",
+        );
+        for (const folderName of pathComponents) {
+          const existing =
+            couldNextExist &&
+            (await this.repository.findOne(
+              { company_id: context.company.id, parent_id: lastParentId, name: folderName },
+              {},
+              context,
+            ));
+          if (existing) {
+            logger.debug({ folderName, id: existing.id }, " !!!! Already exists"); //TODO NONONO
+            if (existing.is_in_trash)
+              throw new Error(
+                `Error creating intermediary path ${JSON.stringify(
+                  folderName,
+                )} under ${JSON.stringify(driveItem.parent_id)}: ${JSON.stringify(
+                  folderName,
+                )} is in the trash`,
+              );
+            lastParentId = existing.id;
+            continue;
+          }
+          const newFolder = getDefaultDriveItem(
+            {
+              parent_id: lastParentId,
+              name: folderName,
+              is_directory: true,
+            },
+            context,
+          ) as DriveFile; //TODO Why is this cast needed
+          newFolder.scope = driveItem.scope;
+          await this.repository.save(newFolder, context);
+          logger.info(
+            { folderName, id: newFolder.id, parentId: lastParentId },
+            "Auto-created folder",
+          );
+          lastParentId = newFolder.id;
+          createdFolderIds.push(newFolder.id);
+          couldNextExist = false;
+        }
+        driveItem.parent_id = lastParentId;
+      }
 
       const hasAccess = await checkAccess(
         driveItem.parent_id,

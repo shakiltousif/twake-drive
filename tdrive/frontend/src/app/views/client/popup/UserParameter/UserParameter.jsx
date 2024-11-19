@@ -2,7 +2,6 @@
 /* eslint-disable react/jsx-key */
 import { Component } from 'react';
 
-import { getFilesTree } from '@components/uploads/file-tree-utils';
 import Collections from '@deprecated/CollectionsV1/Collections/Collections.js';
 import popupManager from '@deprecated/popupManager/popupManager.js';
 import currentUserService from '@deprecated/user/CurrentUser';
