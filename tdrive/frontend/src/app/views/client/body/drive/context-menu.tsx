@@ -44,7 +44,7 @@ export const useOnBuildContextMenu = (
     DriveCurrentFolderAtom({ initialFolderId: initialParentId || 'root' }),
   );
 
-  const { download, downloadZip, update, restore } = useDriveActions();
+  const { download, downloadZip, update, restore, reScan } = useDriveActions();
   const setCreationModalState = useSetRecoilState(CreateModalAtom);
   const setUploadModalState = useSetRecoilState(UploadModelAtom);
   const setSelectorModalState = useSetRecoilState(SelectorModalAtom);
@@ -66,6 +66,8 @@ export const useOnBuildContextMenu = (
         const inTrash = parent.path?.[0]?.id.includes('trash') || viewId?.includes('trash');
         const isPersonal = item?.scope === 'personal';
         const selectedCount = checked.length;
+        const notSafe =
+          !item?.is_directory && !['uploaded', 'safe'].includes(item?.av_status || '');
 
         let menu: any[] = [];
 
@@ -75,26 +77,41 @@ export const useOnBuildContextMenu = (
           const access = upToDateItem.access || 'none';
           const hideShareItem = access === 'read' || getPublicLinkToken() || inTrash;
           const hideManageAccessItem =
-            access === 'read'
-            || getPublicLinkToken()
-            || inTrash
-            || !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_MANAGE_ACCESS);
+            access === 'read' ||
+            getPublicLinkToken() ||
+            inTrash ||
+            !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_MANAGE_ACCESS);
           const newMenuActions = [
             {
               type: 'menu',
               icon: 'share-alt',
               text: Languages.t('components.item_context_menu.share'),
-              hide: hideShareItem,
+              hide: hideShareItem || notSafe,
               onClick: () => setPublicLinkModalState({ open: true, id: item.id }),
             },
             {
               type: 'menu',
               icon: 'users-alt',
               text: Languages.t('components.item_context_menu.manage_access'),
-              hide: hideManageAccessItem,
+              hide: hideManageAccessItem || notSafe,
               onClick: () => setAccessModalState({ open: true, id: item.id }),
             },
-            { type: 'separator', hide: inTrash || (hideShareItem && hideManageAccessItem) },
+            {
+              type: 'menu',
+              icon: 'shield-check',
+              text: Languages.t('components.item_context_menu.rescan_document'),
+              hide: !(item.av_status === 'scan_failed'),
+              onClick: () => {
+                reScan(item);
+              },
+            },
+            {
+              type: 'separator',
+              hide:
+                inTrash ||
+                (hideShareItem && hideManageAccessItem) ||
+                (notSafe && !(item.av_status === 'scan_failed')),
+            },
             {
               type: 'menu',
               icon: 'download-alt',
@@ -104,7 +121,7 @@ export const useOnBuildContextMenu = (
                   downloadZip([item!.id]);
                   console.log(item!.id);
                 } else {
-                  download(item.id);
+                  download(item.id, notSafe);
                 }
               },
             },
@@ -120,12 +137,12 @@ export const useOnBuildContextMenu = (
                 window.open(route, '_blank');
               }
             }, // */
-            { type: 'separator' },
+            { type: 'separator', hide: notSafe },
             {
               type: 'menu',
               icon: 'folder-question',
               text: Languages.t('components.item_context_menu.move'),
-              hide: access === 'read' || inTrash || inPublicSharing,
+              hide: access === 'read' || inTrash || inPublicSharing || notSafe,
               onClick: () =>
                 setSelectorModalState({
                   open: true,
@@ -150,7 +167,7 @@ export const useOnBuildContextMenu = (
               type: 'menu',
               icon: 'file-edit-alt',
               text: Languages.t('components.item_context_menu.rename'),
-              hide: access === 'read' || inTrash,
+              hide: access === 'read' || inTrash || notSafe,
               onClick: () => setPropertiesModalState({ open: true, id: item.id, inPublicSharing }),
             },
             {
@@ -160,7 +177,8 @@ export const useOnBuildContextMenu = (
               hide:
                 !item.access_info.public?.level ||
                 item.access_info.public?.level === 'none' ||
-                inTrash,
+                inTrash ||
+                notSafe,
               onClick: () => {
                 copyToClipboard(getPublicLink(item || parent?.item));
                 ToasterService.success(
@@ -172,10 +190,10 @@ export const useOnBuildContextMenu = (
               type: 'menu',
               icon: 'history',
               text: Languages.t('components.item_context_menu.versions'),
-              hide: item.is_directory || inTrash,
+              hide: item.is_directory || inTrash || notSafe,
               onClick: () => setVersionModal({ open: true, id: item.id }),
             },
-            { type: 'separator', hide: access !== 'manage' || inTrash },
+            { type: 'separator', hide: access !== 'manage' || inTrash || notSafe },
             {
               type: 'menu',
               icon: 'trash',
@@ -238,15 +256,25 @@ export const useOnBuildContextMenu = (
               type: 'menu',
               text: Languages.t('components.item_context_menu.download_multiple'),
               hide: inTrash,
-              onClick: () =>
-                selectedCount === 1 ? download(checked[0].id) : downloadZip(checked.map(c => c.id)),
+              onClick: () => {
+                const  containsMalicious = checked.some(c => c.av_status === 'malicious');
+                if (selectedCount === 1) {
+                  download(checked[0].id);
+                } else {
+                  downloadZip(
+                    checked.map(c => c.id),
+                    false,
+                    containsMalicious,
+                  );
+                }
+              },
             },
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.clear_selection'),
               onClick: () => setChecked({}),
             },
-            { type: 'separator', hide: parent.access === 'read' },
+            { type: 'separator', hide: parent.access === 'read' || notSafe },
             {
               type: 'menu',
               text: Languages.t('components.item_context_menu.delete_multiple'),
@@ -517,7 +545,9 @@ export const useOnBuildFileContextMenu = () => {
         {
           type: 'menu',
           text: Languages.t('components.item_context_menu.download'),
-          onClick: () => download(item.id),
+          onClick: () => {
+            download(item.id);
+          },
         },
       ];
       return menuItems;

@@ -3,12 +3,20 @@ import useRouterCompany from '@features/router/hooks/use-router-company';
 import { useCallback } from 'react';
 import { useRecoilValue, useRecoilCallback, useRecoilState } from 'recoil';
 import { DriveApiClient } from '../api-client/api-client';
-import { DriveItemAtom, DriveItemChildrenAtom, DriveItemPagination, DriveItemSort } from '../state/store';
+import {
+  DriveItemAtom,
+  DriveItemChildrenAtom,
+  DriveItemPagination,
+  DriveItemSort,
+} from '../state/store';
 import { BrowseFilter, DriveItem, DriveItemVersion } from '../types';
 import { SharedWithMeFilterState } from '../state/shared-with-me-filter';
 import Languages from 'features/global/services/languages-service';
 import { useUserQuota } from 'features/users/hooks/use-user-quota';
-
+import AlertManager from 'app/features/global/services/alert-manager-service';
+import FeatureTogglesService, {
+  FeatureNames,
+} from '@features/global/services/feature-toggles-service';
 /**
  * Returns the children of a drive item
  * @returns
@@ -19,6 +27,7 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
   const sortItem = useRecoilValue(DriveItemSort);
   const [ paginateItem ] = useRecoilState(DriveItemPagination);
   const { getQuota } = useUserQuota();
+  const AVEnabled = FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_AV_ENABLED);
 
   const refresh = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -35,7 +44,13 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
             set(DriveItemPagination, pagination);
           }
           try {
-            const details = await DriveApiClient.browse(companyId, parentId, filter, sortItem, pagination);
+            const details = await DriveApiClient.browse(
+              companyId,
+              parentId,
+              filter,
+              sortItem,
+              pagination,
+            );
             set(DriveItemChildrenAtom(parentId), details.children);
             set(DriveItemAtom(parentId), details);
             for (const child of details.children) {
@@ -87,10 +102,31 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
   );
 
   const download = useCallback(
-    async (id: string, versionId?: string) => {
+    async (id: string, isMalicious = false, versionId?: string) => {
       try {
         const url = DriveApiClient.getDownloadUrl(companyId, id, versionId);
-        (window as any).open(url, '_blank').focus();
+        // if AV is enabled
+        if (AVEnabled) {
+          // if the file is malicious
+          if (isMalicious) {
+            // toggle confirm for user
+            AlertManager.confirm(
+              () => {
+                (window as any).open(url, '_blank').focus();
+              },
+              () => {
+                return;
+              },
+              {
+                text: Languages.t('hooks.use-drive-actions.av_confirm_file_download'),
+              },
+            );
+          } else {
+            (window as any).open(url, '_blank').focus();
+          }
+        } else {
+          (window as any).open(url, '_blank').focus();
+        }
       } catch (e) {
         ToasterService.error(Languages.t('hooks.use-drive-actions.unable_download_file'));
       }
@@ -99,10 +135,34 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
   );
 
   const downloadZip = useCallback(
-    async (ids: string[], isDirectory = false) => {
+    async (ids: string[], isDirectory = false, containsMalicious = false) => {
       try {
-        const url = await DriveApiClient.getDownloadZipUrl(companyId, ids, isDirectory);
-        (window as any).open(url, '_blank').focus();
+        const triggerDownload = async () => {
+          const url = await DriveApiClient.getDownloadZipUrl(companyId, ids, isDirectory);
+          (window as any).open(url, '_blank').focus();
+        };
+        if (AVEnabled) {
+          const containsMaliciousFiles =
+            containsMalicious ||
+            (ids.length === 1 && (await DriveApiClient.checkMalware(companyId, ids[0])));
+          if (containsMaliciousFiles) {
+            AlertManager.confirm(
+              async () => {
+                await triggerDownload();
+              },
+              () => {
+                return;
+              },
+              {
+                text: Languages.t('hooks.use-drive-actions.av_confirm_folder_download'),
+              },
+            );
+          } else {
+            await triggerDownload();
+          }
+        } else {
+          await triggerDownload();
+        }
       } catch (e) {
         ToasterService.error(Languages.t('hooks.use-drive-actions.unable_download_file'));
       }
@@ -142,7 +202,12 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
       try {
         const newItem = await DriveApiClient.update(companyId, id, update);
         if (previousName && previousName !== newItem.name && !update.name)
-          ToasterService.warn(Languages.t('hooks.use-drive-actions.update_caused_a_rename', [previousName, newItem.name]));
+          ToasterService.warn(
+            Languages.t('hooks.use-drive-actions.update_caused_a_rename', [
+              previousName,
+              newItem.name,
+            ]),
+          );
         await refresh(id || '', true);
         if (!inPublicSharing) await refresh(parentId || '', true);
         if (update?.parent_id !== parentId) await refresh(update?.parent_id || '', true);
@@ -183,12 +248,47 @@ export const useDriveActions = (inPublicSharing?: boolean) => {
           parentId,
           filter,
           sortItem,
-          pagination
+          pagination,
         );
         return details;
       },
     [paginateItem, refresh],
   );
+  
+  const checkMalware = useCallback(
+    async (item: Partial<DriveItem>) => {
+      try {
+        await DriveApiClient.checkMalware(companyId, item.id || '');
+      } catch (e) {
+        ToasterService.error(Languages.t('hooks.use-drive-actions.unable_rescan_file'));
+      }
+    },
+    [refresh],
+  );
 
-  return { create, refresh, download, downloadZip, remove, restore, update, updateLevel, nextPage };
+  const reScan = useCallback(
+    async (item: Partial<DriveItem>) => {
+      try {
+        await DriveApiClient.reScan(companyId, item.id || '');
+        await refresh(item.parent_id || '', true);
+      } catch (e) {
+        ToasterService.error(Languages.t('hooks.use-drive-actions.unable_rescan_file'));
+      }
+    },
+    [refresh],
+  );
+
+  return {
+    create,
+    refresh,
+    download,
+    downloadZip,
+    remove,
+    restore,
+    update,
+    updateLevel,
+    reScan,
+    checkMalware,
+    nextPage,
+  };
 };

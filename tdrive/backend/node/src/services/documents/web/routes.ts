@@ -83,6 +83,20 @@ const routes: FastifyPluginCallback = (fastify: FastifyInstance, _options, next)
   });
 
   fastify.route({
+    method: "POST",
+    url: `${serviceUrl}/:id/check_malware`,
+    preValidation: [fastify.authenticateOptional],
+    handler: documentsController.containsMaliciousFiles.bind(documentsController),
+  });
+
+  fastify.route({
+    method: "POST",
+    url: `${serviceUrl}/:id/rescan`,
+    preValidation: [fastify.authenticateOptional],
+    handler: documentsController.rescan.bind(documentsController),
+  });
+
+  fastify.route({
     method: "GET",
     url: editingSessionBase, //TODO NONONO check authenticate*Optional*
     preValidation: [fastify.authenticateOptional],

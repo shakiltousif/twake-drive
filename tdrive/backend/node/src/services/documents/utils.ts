@@ -82,6 +82,7 @@ export const getDefaultDriveItem = (
     parent_id: item.parent_id || "root",
     content_keywords: item.content_keywords || "",
     scope: "personal",
+    av_status: "uploaded",
     description: item.description || "",
     access_info: item.access_info || {
       entities: [
