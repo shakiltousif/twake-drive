@@ -16,7 +16,7 @@ describe("The OneOf Storage feature", () => {
       services: ["webserver", "database", "storage", "files", "previews"],
     });
     helpers = await UserApi.getInstance(platform);
-  }, 300000000);
+  });
 
   afterEach(async () => {
     jest.restoreAllMocks();
