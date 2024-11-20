@@ -1,3 +1,22 @@
+# Twake Drive v1.0.5-rc2
+
+*Note: This should be 1.0.6, but to align with internal release cycle numbering, we
+will just continue 1.0.5 for this release.*
+
+## Features
+
+- AntiVirus - Uploaded files are now scanned by ClamAV
+
+## Fixes and Improvements
+
+- Push client error logs to the server logs
+- Tolerate some configuration qwirks (like extra `/`s)
+- Move operations now self-rename if target exists
+- Minor UI fixes related to the search bar, pagination,
+  sorting by size, no more loading segment, and move
+  operation from a public link
+
+
 # Twake Drive v1.0.5-rc1
 
 ## Features
@@ -18,6 +37,7 @@
 - Fix set rights modal had similar border issues as browser
 - Fix file browser vertical borders (and fix react warning)
 - Fix only office filename getting overwritten at session end
+
 
 # Twake Drive v1.0.4
 
@@ -43,6 +63,7 @@
     - Add collation fix.
     - Cli db seed tool
 
+
 # Twake Drive v1.0.3
 
 ## Features
@@ -61,6 +82,7 @@
 - A large number of minor fixes
 - Translation of user notifications
 
+
 # Twake Drive v1.0.2
 
 ## Features
@@ -73,6 +95,7 @@
 - Handling quota limit error
 - Refactored starting docker-compose file
 - Fix navigation for shared link view
+
 
 # Twake Drive v1.0.1
 
@@ -93,6 +116,7 @@
 - Fix preview of the files on mobile and web
 - Malformed URL when you share a file
 - ...
+
 
 # Twake Drive v2023.Q3.012
 
