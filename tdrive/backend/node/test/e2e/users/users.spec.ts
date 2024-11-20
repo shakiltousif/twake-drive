@@ -230,7 +230,6 @@ describe("The /users API", () => {
       const json = response.json();
       expect(json).toMatchObject({ resources: expect.any(Array) });
       const resources = json.resources;
-      console.log(resources);
       expect(resources.length).toBe(0);
 
     });

@@ -32,6 +32,16 @@ services:
     networks:
       - tdrive_network
 
+  av:
+    image: clamav/clamav:latest
+    container_name: av
+    profiles:
+      - av
+    ports:
+      - 3310:3310
+    networks:
+      - tdrive_network
+
   minio:
     image: minio/minio
     ports:

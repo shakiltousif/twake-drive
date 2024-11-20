@@ -7,6 +7,7 @@ services:
     build:
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
+      target: test
     volumes:
        - ./coverage/:/usr/src/app/coverage/
     environment:
@@ -30,17 +31,18 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-      av:
-        condition: service_healthy
+#      av:
+#        condition: service_healthy
       # rabbitmq:
       #   condition: service_started
-      elasticsearch:
-        condition: service_healthy
+#      elasticsearch:
+#        condition: service_healthy
       createbucket:
         condition: service_completed_successfully
     links:
       - mongo
-      - av
+    networks:
+      - tdrive_network
       # - rabbitmq
 
   nginx:
