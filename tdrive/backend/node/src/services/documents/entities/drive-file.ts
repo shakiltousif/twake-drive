@@ -9,6 +9,10 @@ import * as UUIDTools from "../../../utils/uuid";
 
 export const TYPE = "drive_files";
 export type DriveScope = "personal" | "shared";
+export type AVStatusSafe = "safe";
+export type AVStatusUnsafe = "uploaded" | "scanning" | "scan_failed" | "malicious" | "skipped";
+export type AVStatus = AVStatusSafe | AVStatusUnsafe;
+
 /**
  * This represents an item in the file hierarchy.
  *
@@ -33,6 +37,15 @@ export type DriveScope = "personal" | "shared";
  *        if `scope == "personal"`, otherwise the trash of the shared drive
  *     - `"trash_$userid"`: Trash folder for a given user (same note as `"user_$userid"`)
  *     - `"shared_with_me"`: for the feature of the same name
+ *
+ * The `status` field represents the current scan status of the file,
+ * which can be one of the following:
+ * - `"uploaded"`: The file has been uploaded but not yet scanned.
+ * - `"scanning"`: The file is currently being scanned.
+ * - `"scan_failed"`: The scan failed, possibly due to an error.
+ * - `"safe"`: The file has been scanned and marked as safe.
+ * - `"malicious"`: The file has been marked as potentially malicious.
+ * - `"skipped"`: The file scan was skipped (file size too big).
  */
 @Entity(TYPE, {
   globalIndexes: [
@@ -126,6 +139,10 @@ export class DriveFile {
 
   @Column("locks", "encoded_json")
   locks: DriveLock[];
+
+  @Type(() => String)
+  @Column("av_status", "string")
+  av_status: AVStatus;
 }
 
 const OnlyOfficeSafeDocKeyBase64 = {

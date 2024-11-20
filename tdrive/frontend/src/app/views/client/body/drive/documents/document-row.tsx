@@ -1,20 +1,29 @@
-import { DotsHorizontalIcon } from '@heroicons/react/outline';
+import {
+  DotsHorizontalIcon,
+  ShieldCheckIcon,
+  ShieldExclamationIcon,
+  BanIcon,
+} from '@heroicons/react/outline';
 import { Button } from '@atoms/button/button';
 import { Base, BaseSmall } from '@atoms/text';
 import Menu from '@components/menus/menu';
 import useRouterCompany from '@features/router/hooks/use-router-company';
 import { useDrivePreview } from '@features/drive/hooks/use-drive-preview';
 import { formatBytes } from '@features/drive/utils';
-import { useEffect, useState } from 'react';
+import Languages from '@features/global/services/languages-service';
+import { useState } from 'react';
 import { PublicIcon } from '../components/public-icon';
 import { CheckableIcon, DriveItemOverlayProps, DriveItemProps } from './common';
+
 import './style.scss';
 import { useHistory } from 'react-router-dom';
 import RouterServices from '@features/router/services/router-service';
-import useRouteState from 'app/features/router/hooks/use-route-state';
 import { DocumentIcon } from './document-icon';
 import { hasAnyPublicLinkAccess } from '@features/files/utils/access-info-helpers';
 import { formatDateShort } from 'app/features/global/utils/Numbers';
+import FeatureTogglesService, {
+  FeatureNames,
+} from '@features/global/services/feature-toggles-service';
 
 export const DocumentRow = ({
   item,
@@ -23,12 +32,12 @@ export const DocumentRow = ({
   checked,
   onClick,
   onBuildContextMenu,
-  inPublicSharing,
 }: DriveItemProps) => {
   const history = useHistory();
   const [hover, setHover] = useState(false);
-  const { open, close, isOpen } = useDrivePreview();
+  const {open} = useDrivePreview();
   const company = useRouterCompany();
+  const notSafe = ['malicious', 'skipped', 'scan_failed'].includes(item.av_status);
 
   const preview = () => {
     open(item);
@@ -41,7 +50,7 @@ export const DocumentRow = ({
       className={
         'flex flex-row items-center border border-zinc-200 dark:border-zinc-800 px-4 py-3 cursor-pointer ' +
         (checked
-          ? 'bg-blue-500 bg-opacity-10 hover:bg-opacity-25  '
+          ? (notSafe ? 'bg-rose-500' : 'bg-blue-500') + ' bg-opacity-10 hover:bg-opacity-25'
           : 'hover:bg-zinc-500 hover:bg-opacity-10 ') +
         (className || '')
       }
@@ -50,7 +59,9 @@ export const DocumentRow = ({
       onClick={e => {
         if (e.shiftKey || e.ctrlKey) onCheck(!checked);
         else if (onClick) onClick();
-        else preview();
+        else {
+          if (!notSafe) preview();
+        }
       }}
     >
       <div
@@ -78,6 +89,20 @@ export const DocumentRow = ({
       <div className="shrink-0 ml-4 text-right lg:w-24 sm:w-20 ">
         <BaseSmall>{formatBytes(item.size)}</BaseSmall>
       </div>
+      {FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_AV_ENABLED) && (
+        <div className="shrink-0 ml-4 text-right lg:w-24 sm:w-20 ">
+          <BaseSmall title={Languages.t(`scenes.app.drive.document_row.av_${item?.av_status}`)}>
+            {item?.av_status === 'scanning' && (
+              <ShieldExclamationIcon className="w-5 text-yellow-400" />
+            )}
+            {item?.av_status === 'malicious' && (
+              <ShieldExclamationIcon className="w-5 text-rose-400" />
+            )}
+            {item?.av_status === 'skipped' && <BanIcon className="w-5 text-gray-400" />}
+            {item?.av_status === 'scan_failed' && <BanIcon className="w-5 text-gray-400" />}
+          </BaseSmall>
+        </div>
+      )}
       <div className="shrink-0 ml-4">
         <Menu menu={onBuildContextMenu}>
           <Button

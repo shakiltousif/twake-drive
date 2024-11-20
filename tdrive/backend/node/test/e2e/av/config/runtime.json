@@ -1,0 +1,12 @@
+{
+  "drive": {
+    "featureAntivirus": true
+  },
+  "av": {
+    "host": "av",
+    "port": 3310,
+    "debugMode": false,
+    "timeout": 2000,
+    "maxFileSize": 1048576
+  }
+}

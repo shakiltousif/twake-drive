@@ -7,6 +7,7 @@ import {
   CompanyStatsObject,
   CompanyUserObject,
 } from "./web/types";
+import { logger } from "../../core/platform/framework";
 
 export function formatCompany(
   companyEntity: Company,
@@ -66,6 +67,9 @@ export function formatCompany(
       [CompanyFeaturesEnum.COMPANY_MANAGE_ACCESS]: JSON.parse(
         config.get("drive.featureManageAccess") || "true",
       ),
+      [CompanyFeaturesEnum.COMPANY_AV_ENABLED]: JSON.parse(
+        config.get("drive.featureAntivirus") || "false",
+      ),
     },
     {
       ...(res.plan?.features || {}),
@@ -74,6 +78,8 @@ export function formatCompany(
         res.stats.total_members < res.plan?.limits[CompanyLimitsEnum.COMPANY_MEMBERS_LIMIT],
     },
   );
+
+  logger.info("🚀🚀 res.plan.features: ", res.plan.features);
 
   return res;
 }

@@ -93,6 +93,7 @@
   "storage": {
     "secret": "0ea28a329df23220fa814e005bfb671c",
     "iv": "1234abcd00000000",
+    "strategy": "local",
     "type": "local",
     "S3": {
       "endPoint": "play.min.io",
@@ -118,7 +119,15 @@
     "featureUserQuota": false,
     "featureManageAccess": true,
     "defaultCompany": "00000000-0000-4000-0000-000000000000",
-    "defaultUserQuota": 200000000
+    "defaultUserQuota": 200000000,
+    "featureAntivirus": false
+  },
+  "av": {
+    "host": "av",
+    "port": 3310,
+    "debugMode": false,
+    "timeout": 2000,
+    "maxFileSize": 26214400
   },
   "applications": {
     "grid": [

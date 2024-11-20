@@ -155,59 +155,8 @@ export class FileServiceImpl {
         entity.upload_data.size = totalUploadedSize;
         await this.repository.save(entity, context);
 
-        /** Send preview generation task */
-        if (entity.upload_data.size < this.max_preview_file_size) {
-          const document: PreviewMessageQueueRequest["document"] = {
-            id: JSON.stringify(_.pick(entity, "id", "company_id")),
-            provider: gr.platformServices.storage.getConnectorType(),
-
-            path: getFilePath(entity),
-            encryption_algo: this.algorithm,
-            encryption_key: entity.encryption_key,
-            chunks: entity.upload_data.chunks,
-
-            filename: entity.metadata.name,
-            mime: entity.metadata.mime,
-          };
-          const output = {
-            provider: gr.platformServices.storage.getConnectorType(),
-            path: `${getFilePath(entity)}/thumbnails/`,
-            encryption_algo: this.algorithm,
-            encryption_key: entity.encryption_key,
-            pages: 10,
-          };
-
-          entity.metadata.thumbnails_status = "waiting";
-          await this.repository.save(entity, context);
-
-          if (!options?.ignoreThumbnails) {
-            try {
-              await gr.platformServices.messageQueue.publish<PreviewMessageQueueRequest>(
-                "services:preview",
-                {
-                  data: { document, output },
-                },
-              );
-
-              if (options.waitForThumbnail) {
-                entity = await gr.services.files.getFile(
-                  {
-                    id: entity.id,
-                    company_id: context.company.id,
-                  },
-                  context,
-                  { waitForThumbnail: true },
-                );
-              }
-            } catch (err) {
-              entity.metadata.thumbnails_status = "error";
-              await this.repository.save(entity, context);
-
-              logger.warn({ err }, "Previewing - Error while sending ");
-            }
-          }
-        }
-        /** End preview generation task generation */
+        /** Send preview generation task if av is not enabled */
+        if (!gr.services.av?.avEnabled) await this.generatePreview(entity, options, context);
       }
     }
 
@@ -272,6 +221,70 @@ export class FileServiceImpl {
       type: thumbnail.type,
       size: thumbnail.size,
     };
+  }
+
+  generatePreview = async (
+    entity: File,
+    options: { waitForThumbnail?: boolean; ignoreThumbnails?: boolean },
+    context: CompanyExecutionContext,
+  ) => {
+    if (entity.upload_data.size < this.max_preview_file_size) {
+      const { document, output } = this.previewPayload(entity);
+
+      entity.metadata.thumbnails_status = "waiting";
+      await this.repository.save(entity, context);
+
+      if (!options?.ignoreThumbnails) {
+        try {
+          await gr.platformServices.messageQueue.publish<PreviewMessageQueueRequest>(
+            "services:preview",
+            {
+              data: { document, output },
+            },
+          );
+
+          if (options.waitForThumbnail) {
+            entity = await gr.services.files.getFile(
+              {
+                id: entity.id,
+                company_id: context.company.id,
+              },
+              context,
+              { waitForThumbnail: true },
+            );
+            return entity;
+          }
+        } catch (err) {
+          entity.metadata.thumbnails_status = "error";
+          await this.repository.save(entity, context);
+
+          logger.warn({ err }, "Previewing - Error while sending ");
+        }
+      }
+    }
+  };
+
+  previewPayload(entity: File) {
+    const document: PreviewMessageQueueRequest["document"] = {
+      id: JSON.stringify(_.pick(entity, "id", "company_id")),
+      provider: gr.platformServices.storage.getConnectorType(),
+
+      path: getFilePath(entity),
+      encryption_algo: this.algorithm,
+      encryption_key: entity.encryption_key,
+      chunks: entity.upload_data.chunks,
+
+      filename: entity.metadata.name,
+      mime: entity.metadata.mime,
+    };
+    const output = {
+      provider: gr.platformServices.storage.getConnectorType(),
+      path: `${getFilePath(entity)}/thumbnails/`,
+      encryption_algo: this.algorithm,
+      encryption_key: entity.encryption_key,
+      pages: 10,
+    };
+    return { document, output };
   }
 
   get(id: string, context: CompanyExecutionContext): Promise<File> {
@@ -437,7 +450,7 @@ export class FileServiceImpl {
         id: externalId,
         company_id: "00000000-0000-4000-0000-000000000000",
       });
-      const exist = await gr.platformServices.storage.exists(getFilePath(file) + "/chunk1");
+      const exist = await gr.platformServices.storage.exists(getFilePath(file));
       if (exist) {
         return { exist: true, file };
       } else {
@@ -465,6 +478,10 @@ export class FileServiceImpl {
       logger.error(`Error while uploading missing file ${id} to S3`, error);
       return { success: false };
     }
+  }
+
+  getEncryptionAlgorithm(): string {
+    return this.algorithm;
   }
 }
 export const getFilePath = (entity: File): string => {

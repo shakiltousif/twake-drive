@@ -30,10 +30,12 @@ import { CompanyServiceImpl } from "./user/services/companies";
 import { UserExternalLinksServiceImpl } from "./user/services/external_links";
 import { UserServiceImpl } from "./user/services/users/service";
 import { WorkspaceServiceImpl } from "./workspaces/services/workspace";
+import { AVServiceImpl } from "./av/service";
 
 import { PreviewEngine } from "./previews/services/files/engine";
 import { I18nService } from "./i18n";
 import { WebDAVServiceImpl } from "./webdav/services";
+import { getConfigOrDefault } from "../utils/get-config";
 
 type PlatformServices = {
   auth: AuthServiceAPI;
@@ -68,6 +70,7 @@ type TdriveServices = {
     documents: DocumentsService;
     engine: DocumentsEngine;
   };
+  av?: AVServiceImpl;
   tags: TagsService;
   i18n: I18nService;
   webdav: WebDAVServiceImpl;
@@ -134,6 +137,10 @@ class GlobalResolver {
       i18n: await new I18nService().init(),
       webdav: await new WebDAVServiceImpl().init(),
     };
+
+    // AV service is optional
+    if (getConfigOrDefault("drive.featureAntivirus", false))
+      this.services.av = await new AVServiceImpl().init();
 
     Object.keys(this.services).forEach((key: keyof TdriveServices) => {
       assert(this.services[key], `Service ${key} was not initialized`);

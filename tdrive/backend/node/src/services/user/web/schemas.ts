@@ -95,6 +95,7 @@ export const companyObjectSchema = {
             [CompanyFeaturesEnum.COMPANY_DISPLAY_EMAIL]: { type: "boolean" },
             [CompanyFeaturesEnum.COMPANY_USER_QUOTA]: { type: "boolean" },
             [CompanyFeaturesEnum.COMPANY_MANAGE_ACCESS]: { type: "boolean" },
+            [CompanyFeaturesEnum.COMPANY_AV_ENABLED]: { type: "boolean" },
             guests: { type: "number" }, // to rename or delete
             members: { type: "number" }, //  to rename or delete
             storage: { type: "number" }, //  to rename or delete
@@ -187,6 +188,19 @@ export const setUserPreferencesSchema = {
   tags: ["User"],
   response: {
     "2xx": userObjectSchema.properties.preferences,
+  },
+};
+
+export const sendUserClientReportSchema = {
+  request: {
+    type: "object",
+    properties: {
+      message: { type: "string" },
+    },
+    required: ["message"],
+  },
+  response: {
+    "2xx": {},
   },
 };
 
