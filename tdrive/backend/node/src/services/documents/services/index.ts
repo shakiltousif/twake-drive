@@ -478,7 +478,7 @@ export class DocumentsService {
       await updateItemSize(driveItem.parent_id, this.repository, context);
 
       // If AV feature is enabled, scan the file
-      if (globalResolver.services.av?.avEnabled && version) {
+      if (!driveItem.is_directory && globalResolver.services.av?.avEnabled && version) {
         try {
           driveItem.av_status = await globalResolver.services.av.scanDocument(
             driveItem,
