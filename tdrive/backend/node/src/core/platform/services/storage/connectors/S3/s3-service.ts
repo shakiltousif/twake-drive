@@ -22,6 +22,9 @@ export default class S3ConnectorService implements StorageConnectorAPI {
   id: string;
 
   constructor(S3Configuration: S3Configuration) {
+    if (S3Configuration.port && typeof S3Configuration.port === "string") {
+      S3Configuration.port = parseInt(S3Configuration.port, 10);
+    }
     this.client = new Minio.Client(S3Configuration);
     this.minioConfiguration = S3Configuration;
     this.id = this.minioConfiguration.id;
