@@ -3,6 +3,7 @@ import { logger } from "../../../../../../core/platform/framework";
 import { Readable } from "stream";
 import { StorageConnectorAPI, WriteMetadata } from "../../provider";
 import { randomUUID } from "crypto";
+import _ from "lodash";
 
 export type S3Configuration = {
   id: string;
@@ -22,11 +23,12 @@ export default class S3ConnectorService implements StorageConnectorAPI {
   id: string;
 
   constructor(S3Configuration: S3Configuration) {
-    if (S3Configuration.port && typeof S3Configuration.port === "string") {
-      S3Configuration.port = parseInt(S3Configuration.port, 10);
+    const confCopy = _.cloneDeep(S3Configuration) as S3Configuration;
+    if (confCopy.port && typeof confCopy.port === "string") {
+      confCopy.port = parseInt(confCopy.port, 10);
     }
-    this.client = new Minio.Client(S3Configuration);
-    this.minioConfiguration = S3Configuration;
+    this.client = new Minio.Client(confCopy);
+    this.minioConfiguration = confCopy;
     this.id = this.minioConfiguration.id;
     if (!this.id) {
       this.id = randomUUID();
