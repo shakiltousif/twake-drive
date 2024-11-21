@@ -27,6 +27,9 @@ export default class S3ConnectorService implements StorageConnectorAPI {
     if (confCopy.port && typeof confCopy.port === "string") {
       confCopy.port = parseInt(confCopy.port, 10);
     }
+    if (confCopy.useSSL && typeof confCopy.useSSL === "string") {
+      confCopy.useSSL = !(!confCopy.useSSL || confCopy.useSSL === "false");
+    }
     this.client = new Minio.Client(confCopy);
     this.minioConfiguration = confCopy;
     this.id = this.minioConfiguration.id;
