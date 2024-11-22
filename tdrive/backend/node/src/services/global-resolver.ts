@@ -130,7 +130,7 @@ class GlobalResolver {
     };
 
     // AV service is optional
-    if (getConfigOrDefault("drive.featureAntivirus", false))
+    if (getConfigOrDefault<boolean>("drive.featureAntivirus", false))
       this.services.av = await new AVServiceImpl().init();
 
     Object.keys(this.services).forEach((key: keyof TdriveServices) => {
