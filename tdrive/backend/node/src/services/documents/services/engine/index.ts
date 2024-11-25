@@ -7,6 +7,8 @@ import { DocumentsProcessor } from "./extract-keywords";
 import Repository from "../../../../core/platform/services/database/services/orm/repository/repository";
 import { DriveFile, TYPE } from "../../entities/drive-file";
 import { DocumentsFinishedProcess } from "./save-keywords";
+import { generateEncodedUrlComponents } from "../../utils";
+
 export class DocumentsEngine implements Initializable {
   private documentRepository: Repository<DriveFile>;
 
@@ -24,6 +26,7 @@ export class DocumentsEngine implements Initializable {
       logger.error(`Error dispatching document event. Unknown event type: ${event}`);
       return; // Early return on unknown event type
     }
+    const urlComponents = generateEncodedUrlComponents(e, receiver.id);
 
     try {
       const { html, text, subject } = await globalResolver.platformServices.emailPusher.build(
@@ -37,10 +40,12 @@ export class DocumentsEngine implements Initializable {
             {
               type: event,
               item: e.item,
+              urlComponents,
             },
           ],
         },
       );
+
       logger.info(`Sending email notification to ${receiver.email_canonical}`);
       await globalResolver.platformServices.emailPusher.send(receiver.email_canonical, {
         subject,
