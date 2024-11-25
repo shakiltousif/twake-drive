@@ -21,10 +21,13 @@ import { checkAccess, generateAccessToken } from "./services/access-check";
 import {
   CompanyExecutionContext,
   DriveExecutionContext,
+  NotificationActionType,
+  NotificationPayloadType,
   RootType,
   SharedWithMeType,
   TrashType,
 } from "./types";
+import short, { Translator } from "short-uuid";
 
 const ROOT: RootType = "root";
 const TRASH: TrashType = "trash";
@@ -672,4 +675,44 @@ export const getKeywordsOfFile = async (
     content_strings = await officeFileToString(file, extension);
   }
   return extractKeywords(content_strings);
+};
+
+/**
+ * Generate encodedUrl for email notification
+ */
+
+export const generateEncodedUrlComponents = (e: NotificationPayloadType, receiver: string) => {
+  const translator: Translator = short();
+  const encodedCompanyId = translator.fromUUID(e.item.company_id);
+  const clientPath = ["client", encodedCompanyId, "v"];
+  const isPersonalScope = e.item.scope === "personal";
+  const isDirectory = e.item.is_directory;
+  const itemId = isDirectory ? e.item.id : e.item.parent_id;
+
+  // Determine the scope and base view
+  let view: string;
+  switch (e.type) {
+    case NotificationActionType.UPDATE:
+      view = isPersonalScope ? `user_${receiver}` : "root";
+      break;
+    case NotificationActionType.DIRECT:
+      view = "shared_with_me";
+      break;
+    default:
+      throw new Error(`Unexpected NotificationActionType value: ${e.type}`);
+  }
+
+  // Build URL components
+  const urlComponents = [...clientPath, view];
+
+  // Add directory and itemId if applicable
+  if (e.type === NotificationActionType.UPDATE || isDirectory) {
+    urlComponents.push("d", itemId);
+  }
+
+  // To highlight the file in the document browser when the user clicks on the notification
+  if (!isDirectory) {
+    urlComponents.push("preview", e.item.id);
+  }
+  return urlComponents;
 };
