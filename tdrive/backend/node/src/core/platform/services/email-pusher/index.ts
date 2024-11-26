@@ -1,4 +1,5 @@
 import { getLogger, TdriveLogger, TdriveService } from "../../framework";
+import { getConfigOrDefault } from "../../../../utils/get-config";
 import EmailPusherAPI from "./provider";
 import {
   EmailBuilderDataPayload,
@@ -42,7 +43,7 @@ export default class EmailPusherClass
     });
     this.interface = this.configuration.get<string>("email_interface", "");
     this.platformUrl = this.configuration.get<string>("platform_url", "");
-    this.debug = this.configuration.get<boolean>("debug", false);
+    this.debug = getConfigOrDefault<boolean>("email-pusher.debug", true);
     if (this.interface === "smtp") {
       const useTLS = this.configuration.get<string>("smtp_tls", "false") == "true";
       const smtpConfig: SMTPClientConfigType = {
