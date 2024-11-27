@@ -18,7 +18,7 @@ will just continue 1.0.5 for this release*
   operation from a public link
 - Email link when folder updated by public link fixed
 - Fix download for Safari users who block popups
-
+- Fix for OnlyOffice based on postgres
 
 # Twake Drive v1.0.5-rc1
 
