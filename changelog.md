@@ -1,8 +1,7 @@
-# Twake Drive v1.0.5-rc3 - rc9
+# Twake Drive v1.0.5-rc3 - rc10
 
 *Note: `-rc2` should be 1.0.6, but to align with internal release cycle numbering, we
-will just continue 1.0.5 for this release. `-rc3` is tiny hotfix on top caught just in
-time*
+will just continue 1.0.5 for this release*
 
 ## Features
 
@@ -18,6 +17,7 @@ time*
   sorting by size, no more loading segment, and move
   operation from a public link
 - Email link when folder updated by public link fixed
+- Fix download for Safari users who block popups
 
 
 # Twake Drive v1.0.5-rc1
