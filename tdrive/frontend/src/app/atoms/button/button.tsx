@@ -3,7 +3,15 @@ import React, { useEffect } from 'react';
 import _ from 'lodash';
 import { addShortcut, removeShortcut } from 'app/features/global/services/shortcut-service';
 
-export type ButtonTheme = 'primary' | 'secondary' | 'danger' | 'default' | 'outline' | 'dark' | 'white' | 'green';
+export type ButtonTheme =
+  | 'primary'
+  | 'secondary'
+  | 'danger'
+  | 'default'
+  | 'outline'
+  | 'dark'
+  | 'white'
+  | 'green';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   theme?: ButtonTheme;
@@ -58,48 +66,30 @@ export const Button = (props: ButtonProps) => {
     else className = className + ' w-9 !p-0 justify-center';
   }
 
-  // translate shortcuts
-  const translateDynamicShortcut = (shortcut: string): string =>
-    shortcut.startsWith('CmdOrCtrl+Shift')
-      ? `⇧⌘${shortcut.replace('CmdOrCtrl+Shift+', '')}`
-      : shortcut.startsWith('CmdOrCtrl')
-      ? `⌘${shortcut.replace('CmdOrCtrl+', '')}`
-      : shortcut;
+  useEffect(() => {
+    const handler = (event?: KeyboardEvent) => {
+      // Disable default behavior for the shortcut
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      props.onClick && props.onClick({} as any);
+    };
 
-  if (props.shortcut) {
-    useEffect(() => {
-      const handler = (event?: KeyboardEvent) => {
-        // Disable default behavior for the shortcut
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        props.onClick && props.onClick({} as any);
-      };
+    const shortcut = props.shortcut || '';
 
-      const shortcut = props.shortcut || '';
-
-      // Add shortcut with default behavior prevention
-      addShortcut({
-        shortcut,
-        handler: event => {
-          handler(event as KeyboardEvent);
-        },
-      });
-
-      return () => {
-        removeShortcut({
-          shortcut,
-          handler: event => {
-            handler(event as KeyboardEvent);
-          },
-        });
-      };
-    }, [props.onClick, props.shortcut]);
-  }
+    // Add shortcut with default behavior prevention
+    addShortcut({
+      shortcut,
+      handler: event => {
+        handler(event as KeyboardEvent);
+      },
+    });
+  }, [props.onClick, props.shortcut]);
 
   return (
     <button
+      aria-keyshortcuts={props.shortcut}
       type="button"
       className={
         ' inline-flex items-center px-4 py-2 border font-medium rounded-md focus:outline-none ' +
@@ -145,11 +135,11 @@ export const Button = (props: ButtonProps) => {
       {props.children}
       {props.shortcut && props.theme !== 'white' && (
         <span
-          className={`ml-2 text-xs ${
-            props.theme === 'primary' ? 'text-gray-200' : 'text-gray-400'
+          className={`ml-2 text-xs w-5 h-5 leading-[22px] text-center rounded-sm opacity-100 ${
+            props.theme === 'primary' ? 'text-gray-200 bg-[#004591]' : 'text-gray-400 bg-gray-200'
           }`}
         >
-          {translateDynamicShortcut(props.shortcut)}
+          {props.shortcut}
         </span>
       )}
     </button>
