@@ -50,8 +50,19 @@ export const isSharedWithMeFolder = (id: string) => {
 export const getVirtualFoldersNames = async (id: string, context: DriveExecutionContext) => {
   const configuration = new Configuration("drive");
   const defaultLang = configuration.get<string>("defaultLanguage") || "en";
-  const user = await gr.services.users.get({ id: context.user?.id });
-  const locale = user?.preferences?.locale || defaultLang;
+  const locale = await (async () => {
+    try {
+      const user = await gr.services.users.get({ id: context.user?.id });
+      return user?.preferences?.locale || defaultLang;
+    } catch (error) {
+      logger.error(
+        { error, context },
+        "Ignoring error getting user to translate root. This is expected from requests coming from applications as the user id is not a valid UUID for postgres. Defaulting to " +
+          defaultLang,
+      );
+      return defaultLang;
+    }
+  })();
 
   if (id.startsWith("user_")) {
     return gr.services.i18n.translate("virtual-folder.my-drive", locale);
