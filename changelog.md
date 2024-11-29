@@ -1,4 +1,4 @@
-# Twake Drive v1.0.5-rc3 - rc10
+# Twake Drive v1.0.5
 
 *Note: `-rc2` should be 1.0.6, but to align with internal release cycle numbering, we
 will just continue 1.0.5 for this release. Canditates through `rc11` were hotfixes*
