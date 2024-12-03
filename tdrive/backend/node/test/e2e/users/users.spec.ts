@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
-import { init, TestPlatform } from "../setup";
+import { init, initWithDefaults, TestPlatform } from "../setup";
 import { TestDbService } from "../utils.prepare.db";
 import { v1 as uuidv1 } from "uuid";
 import { CompanyLimitsEnum } from "../../../src/services/user/web/types";
@@ -22,23 +22,7 @@ describe("The /users API", () => {
   });
 
   beforeAll(async () => {
-    const platform = await init({
-      services: [
-        "database",
-        "search",
-        "message-queue",
-        "applications",
-        "webserver",
-        "user",
-        "auth",
-        "storage",
-        "counter",
-        "console",
-        "workspaces",
-        "statistics",
-        "platform-services",
-      ],
-    });
+    platform = await initWithDefaults();
 
     testDbService = await TestDbService.getInstance(platform);
     await testDbService.createCompany();
