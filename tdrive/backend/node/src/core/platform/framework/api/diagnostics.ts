@@ -1,5 +1,6 @@
 import assert from "node:assert";
 import config from "../../../config";
+import { logger } from "../logger";
 
 /**
  * Values that can match a set of diagnostic providers.
@@ -142,7 +143,7 @@ const runProvider = async provider => {
   const startMs = now();
   try {
     const result = await provider.get();
-    if (!result.ok || result.warn)
+    if (!result.ok)
       logger.error(
         { provider: provider.key, result },
         "Got diagnostic provider result with ok=false",
@@ -153,8 +154,9 @@ const runProvider = async provider => {
         "Got diagnostic provider result with ok=true but a warning",
       );
     return recordDiagnostic(startMs, provider.key, result);
-  } catch (error) {
-    return recordDiagnostic(startMs, provider.key, undefined, error);
+  } catch (err) {
+    logger.error({ err, provider: provider.key }, "Failed to read diagnostic provider");
+    return recordDiagnostic(startMs, provider.key, undefined, err);
   }
 };
 
