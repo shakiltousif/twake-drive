@@ -72,12 +72,13 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
 
   async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
     switch (depth) {
-      case TServiceDiagnosticDepth.critical:
+      case TServiceDiagnosticDepth.alive:
         return { ok: true, didConnect: await this.ping() };
       case TServiceDiagnosticDepth.stats_basic:
       case TServiceDiagnosticDepth.stats_track:
       case TServiceDiagnosticDepth.stats_deep:
         return { ok: true, warn: "unsupported_depth" };
+
       default:
         throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
     }

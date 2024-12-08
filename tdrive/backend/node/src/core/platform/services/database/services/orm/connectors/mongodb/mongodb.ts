@@ -52,18 +52,45 @@ export class MongoConnector extends AbstractConnector<MongoConnectionOptions> {
     return !wasConnected;
   }
 
+  private async dbStats(): Promise<object> {
+    return (await this.getDatabase()).stats();
+  }
+
+  private async collectionsStats(deep: boolean): Promise<object> {
+    const db = await this.getDatabase();
+    const result = { collections: {} };
+    for (const collection of await db.collections()) {
+      const stats = await collection.aggregate([
+        {
+          $collStats: {
+            latencyStats: { histograms: true },
+            storageStats: deep ? {} : undefined, // Really a lot of keys with 0 occurances
+            count: {},
+            queryExecStats: {},
+          },
+        },
+      ]);
+      result.collections[collection.collectionName] = await stats.toArray();
+    }
+    return result;
+  }
+
   async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
     switch (depth) {
-      case TServiceDiagnosticDepth.critical:
+      case TServiceDiagnosticDepth.alive:
         return { ok: true, didConnect: await this.ping() };
-      case TServiceDiagnosticDepth.deep_statistics:
-      case TServiceDiagnosticDepth.tracked_statistics:
-        return { ok: true, warn: "unsupported_depth" };
+      case TServiceDiagnosticDepth.stats_track:
+        return { ok: true, ...(await this.dbStats()) };
+      case TServiceDiagnosticDepth.stats_basic:
+        return { ok: true, ...(await this.collectionsStats(false)) };
+      case TServiceDiagnosticDepth.stats_deep:
+        return { ok: true, ...(await this.collectionsStats(true)) };
 
       default:
         throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
     }
   }
+
   getClient(): mongo.MongoClient {
     return this.client;
   }

@@ -13,17 +13,27 @@ export type TDiagnosticTag =
   | "startup" // Tests that are absolutely required (and light) to even begin the other tests
   | "ready" // Tests required before traffic can be sent our way
   | "live" // Tests required to prevent from being restarted
-  | "stats"; // Expensive diagnostics that should not often be ran
+  | "stats" // Expensive diagnostics that should not often be ran, but can be system wide
+  | "stats-full"; // Expensive diagnostics that should not often be ran, and then probably for a single key
 
 /** Detail requested from platform service self-diagnostics */
 export enum TServiceDiagnosticDepth {
   /** Minimal cost information that tests functioning service */
-  critical = 0,
-  /** Statistics that have a little impact enough for regular tracking into a time series */
-  tracked_statistics = 1,
+  alive = "alive",
+  /** Statistics that have a little impact enough for periodic tracking into a time series */
+  stats_track = "stats_track",
+  /** Statistics that should be included when looking specifically at general statistics */
+  stats_basic = "stats_basic",
   /** Statistics possibly expensive and large to calculate, for occasional debug operations */
-  deep_statistics = 2,
+  stats_deep = "stats_deep",
 }
+
+const serviceDiagnosticDepthToTags: { [depth in TServiceDiagnosticDepth]: TDiagnosticTag[] } = {
+  [TServiceDiagnosticDepth.alive]: ["startup", "live", "ready"],
+  [TServiceDiagnosticDepth.stats_track]: ["ready", "stats"],
+  [TServiceDiagnosticDepth.stats_basic]: ["stats", "stats-full"],
+  [TServiceDiagnosticDepth.stats_deep]: ["stats-full"],
+};
 
 interface IDiagnosticsConfig {
   // Diagnostic keys that should be considered ok without evaluation
@@ -181,6 +191,31 @@ export default {
       triggerUpdate = () => pendingTimeouts.push(setTimeout(updateProvider, provider.pollPeriodMs));
       triggerUpdate();
     });
+  },
+
+  /** Create providers to match from {@link IServiceDiagnosticProvider} to multiple {@link IDiagnosticProvider}s */
+  registerServiceProviders(
+    name: string,
+    getService: () => IServiceDiagnosticProvider,
+    overrideTags: Partial<
+      typeof serviceDiagnosticDepthToTags | { [key in TServiceDiagnosticDepth]: false }
+    > = {},
+  ) {
+    this.registerProviders(
+      ...Object.values(TServiceDiagnosticDepth)
+        .map(depth => {
+          const defaultTags = serviceDiagnosticDepthToTags[depth];
+          if (!defaultTags) throw new Error(`Unknown depth ${JSON.stringify(depth)}`);
+          const tags = overrideTags[depth] ?? defaultTags;
+          if (tags === false) return null;
+          return {
+            key: `${name}-${depth}`,
+            tags,
+            get: () => getService().getDiagnostics(depth),
+          };
+        })
+        .filter(x => !!x),
+    );
   },
 
   /** Cancel all pending diagnostic updates */

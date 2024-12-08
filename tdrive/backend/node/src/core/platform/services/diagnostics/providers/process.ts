@@ -8,8 +8,8 @@ export default () =>
       return {
         ok: true,
         gc: !!global.gc,
-        mem: process.memoryUsage(),
         pid: process.pid,
+        mem: process.memoryUsage(),
         res: process.resourceUsage(),
       };
     },
