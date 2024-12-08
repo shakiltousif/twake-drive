@@ -74,10 +74,24 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
     switch (depth) {
       case TServiceDiagnosticDepth.alive:
         return { ok: true, didConnect: await this.ping() };
-      case TServiceDiagnosticDepth.stats_basic:
       case TServiceDiagnosticDepth.stats_track:
+        return {
+          ok: true,
+          db: (
+            await this.client.query("select * from pg_stat_database where datname = $1", [
+              this.options.database,
+            ])
+          ).rows,
+        };
+      case TServiceDiagnosticDepth.stats_basic:
+        return { ok: true, warn: "pgsql_basic_has_nothing_more_than_track" };
       case TServiceDiagnosticDepth.stats_deep:
-        return { ok: true, warn: "unsupported_depth" };
+        return {
+          ok: true,
+          databases: (await this.client.query("select * from pg_stat_database")).rows,
+          tables: (await this.client.query("select * from pg_stat_user_tables")).rows,
+          indexes: (await this.client.query("select * from pg_stat_user_indexes")).rows,
+        };
 
       default:
         throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
