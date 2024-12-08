@@ -8,6 +8,10 @@ import { AbstractConnector } from "../abstract-connector";
 import { buildSelectQuery } from "./query-builder";
 import { transformValueFromDbString, transformValueToDbString } from "./typeTransforms";
 import { logger } from "../../../../../../framework";
+import {
+  TDiagnosticResult,
+  TServiceDiagnosticDepth,
+} from "../../../../../../framework/api/diagnostics";
 
 export interface MongoConnectionOptions {
   // TODO: More options
@@ -42,6 +46,24 @@ export class MongoConnector extends AbstractConnector<MongoConnectionOptions> {
     return this;
   }
 
+  private async ping(): Promise<boolean> {
+    const wasConnected = !!this.client;
+    await (await this.getDatabase()).admin().ping();
+    return !wasConnected;
+  }
+
+  async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
+    switch (depth) {
+      case TServiceDiagnosticDepth.critical:
+        return { ok: true, didConnect: await this.ping() };
+      case TServiceDiagnosticDepth.deep_statistics:
+      case TServiceDiagnosticDepth.tracked_statistics:
+        return { ok: true, warn: "unsupported_depth" };
+
+      default:
+        throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
+    }
+  }
   getClient(): mongo.MongoClient {
     return this.client;
   }
