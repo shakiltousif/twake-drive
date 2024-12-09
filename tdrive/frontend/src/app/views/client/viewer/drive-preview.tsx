@@ -161,6 +161,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
                   size="lg"
                   icon={ArrowLeftIcon}
                   onClick={ handleSwitchLeft }
+                  testClassId="drive-preview-button-switch-left"
                 />
                 <Button
                   iconSize="lg"
@@ -169,6 +170,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
                   size="lg"
                   icon={ArrowRightIcon}
                   onClick={ handleSwitchRight }
+                  testClassId="drive-preview-button-switch-right"
                 />
               </>
             }
@@ -181,6 +183,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
               onClick= {() => {
                 download && (window.location.href = download);
               }}
+              testClassId="drive-preview-button-download"
             />
           </div>
         </div>
