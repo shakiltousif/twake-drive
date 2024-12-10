@@ -23,11 +23,13 @@ export default (): JSX.Element => {
       menu={[
         // user name / email
         {
+          id: 'username',
           type: 'text',
           className: "username",
           text: currentUserService.getFullName(user),
         },
         {
+          id: 'email',
           type: 'text',
           text: user.email,
           className: 'email',
@@ -36,6 +38,7 @@ export default (): JSX.Element => {
         },
         { type: 'separator' },
         {
+          id: 'account-setting',
           type: 'menu',
           className: 'account-menu',
           icon: <Icon type="user-circle" className="text-black dark:text-white" />,
@@ -46,6 +49,7 @@ export default (): JSX.Element => {
           },
         },
         {
+          id: 'logout',
           type: 'menu',
           className: 'account-menu',
           icon: <Icon type="sign-out-alt" className="text-black dark:text-white" />,
@@ -61,6 +65,7 @@ export default (): JSX.Element => {
         className="shrink-0 border-0"
         avatar={user.thumbnail}
         title={currentUserService.getFullName(user)}
+        testClassId="account-avatar"
       />
     </Menu>
   );
