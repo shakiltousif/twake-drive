@@ -21,6 +21,9 @@ import { ReactComponent as StatusCheckDouble } from './assets/status-check-doubl
 import { ReactComponent as StatusCheck } from './assets/status-check.svg';
 import { ReactComponent as Users } from './assets/users.svg';
 import { ReactComponent as Sort } from './assets/sort.svg';
+import { ReactComponent as Envelop } from './assets/envelop.svg';
+import { ReactComponent as Account } from './assets/account.svg';
+import { ReactComponent as Logout } from './assets/logout.svg';
 
 export const CopyIcon = (props: ComponentProps<'svg'>) => <CopySvg {...props} />;
 export const DeleteIcon = (props: ComponentProps<'svg'>) => <DeleteSvg {...props} />;
@@ -45,3 +48,6 @@ export const StatusCheckDoubleIcon = (props: ComponentProps<'svg'>) => (
 export const StatusCheckIcon = (props: ComponentProps<'svg'>) => <StatusCheck {...props} />;
 export const UsersIcon = (props: ComponentProps<'svg'>) => <Users {...props} />;
 export const SortIcon = (props: ComponentProps<'svg'>) => <Sort {...props} />;
+export const EnvelopIcon = (props: ComponentProps<'svg'>) => <Envelop {...props} />;
+export const AccountIcon = (props: ComponentProps<'svg'>) => <Account {...props} />;
+export const LogoutIcon = (props: ComponentProps<'svg'>) => <Logout {...props} />;

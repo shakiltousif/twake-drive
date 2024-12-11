@@ -41,6 +41,21 @@
     padding: 0 8px;
   }
 
+  .username {
+    .text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+  }
+
+  .account-menu {
+    height: 46px !important;
+    line-height: 46px !important;
+    .text {
+      margin-left: 10px;
+    }
+  }
+
   .menu-text {
     font-size: 12px;
     font-weight: 500;
@@ -119,6 +134,9 @@
       color: var(--primary);
       .icon {
         color: var(--primary);
+        svg {
+          stroke: var(--primary);
+        }
       }
     }
 
