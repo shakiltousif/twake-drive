@@ -23,13 +23,13 @@ export default (): JSX.Element => {
       menu={[
         // user name / email
         {
-          id: 'username',
+          testClassId: 'username',
           type: 'text',
           className: "username",
           text: currentUserService.getFullName(user),
         },
         {
-          id: 'email',
+          testClassId: 'email',
           type: 'text',
           text: user.email,
           className: 'email',
@@ -38,7 +38,7 @@ export default (): JSX.Element => {
         },
         { type: 'separator' },
         {
-          id: 'account-setting',
+          testClassId: 'account-setting',
           type: 'menu',
           className: 'account-menu',
           icon: <Icon type="user-circle" className="text-black dark:text-white" />,
@@ -49,7 +49,7 @@ export default (): JSX.Element => {
           },
         },
         {
-          id: 'logout',
+          testClassId: 'logout',
           type: 'menu',
           className: 'account-menu',
           icon: <Icon type="sign-out-alt" className="text-black dark:text-white" />,
