@@ -9,7 +9,7 @@ import ModalManagerDepreciated from '@deprecated/popupManager/popupManager';
 import FeatureTogglesService, {
   FeatureNames,
 } from '@features/global/services/feature-toggles-service';
-import { AccountIcon, EnvelopIcon, LogoutIcon } from 'app/atoms/icons-agnostic';
+import Icon from '@components/icon/icon.jsx';
 
 export default (): JSX.Element => {
   const { user } = useCurrentUser();
@@ -28,17 +28,17 @@ export default (): JSX.Element => {
           text: currentUserService.getFullName(user),
         },
         {
-          type: 'menu',
+          type: 'text',
           text: user.email,
-          className: 'account-menu',
-          icon: <EnvelopIcon className="stroke-black dark:stroke-white" />,
+          className: 'email',
+          icon: <Icon type="envelope" className="text-black dark:text-white" />,
           hide: !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_DISPLAY_EMAIL),
         },
         { type: 'separator' },
         {
           type: 'menu',
           className: 'account-menu',
-          icon: <AccountIcon className="stroke-black dark:stroke-white" />,
+          icon: <Icon type="user-circle" className="text-black dark:text-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.title'),
           //hide: InitService.server_infos?.configuration?.accounts?.type === 'remote',
           onClick: () => {
@@ -48,7 +48,7 @@ export default (): JSX.Element => {
         {
           type: 'menu',
           className: 'account-menu',
-          icon: <LogoutIcon className="stroke-black dark:stroke-white" />,
+          icon: <Icon type="sign-out-alt" className="text-black dark:text-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.logout'),
           onClick: () => {
             LoginService.logout();

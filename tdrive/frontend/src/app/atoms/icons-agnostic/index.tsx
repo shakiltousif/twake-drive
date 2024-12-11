@@ -48,6 +48,3 @@ export const StatusCheckDoubleIcon = (props: ComponentProps<'svg'>) => (
 export const StatusCheckIcon = (props: ComponentProps<'svg'>) => <StatusCheck {...props} />;
 export const UsersIcon = (props: ComponentProps<'svg'>) => <Users {...props} />;
 export const SortIcon = (props: ComponentProps<'svg'>) => <Sort {...props} />;
-export const EnvelopIcon = (props: ComponentProps<'svg'>) => <Envelop {...props} />;
-export const AccountIcon = (props: ComponentProps<'svg'>) => <Account {...props} />;
-export const LogoutIcon = (props: ComponentProps<'svg'>) => <Logout {...props} />;
