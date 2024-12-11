@@ -1,11 +1,13 @@
 import FileUploadService from '@features/files/services/file-upload-service';
 import { selector } from 'recoil';
 import { PendingFilesListState } from '../atoms/pending-files-list';
+import { RootPendingFilesListState } from '../atoms/root-pending-files-list';
 
 export const CurrentTaskSelector = selector({
   key: 'CurrentTaskFilesSelector',
   get: ({ get }) => {
     const list = get(PendingFilesListState);
+    const rootList = get(RootPendingFilesListState) || {};
 
     const currentTaskFiles = list
       ? list.filter(
@@ -16,6 +18,7 @@ export const CurrentTaskSelector = selector({
       : [];
 
     return {
+      roots: rootList,
       files: currentTaskFiles,
       total: currentTaskFiles.length,
       uploaded: currentTaskFiles.filter(f => f.status === 'success').length,

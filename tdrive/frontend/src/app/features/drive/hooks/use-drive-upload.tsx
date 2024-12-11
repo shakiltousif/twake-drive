@@ -16,7 +16,7 @@ export const useDriveUpload = () => {
 
   const uploadVersion = async (file: File, context: { companyId: string; id: string }) => {
     return new Promise(r => {
-      FileUploadService.upload([file], {
+      FileUploadService.upload([{root: file.name, file}], {
         context: {
           companyId: context.companyId,
           id: context.id,
@@ -62,6 +62,7 @@ export const useDriveUpload = () => {
     for (const parentId of Object.keys(filesPerParentId)) {
       logger.debug(`Upload files for directory ${parentId}`);
       expectedUploadsCount += filesPerParentId[parentId].length;
+      console.log("UP:: TREE IS:: ", filesPerParentId[parentId]);
       await FileUploadService.upload(filesPerParentId[parentId], {
         context: {
           companyId: context.companyId,
@@ -114,7 +115,7 @@ export const useDriveUpload = () => {
         if (request.status != 200)
           throw new Error(`Unexpected response status code: ${request.status} from ${JSON.stringify(url)}`);
         const file = new File([request.response], name);
-        FileUploadService.upload([file], {
+        FileUploadService.upload([{root: file.name , file}], {
           context: {
             companyId: context.companyId,
             parentId: context.parentId,

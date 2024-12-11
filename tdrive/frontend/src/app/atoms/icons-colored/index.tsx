@@ -10,6 +10,10 @@ import { ReactComponent as FileTypeUnknownSvg } from './assets/file-type-unknown
 import { ReactComponent as FileTypeMediaSvg } from './assets/file-type-media.svg';
 import { ReactComponent as FileTypeSlidesSvg } from './assets/file-type-slides.svg';
 import { ReactComponent as FileTypeLinkSvg } from './assets/file-type-link.svg';
+import { ReactComponent as FolderSvg } from './assets/folder.svg';
+import { ReactComponent as ArrowDownSvg } from './assets/arrow-down.svg';
+import { ReactComponent as ArrowUpSvg } from './assets/arrow-up.svg';
+import { ReactComponent as CheckGreenSvg } from './assets/check-green.svg';
 import { ReactComponent as RemoveSvg } from './assets/remove.svg';
 import { ReactComponent as SentSvg } from './assets/sent.svg';
 
@@ -36,6 +40,14 @@ export const FileTypeSlidesIcon = (props: ComponentProps<'svg'>) => (
 );
 
 export const FileTypeLinkIcon = (props: ComponentProps<'svg'>) => <FileTypeLinkSvg {...props} />;
+
+export const FolderIcon = (props: ComponentProps<'svg'>) => <FolderSvg {...props} />;
+
+export const ArrowDownIcon = (props: ComponentProps<'svg'>) => <ArrowDownSvg {...props} />;
+
+export const ArrowUpIcon = (props: ComponentProps<'svg'>) => <ArrowUpSvg {...props} />;
+
+export const CheckGreenIcon = (props: ComponentProps<'svg'>) => <CheckGreenIcon {...props} />;
 
 export const RemoveIcon = (props: ComponentProps<'svg'>) => <RemoveSvg {...props} />;
 

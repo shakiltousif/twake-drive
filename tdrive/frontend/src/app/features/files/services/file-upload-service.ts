@@ -10,8 +10,8 @@ import RouterServices from '@features/router/services/router-service';
 import _ from 'lodash';
 import FileUploadAPIClient from '../api/file-upload-api-client';
 import { isPendingFileStatusPending } from '../utils/pending-files';
-import { FileTreeObject } from "components/uploads/file-tree-utils";
-import { DriveApiClient } from "features/drive/api-client/api-client";
+import { FileTreeObject } from 'components/uploads/file-tree-utils';
+import { DriveApiClient } from 'features/drive/api-client/api-client';
 import { ToasterService } from 'app/features/global/services/toaster-service';
 import Languages from 'app/features/global/services/languages-service';
 
@@ -22,12 +22,15 @@ export enum Events {
 const logger = Logger.getLogger('Services/FileUploadService');
 class FileUploadService {
   private pendingFiles: PendingFileType[] = [];
+  private GroupedPendingFiles: { [key: string]: PendingFileType[] } = {};
   public currentTaskId = '';
   private recoilHandler: Function = () => undefined;
+  private rootRecoilHandler: Function = () => undefined;
   private logger: Logger.Logger = Logger.getLogger('FileUploadService');
 
-  setRecoilHandler(handler: Function) {
+  setRecoilHandler(handler: Function, rootHandler: Function) {
     this.recoilHandler = handler;
+    this.rootRecoilHandler = rootHandler;
   }
 
   notify() {
@@ -39,19 +42,53 @@ class FileUploadService {
         file: f.backendFile,
       };
     });
+    const updatedRootState = Object.keys(this.GroupedPendingFiles).reduce(
+      (acc: any, key: string) => {
+        const files = this.GroupedPendingFiles[key]
+          .map((f: PendingFileType) => {
+            // filter out the files that are not part of the current task
+            if (
+              f.uploadTaskId !== this.currentTaskId ||
+              f.status === 'error' ||
+              f.status === 'success'
+            ) {
+              return null;
+            }
+            return {
+              id: f.id,
+              status: f.status,
+              progress: f.progress,
+              file: f.backendFile,
+            };
+          })
+          .filter(file => file !== null); // remove null entries from the array
+
+        // Add to the accumulator object
+        acc[key] = [...files];
+        return acc;
+      },
+      {},
+    );
     this.recoilHandler(_.cloneDeep(updatedState));
+    this.rootRecoilHandler(_.cloneDeep(updatedRootState));
   }
 
-  public async createDirectories(root: FileTreeObject['tree'], context: { companyId: string; parentId: string }) {
+  public async createDirectories(
+    root: FileTreeObject['tree'],
+    context: { companyId: string; parentId: string },
+  ) {
     // Create all directories
-    const filesPerParentId: { [key: string]: File[] } = {};
-    filesPerParentId[context.parentId] = []
+    const filesPerParentId: { [key: string]: { root: string; file: File }[] } = {};
+    filesPerParentId[context.parentId] = [];
 
     const traverserTreeLevel = async (tree: FileTreeObject['tree'], parentId: string) => {
       for (const directory of Object.keys(tree)) {
-        if (tree[directory] instanceof File) {
+        if (tree[directory].file instanceof File) {
           logger.trace(`${directory} is a file, save it for future upload`);
-          filesPerParentId[parentId].push(tree[directory] as File);
+          filesPerParentId[parentId].push({
+            root: tree[directory].root as string,
+            file: tree[directory].file as File,
+          });
         } else {
           logger.debug(`Create directory ${directory}`);
 
@@ -77,20 +114,20 @@ class FileUploadService {
             backendFile: null,
             resumable: null,
             label: directory,
-            type: "file",
+            type: 'file',
             pausable: false,
           };
 
-          this.pendingFiles.push(pendingFile);
-          this.notify();
-
           try {
-            const driveItem = await DriveApiClient.create(context.companyId, { item: item, version: {}});
+            const driveItem = await DriveApiClient.create(context.companyId, {
+              item: item,
+              version: {},
+            });
             this.logger.debug(`Directory ${directory} created`);
             pendingFile.status = 'success';
             this.notify();
             if (driveItem?.id) {
-              filesPerParentId[driveItem.id] = []
+              filesPerParentId[driveItem.id] = [];
               await traverserTreeLevel(tree[directory] as FileTreeObject['tree'], driveItem.id);
             }
           } catch (e) {
@@ -99,14 +136,14 @@ class FileUploadService {
           }
         }
       }
-    }
+    };
 
     await traverserTreeLevel(root, context.parentId);
     return filesPerParentId;
   }
 
   public async upload(
-    fileList: File[],
+    fileList: { root: string; file: File }[],
     options?: {
       context?: any;
       callback?: (file: FileType | null, context: any) => void;
@@ -125,7 +162,7 @@ class FileUploadService {
     }
 
     for (const file of fileList) {
-      if (!file) continue;
+      if (!file.file) continue;
 
       const pendingFile: PendingFileType = {
         id: uuid(),
@@ -134,21 +171,26 @@ class FileUploadService {
         lastProgress: new Date().getTime(),
         speed: 0,
         uploadTaskId: this.currentTaskId,
-        originalFile: file,
+        originalFile: file.file,
         backendFile: null,
         resumable: null,
-        type: "file",
+        type: 'file',
         label: null,
-        pausable: true
+        pausable: true,
       };
 
-      this.pendingFiles.push(pendingFile);
+      console.log('fs:: upload:: pendingFile', pendingFile);
 
+      this.pendingFiles.push(pendingFile);
+      if (!this.GroupedPendingFiles[file.root]) {
+        this.GroupedPendingFiles[file.root] = [];
+      }
+      this.GroupedPendingFiles[file.root].push(pendingFile);
       this.notify();
 
       // First we create the file object
       const resource = (
-        await FileUploadAPIClient.upload(file, { companyId, ...(options?.context || {}) })
+        await FileUploadAPIClient.upload(file.file, { companyId, ...(options?.context || {}) })
       )?.resource;
 
       if (!resource) {
@@ -173,7 +215,7 @@ class FileUploadService {
         },
       });
 
-      pendingFile.resumable.addFile(file);
+      pendingFile.resumable.addFile(file.file);
 
       pendingFile.resumable.on('fileAdded', () => pendingFile.resumable.upload());
 
@@ -208,9 +250,16 @@ class FileUploadService {
       pendingFile.resumable.on('fileError', () => {
         pendingFile.status = 'error';
         pendingFile.resumable.cancel();
-        const intendedFilename = (pendingFile.originalFile || {}).name || (pendingFile.backendFile || { metadata: {}}).metadata.name;
-        ToasterService.error(Languages.t('services.file_upload_service.toaster.upload_file_error', [intendedFilename],
-                                         'Error uploading file ' + intendedFilename));
+        const intendedFilename =
+          (pendingFile.originalFile || {}).name ||
+          (pendingFile.backendFile || { metadata: {} }).metadata.name;
+        ToasterService.error(
+          Languages.t(
+            'services.file_upload_service.toaster.upload_file_error',
+            [intendedFilename],
+            'Error uploading file ' + intendedFilename,
+          ),
+        );
         options?.callback?.(null, options?.context || {});
         this.notify();
       });
@@ -334,7 +383,6 @@ class FileUploadService {
       fileId: fileId,
     });
   }
-
 
   public getDownloadRoute({ companyId, fileId }: { companyId: string; fileId: string }): string {
     return FileUploadAPIClient.getDownloadRoute({

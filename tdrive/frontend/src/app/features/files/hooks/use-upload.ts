@@ -2,12 +2,16 @@ import FileUploadService from '@features/files/services/file-upload-service';
 import RouterServices from '@features/router/services/router-service';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { PendingFilesListState } from '../state/atoms/pending-files-list';
+import { RootPendingFilesListState } from '../state/atoms/root-pending-files-list';
 import { CurrentTaskSelector } from '../state/selectors/current-task';
 
 export const useUpload = () => {
   const { companyId } = RouterServices.getStateFromRoute();
   const [pendingFilesListState, setPendingFilesListState] = useRecoilState(PendingFilesListState);
-  FileUploadService.setRecoilHandler(setPendingFilesListState);
+  const [rootPendingFilesListState, setRootPendingFilesListState] =
+    useRecoilState(RootPendingFilesListState);
+  FileUploadService.setRecoilHandler(setPendingFilesListState, setRootPendingFilesListState);
+  // FileUploadService.setRecoilHandler(setPendingFilesListState);
 
   const currentTask = useRecoilValue(CurrentTaskSelector);
 

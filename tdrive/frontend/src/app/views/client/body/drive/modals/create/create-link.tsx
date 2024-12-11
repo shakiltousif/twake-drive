@@ -21,7 +21,7 @@ export const CreateLink = () => {
       type: 'text/uri-list',
     });
 
-    await FileUploadService.upload([file], {
+    await FileUploadService.upload([{ root: file.name, file }], {
       context: {
         parentId: state.parent_id,
       },

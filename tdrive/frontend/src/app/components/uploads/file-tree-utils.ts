@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type TreeItem = { [key: string]: File | TreeItem };
+type TreeItem = { [key: string]: { root: string; file: File } | TreeItem };
 
 export type FileTreeObject = {
   tree: TreeItem;
@@ -163,7 +163,10 @@ export const getFilesTree = (
             return;
           }
           if (dir_index === path.split('/').length - 1) {
-            dirs[dir] = real_file;
+            dirs[dir] = {
+              root: path.split('/')[0],
+              file: real_file,
+            };
           } else {
             if (!dirs[dir]) {
               dirs[dir] = {};
@@ -172,8 +175,8 @@ export const getFilesTree = (
           }
         });
       });
-
-      fcb && fcb(tree, documents_number, total_size);
+      console.log("tree is:: ", tree);
+      // fcb && fcb(tree, documents_number, total_size);
       resolve({ tree, documentsCount: documents_number, totalSize: total_size });
     };
 
