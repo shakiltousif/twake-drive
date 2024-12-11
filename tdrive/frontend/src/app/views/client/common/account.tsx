@@ -9,6 +9,7 @@ import ModalManagerDepreciated from '@deprecated/popupManager/popupManager';
 import FeatureTogglesService, {
   FeatureNames,
 } from '@features/global/services/feature-toggles-service';
+import { AccountIcon, EnvelopIcon, LogoutIcon } from 'app/atoms/icons-agnostic';
 
 export default (): JSX.Element => {
   const { user } = useCurrentUser();
@@ -23,18 +24,21 @@ export default (): JSX.Element => {
         // user name / email
         {
           type: 'text',
+          className: "username",
           text: currentUserService.getFullName(user),
         },
         {
-          type: 'text',
+          type: 'menu',
           text: user.email,
-          icon: 'envelope-info',
+          className: 'account-menu',
+          icon: <EnvelopIcon className="stroke-black dark:stroke-white" />,
           hide: !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_DISPLAY_EMAIL),
         },
         { type: 'separator' },
         {
           type: 'menu',
-          icon: 'user',
+          className: 'account-menu',
+          icon: <AccountIcon className="stroke-black dark:stroke-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.title'),
           //hide: InitService.server_infos?.configuration?.accounts?.type === 'remote',
           onClick: () => {
@@ -43,9 +47,9 @@ export default (): JSX.Element => {
         },
         {
           type: 'menu',
-          icon: 'sign-out-alt',
+          className: 'account-menu',
+          icon: <LogoutIcon className="stroke-black dark:stroke-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.logout'),
-          className: 'error',
           onClick: () => {
             LoginService.logout();
           },
