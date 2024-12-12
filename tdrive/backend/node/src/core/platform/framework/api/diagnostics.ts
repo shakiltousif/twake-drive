@@ -44,13 +44,6 @@ interface IDiagnosticsConfig {
   // relied on for security because disabling diagnostics. At worst this
   // provides access to the DB statistics.
   probeSecret?: string;
-  // This secret is required to sign more dangerous diagnostic endpoints, such
-  // the heap snapshot. It should never be sent over the network.
-  secret?: string;
-  // Maximum time to keep the same challenge token for diagnostic endpoints, in seconds.
-  // Must be large enough to have a reasonable chance of running the token request
-  // then the action on the same backend instance.
-  secretChallengeRefreshS: number;
 }
 
 export const getConfig = (): IDiagnosticsConfig => {
@@ -62,11 +55,6 @@ export const getConfig = (): IDiagnosticsConfig => {
         .trim()
         .split(/[,\s]+/g)
         .filter(x => !!x),
-    };
-  if (typeof configSection.secretChallengeRefreshS === "string")
-    configSection = {
-      ...configSection,
-      secretChallengeRefreshS: parseInt(configSection.secretChallengeRefreshS, 10),
     };
   return configSection;
 };
@@ -94,8 +82,6 @@ export interface IDiagnosticProvider {
   /**
    * Returns an object as presented to a diagnostic requester.
    * Warning: this could be public and readable to the internet.
-   * @param completeButSlow If `true`, perform additional operations for a
-   * more informative
    */
   get(): Promise<TDiagnosticResult>;
 }

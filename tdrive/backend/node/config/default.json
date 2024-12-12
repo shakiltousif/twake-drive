@@ -37,9 +37,7 @@
   },
   "diagnostics": {
     "skipKeys": [],
-    "probeSecret": "",
-    "secret": "",
-    "secretChallengeRefreshS": 15
+    "probeSecret": ""
   },
   "tracker": {
     "type": "segment",

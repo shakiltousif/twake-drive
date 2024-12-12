@@ -21,8 +21,7 @@
       "__name": "DIAG_SKIP_KEYS",
       "__format": "json"
     },
-    "probeSecret": "DIAG_PROBE_SECRET",
-    "secret": "DIAG_SECRET"
+    "probeSecret": "DIAG_PROBE_SECRET"
   },
   "webserver": {
     "host": "TWAKE_DRIVE_HOST",
