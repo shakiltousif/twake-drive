@@ -9,7 +9,7 @@ import registerBasicProviders from "./providers";
  * The diagnostics service exposes endpoint that are of use for operational reasons.
  *
  */
-@Prefix("/api/diagnostics")
+@Prefix("/diagnostics")
 @Consumes(["webserver"])
 @ServiceName("diagnostics")
 export default class DiagnosticsService extends TdriveService<DiagnosticsServiceAPI> {

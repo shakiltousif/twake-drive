@@ -36,7 +36,7 @@ describe("The diagnostics infrastucture", () => {
   const getDiagnosticTags = (tag: string, secret: string) =>
     platform.app.inject({
       method: "GET",
-      url: `/api/diagnostics/t/${encodeURIComponent(tag)}?secret=${encodeURIComponent(secret)}`,
+      url: `/diagnostics/t/${encodeURIComponent(tag)}?secret=${encodeURIComponent(secret)}`,
     });
 
   it("should refuse invalid probe secrets", async () => {
