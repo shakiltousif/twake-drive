@@ -125,8 +125,16 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
    */
   exists = async (path: string, options?: ReadOptions): Promise<boolean> => {
     for (const storage of this.storages) {
-      if (await storage.exists(path, options)) {
-        return true;
+      try {
+        if (await storage.exists(path, options)) {
+          return true;
+        }
+      } catch (e) {
+        throw new OneOfStorageReadOneFailedException(
+          storage.getId(),
+          `Reading ${path} from storage ${storage} failed.`,
+          e,
+        );
       }
     }
     return false;
