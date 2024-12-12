@@ -59,6 +59,7 @@ export default (): JSX.Element => {
           },
         },
       ]}
+      testClassId="menu-account"
     >
       <Avatar
         size="md"
