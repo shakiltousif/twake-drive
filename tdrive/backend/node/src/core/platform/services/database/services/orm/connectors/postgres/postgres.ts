@@ -71,26 +71,41 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
   }
 
   async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const safeRequest = async (query: string, values?: any[]) => {
+      try {
+        return (await this.client.query(query, values)).rows;
+      } catch (err) {
+        const logId = "pg-diags-error-" + Math.floor(process.uptime() * 1000);
+        logger.error(
+          { err, query, values, logId, errCode: err.code },
+          `Error running postgresql statistics at ${depth} ( ${logId} ) `,
+        );
+        return { error: true, logId };
+      }
+    };
     switch (depth) {
+      // This is the only required `ok`
       case TServiceDiagnosticDepth.alive:
         return { ok: true, didConnect: await this.ping() };
+
+      // Statistics can silently fail, and do it granularly if there is
+      // a permission issue only on some of the stats
       case TServiceDiagnosticDepth.stats_track:
         return {
           ok: true,
-          db: (
-            await this.client.query("select * from pg_stat_database where datname = $1", [
-              this.options.database,
-            ])
-          ).rows,
+          db: await safeRequest("select * from pg_stat_database where datname = $1", [
+            this.options.database,
+          ]),
         };
       case TServiceDiagnosticDepth.stats_basic:
-        return { ok: true, warn: "pgsql_basic_has_nothing_more_than_track" };
+        return { ok: true, warn: "pgsql_basic_has_no_basic_level_stats" };
       case TServiceDiagnosticDepth.stats_deep:
         return {
           ok: true,
-          databases: (await this.client.query("select * from pg_stat_database")).rows,
-          tables: (await this.client.query("select * from pg_stat_user_tables")).rows,
-          indexes: (await this.client.query("select * from pg_stat_user_indexes")).rows,
+          databases: await safeRequest("select * from pg_stat_database"),
+          tables: await safeRequest("select * from pg_stat_user_tables"),
+          indexes: await safeRequest("select * from pg_stat_user_indexes"),
         };
 
       default:
