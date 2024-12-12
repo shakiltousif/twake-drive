@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { afterAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { init, TestPlatform } from "../setup";
 import { getConfig as getDiagnosticsConfig } from "../../../src/core/platform/framework/api/diagnostics";
+import { e2eTestOverride as processDiagnosticProviderE2EOverride } from "../../../src/core/platform/services/diagnostics/providers/process";
 
 describe("The diagnostics infrastucture", () => {
   let platform: TestPlatform;
@@ -47,5 +48,16 @@ describe("The diagnostics infrastucture", () => {
     const result = await getDiagnosticTags("ready", diagnosticConfig.probeSecret!);
     expect(result.statusCode).toBe(200);
     expect(result.json().ok).toBe(true);
+  });
+
+  it("should aggregate failure", async () => {
+    try {
+      processDiagnosticProviderE2EOverride.forceFail = true;
+      const result = await getDiagnosticTags("ready", diagnosticConfig.probeSecret!);
+      expect(result.statusCode).toBe(503);
+      expect(result.json().ok).toBe(false);
+    } finally {
+      processDiagnosticProviderE2EOverride.forceFail = false;
+    }
   });
 });
