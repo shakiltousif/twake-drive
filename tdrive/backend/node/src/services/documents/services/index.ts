@@ -30,6 +30,7 @@ import {
   DriveFileAccessLevel,
   DriveItemDetails,
   DriveTdriveTab,
+  NotificationActionType,
   RootType,
   SearchDocumentsOptions,
   TrashType,
@@ -74,9 +75,9 @@ export class DocumentsService {
   userRepository: Repository<User>;
   ROOT: RootType = "root";
   TRASH: TrashType = "trash";
-  quotaEnabled: boolean = getConfigOrDefault("drive.featureUserQuota", false);
-  defaultQuota: number = getConfigOrDefault("drive.defaultUserQuota", 0);
-  manageAccessEnabled: boolean = getConfigOrDefault("drive.featureManageAccess", false);
+  quotaEnabled: boolean = getConfigOrDefault<boolean>("drive.featureUserQuota", false);
+  defaultQuota: number = getConfigOrDefault<number>("drive.defaultUserQuota", 0);
+  manageAccessEnabled: boolean = getConfigOrDefault<boolean>("drive.featureManageAccess", false);
   logger: TdriveLogger = getLogger("Documents Service");
 
   async init(): Promise<this> {
@@ -460,6 +461,7 @@ export class DocumentsService {
             gr.services.documents.engine.notifyDocumentShared({
               context,
               item: driveItem,
+              type: NotificationActionType.UPDATE,
               notificationEmitter: context.user.id,
               notificationReceiver: parentItem.creator,
             });
@@ -481,7 +483,7 @@ export class DocumentsService {
       await updateItemSize(driveItem.parent_id, this.repository, context);
 
       // If AV feature is enabled, scan the file
-      if (globalResolver.services.av?.avEnabled && version) {
+      if (!driveItem.is_directory && globalResolver.services.av?.avEnabled && version) {
         try {
           driveItem.av_status = await globalResolver.services.av.scanDocument(
             driveItem,
@@ -639,6 +641,7 @@ export class DocumentsService {
                 gr.services.documents.engine.notifyDocumentShared({
                   context,
                   item,
+                  type: NotificationActionType.DIRECT,
                   notificationEmitter: context.user.id,
                   notificationReceiver: sharedWith[0].id,
                 });
@@ -1015,6 +1018,7 @@ export class DocumentsService {
         gr.services.documents.engine.notifyDocumentVersionUpdated({
           context,
           item,
+          type: NotificationActionType.UPDATE,
           notificationEmitter: context.user.id,
           notificationReceiver: item.creator,
         });
@@ -1126,7 +1130,8 @@ export class DocumentsService {
 
       // Check files in the current directory
       const maliciousFiles = entities.filter(
-        child => !child.is_directory && child.av_status !== "safe",
+        child =>
+          !child.is_directory && child.av_status && !["uploaded", "safe"].includes(child.av_status),
       );
 
       if (maliciousFiles.length > 0) {
@@ -1924,6 +1929,7 @@ export class DocumentsService {
     await gr.services.documents.engine.notifyDocumentAVScanAlert({
       context,
       item,
+      type: NotificationActionType.DIRECT,
       notificationEmitter: context.user.id,
       notificationReceiver: context.user.id,
     });

@@ -4,6 +4,7 @@ import { Readable } from "stream";
 import { StorageConnectorAPI, WriteMetadata } from "../../provider";
 import { createStreamSizeCounter } from "../../../../../../utils/files";
 import { randomUUID } from "crypto";
+import _ from "lodash";
 
 export type S3Configuration = {
   id: string;
@@ -23,8 +24,15 @@ export default class S3ConnectorService implements StorageConnectorAPI {
   id: string;
 
   constructor(S3Configuration: S3Configuration) {
-    this.client = new Minio.Client(S3Configuration);
-    this.minioConfiguration = S3Configuration;
+    const confCopy = _.cloneDeep(S3Configuration) as S3Configuration;
+    if (confCopy.port && typeof confCopy.port === "string") {
+      confCopy.port = parseInt(confCopy.port, 10);
+    }
+    if (confCopy.useSSL && typeof confCopy.useSSL === "string") {
+      confCopy.useSSL = !(!confCopy.useSSL || confCopy.useSSL === "false");
+    }
+    this.client = new Minio.Client(confCopy);
+    this.minioConfiguration = confCopy;
     this.id = this.minioConfiguration.id;
     if (!this.id) {
       this.id = randomUUID();

@@ -1,4 +1,5 @@
 import { getLogger, TdriveLogger, TdriveService } from "../../framework";
+import { getConfigOrDefault } from "../../../../utils/get-config";
 import EmailPusherAPI from "./provider";
 import {
   EmailBuilderDataPayload,
@@ -15,7 +16,6 @@ import { convert } from "html-to-text";
 import path from "path";
 import { existsSync } from "fs";
 import axios from "axios";
-import short, { Translator } from "short-uuid";
 import { joinURL } from "../../../../utils/urls";
 
 export default class EmailPusherClass
@@ -43,6 +43,7 @@ export default class EmailPusherClass
     });
     this.interface = this.configuration.get<string>("email_interface", "");
     this.platformUrl = this.configuration.get<string>("platform_url", "");
+    this.debug = getConfigOrDefault<boolean>("email-pusher.debug", true);
     if (this.interface === "smtp") {
       const useTLS = this.configuration.get<string>("smtp_tls", "false") == "true";
       const smtpConfig: SMTPClientConfigType = {
@@ -60,7 +61,6 @@ export default class EmailPusherClass
       this.apiUrl = this.configuration.get<string>("endpoint", "");
       this.apiKey = this.configuration.get<string>("api_key", "");
       this.sender = this.configuration.get<string>("sender", "");
-      this.debug = this.configuration.get<boolean>("debug", false);
     }
 
     return this;
@@ -81,20 +81,10 @@ export default class EmailPusherClass
   ): Promise<EmailBuilderRenderedResult> {
     try {
       language = ["en", "fr"].find(l => language.toLocaleLowerCase().includes(l)) || "en";
-      const translator: Translator = short();
       const templatePath = path.join(__dirname, "templates", language, `${template}.eta`);
       const subjectPath = path.join(__dirname, "templates", language, `${template}.subject.eta`);
-      const encodedCompanyId = translator.fromUUID(data.notifications[0].item.company_id);
-      const encodedItemId = translator.fromUUID(data.notifications[0].item.id);
-      const previewType = data.notifications[0].item.is_directory ? "d" : "preview";
-      const encodedUrl = joinURL([
-        this.platformUrl,
-        "client",
-        encodedCompanyId,
-        "v/shared_with_me",
-        previewType,
-        encodedItemId,
-      ]);
+      const urlComponents = data.notifications[0].urlComponents;
+      const encodedUrl = joinURL([this.platformUrl, ...urlComponents]);
 
       if (!existsSync(templatePath)) {
         throw Error(`template not found: ${templatePath}`);
@@ -118,7 +108,7 @@ export default class EmailPusherClass
 
       return { html, text, subject };
     } catch (error) {
-      this.logger.error(`Failure when building email template: ${error}`);
+      this.logger.error({ error }, `Failure when building email template: ${error}`);
     }
   }
 
@@ -150,7 +140,7 @@ export default class EmailPusherClass
       };
 
       if (this.debug) {
-        this.logger.info("EMAIL::SENT ", { emailObject });
+        this.logger.info({ emailObject }, "EMAIL::SENT");
       } else {
         if (this.interface === "smtp") {
           try {
