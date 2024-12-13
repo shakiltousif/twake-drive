@@ -51,7 +51,8 @@ export default class S3ConnectorService implements StorageConnectorAPI {
       case TServiceDiagnosticDepth.stats_basic:
       case TServiceDiagnosticDepth.stats_track:
       case TServiceDiagnosticDepth.stats_deep:
-        return { ok: true, warn: "s3_statistics_not_implemented" };
+        // Local store is always ok... should never be used outside dev environments
+        return { ok: true, empty: true };
 
       default:
         throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);

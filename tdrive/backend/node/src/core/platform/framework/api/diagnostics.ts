@@ -79,7 +79,9 @@ export const getConfig = (): IDiagnosticsConfig => {
 export type TDiagnosticKey = string;
 
 /** Each provider should return an object of this format. The key of the provider defines the schema. */
-export type TDiagnosticResult = { ok: boolean; warn?: string } & { [key: string]: unknown };
+export type TDiagnosticResult = { ok: boolean; warn?: string; empty?: boolean } & {
+  [key: string]: unknown;
+};
 
 /** Implemented by objects that want to provide data to the diagnostic check */
 export interface IDiagnosticProvider {
@@ -155,7 +157,7 @@ const runProvider = async (provider, log) => {
         { diagnostic: provider.key, ...result },
         "Got diagnostic provider result with ok=true but a warning",
       );
-    else if (log)
+    else if (log && !result.empty)
       logger.info({ diagnostic: provider.key, ...result }, "Diagnostic provider result");
     return recordDiagnostic(startMs, provider.key, result);
   } catch (err) {

@@ -99,7 +99,7 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
           ]),
         };
       case TServiceDiagnosticDepth.stats_basic:
-        return { ok: true, warn: "pgsql_basic_has_no_basic_level_stats" };
+        return { ok: true, empty: true };
       case TServiceDiagnosticDepth.stats_deep:
         return {
           ok: true,
