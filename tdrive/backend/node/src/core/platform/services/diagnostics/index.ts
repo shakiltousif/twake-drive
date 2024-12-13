@@ -8,6 +8,7 @@ import diagnostics, {
   getConfig as getDiagnosticsGetConfig,
   TDiagnosticTag,
 } from "../../framework/api/diagnostics";
+import registerFastifyRoutesDiagnosticsProvider from "./web/provider";
 
 /**
  * The diagnostics service exposes endpoint that are of use for operational reasons.
@@ -29,7 +30,9 @@ export default class DiagnosticsService extends TdriveService<DiagnosticsService
   public async doInit(): Promise<this> {
     this.service = new DiagnosticsServiceImpl();
     const fastify = this.context.getProvider<WebServerAPI>("webserver").getServer();
+
     registerBasicProviders();
+    registerFastifyRoutesDiagnosticsProvider(fastify);
 
     fastify.register((instance, _opts, next) => {
       web(instance, { prefix: this.prefix });
