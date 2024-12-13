@@ -78,16 +78,16 @@ export const DocumentRow = ({
           fallback={<DocumentIcon item={item} />}
         />
       </div>
-      <div className="grow text-ellipsis whitespace-nowrap overflow-hidden">
-        <Base className="flex maxWidth100">{item.name}</Base>
+      <div className="md:grow text-ellipsis whitespace-nowrap">
+        <Base className={`block text-ellipsis whitespace-nowrap overflow-hidden ${hasAnyPublicLinkAccess(item) ? 'w-[38px]' : 'w-[74px]'} md:w-full`}>{item.name}</Base>
       </div>
-      <div className="shrink-0 ml-4">
-        {hasAnyPublicLinkAccess(item) && <PublicIcon className="h-5 w-5 text-blue-500" />}
+      <div className="shrink-0 md:ml-4">
+        {hasAnyPublicLinkAccess(item) && <PublicIcon className="h-5 w-5 text-blue-500 ml-4" />}
       </div>
-      <div className="shrink-0 ml-4 mr-12">
+      <div className="shrink-0 ml-4 md:mr-12">
         <BaseSmall>{formatDateShort(item?.last_version_cache?.date_added)}</BaseSmall>
       </div>
-      <div className="shrink-0 ml-4 text-right lg:w-24 sm:w-20 ">
+      <div className="shrink-0 ml-4 mr-4 md:mr-none text-right lg:w-24 sm:w-20 ">
         <BaseSmall>{formatBytes(item.size)}</BaseSmall>
       </div>
       {FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_AV_ENABLED) && (
@@ -101,7 +101,7 @@ export const DocumentRow = ({
           </BaseSmall>
         </div>
       )}
-      <div className="shrink-0 ml-4">
+      <div className="shrink-0 ml-auto md:ml-4">
         <Menu menu={onBuildContextMenu}>
           <Button
             theme={'secondary'}
