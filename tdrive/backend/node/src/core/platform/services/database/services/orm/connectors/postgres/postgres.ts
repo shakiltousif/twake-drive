@@ -72,9 +72,10 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
 
   async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const safeRequest = async (query: string, values?: any[]) => {
+    const safeRequest = async (query: string, values?: any[], singleRow = false) => {
       try {
-        return (await this.client.query(query, values)).rows;
+        const rows = (await this.client.query(query, values)).rows;
+        return singleRow && rows?.length === 1 ? rows[0] : rows;
       } catch (err) {
         const logId = "pg-diags-error-" + Math.floor(process.uptime() * 1000);
         logger.error(
@@ -94,9 +95,11 @@ export class PostgresConnector extends AbstractConnector<PostgresConnectionOptio
       case TServiceDiagnosticDepth.stats_track:
         return {
           ok: true,
-          db: await safeRequest("select * from pg_stat_database where datname = $1", [
-            this.options.database,
-          ]),
+          db: await safeRequest(
+            "select * from pg_stat_database where datname = $1",
+            [this.options.database],
+            true,
+          ),
         };
       case TServiceDiagnosticDepth.stats_basic:
         return { ok: true, empty: true };
