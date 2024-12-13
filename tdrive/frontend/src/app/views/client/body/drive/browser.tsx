@@ -357,7 +357,7 @@ export default memo(
                 (loading && (!items?.length || loadingParentChange) ? 'opacity-50 ' : '')
               }
             >
-              <div className="flex flex-row shrink-0 items-center mb-4">
+              <div className={`flex flex-row shrink-0 items-center mb-4 ${!sharedWithMe ? 'flex-wrap' : ''}`}>
                 {sharedWithMe ? (
                   <div>
                     <Title className="mb-4 block">
