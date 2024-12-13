@@ -37,7 +37,9 @@
   },
   "diagnostics": {
     "skipKeys": [],
-    "probeSecret": ""
+    "probeSecret": "",
+    "statsLogPeriodMs": 120000,
+    "statsFullStatsLogPeriodMs": 600000
   },
   "tracker": {
     "type": "segment",

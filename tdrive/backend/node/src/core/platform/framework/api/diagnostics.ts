@@ -1,6 +1,8 @@
 import assert from "node:assert";
 import config from "../../../config";
-import { logger } from "../logger";
+import { getLogger } from "../logger";
+
+const logger = getLogger("Diagnostics");
 
 /**
  * Values that can match a set of diagnostic providers.
@@ -44,6 +46,10 @@ interface IDiagnosticsConfig {
   // relied on for security because disabling diagnostics. At worst this
   // provides access to the DB statistics.
   probeSecret?: string;
+  // Period at which to log TDiagnosticTag `stats`. 0 to disable.
+  statsLogPeriodMs: number;
+  // Period at which to log TDiagnosticTag `stats-full`. 0 to disable.
+  statsFullStatsLogPeriodMs: number;
 }
 
 export const getConfig = (): IDiagnosticsConfig => {
@@ -56,7 +62,17 @@ export const getConfig = (): IDiagnosticsConfig => {
         .split(/[,\s]+/g)
         .filter(x => !!x),
     };
-  return configSection;
+
+  const getNumberFromConfig = (value): number => {
+    if (typeof value == "number") return value;
+    if (typeof value == "string") return parseInt(value, 10) ?? 0;
+    return 0;
+  };
+  return {
+    ...configSection,
+    statsLogPeriodMs: getNumberFromConfig(configSection.statsLogPeriodMs),
+    statsFullStatsLogPeriodMs: getNumberFromConfig(configSection.statsFullStatsLogPeriodMs),
+  };
 };
 
 /** Code-wide unique key for each provider */
@@ -125,20 +141,22 @@ const recordDiagnostic = (startMs: number, key: TDiagnosticKey, data?: object, e
     ...(error ? { ok: false, error } : { ...data }),
   });
 
-const runProvider = async provider => {
+const runProvider = async (provider, log) => {
   const startMs = now();
   try {
     const result = await provider.get();
     if (!result.ok)
       logger.error(
-        { provider: provider.key, result },
+        { diagnostic: provider.key, ...result },
         "Got diagnostic provider result with ok=false",
       );
     else if (result.warn)
       logger.warn(
-        { provider: provider.key, result },
+        { diagnostic: provider.key, ...result },
         "Got diagnostic provider result with ok=true but a warning",
       );
+    else if (log)
+      logger.info({ diagnostic: provider.key, ...result }, "Diagnostic provider result");
     return recordDiagnostic(startMs, provider.key, result);
   } catch (err) {
     logger.error({ err, provider: provider.key }, "Failed to read diagnostic provider");
@@ -173,7 +191,7 @@ export default {
       let triggerUpdate: () => void = () => undefined; // The empty function is for the linter. I love you linter <3
       const updateProvider = (timeoutId: number) => async () => {
         forgetPendingTimeout(timeoutId);
-        await runProvider(provider);
+        await runProvider(provider, false);
         triggerUpdate();
       };
       triggerUpdate = () => pendingTimeouts.push(setTimeout(updateProvider, provider.pollPeriodMs));
@@ -213,9 +231,14 @@ export default {
     hasShutdown = true;
   },
 
-  /** Return the values of all providers which include the provided tag */
+  /**
+   * Return the values of all providers which include the provided tag.
+   *
+   * @param log if `true`, print each individual log output even if succesful
+   */
   async get(
     tag: TDiagnosticTag,
+    log: boolean,
   ): Promise<{ ok: boolean } | { [key: TDiagnosticKey]: TDiagnosticResult }> {
     const config = getConfig();
     const result = { ok: true };
@@ -230,7 +253,7 @@ export default {
       immediateDiagnosticProviders.map(async provider => {
         if (!isProviderIncludedInTag(tag, provider, config)) return;
         atLeastOneCheck = true;
-        const providerResult = await runProvider(provider);
+        const providerResult = await runProvider(provider, log);
         if (!providerResult.ok) result.ok = false;
         return (result[provider.key] = providerResult);
       }),
