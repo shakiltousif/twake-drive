@@ -74,7 +74,7 @@ export const PathRender = ({
   const pathLength = (pathToRender || []).reduce((acc, curr) => acc + curr.name.length, 0);
 
   return (
-    <nav className="overflow-hidden whitespace-nowrap mr-2 pl-px inline-flex">
+    <nav className="overflow-hidden whitespace-nowrap mr-2 pl-px inline-flex md:max-w-[50%] sm:max-w-[20%]">
       {pathLength < 70 ? (
         (pathToRender || [])?.map((a, i) => (
           <PathItem
@@ -133,10 +133,10 @@ const PathItem = ({
   const { access: trashAccess } = useDriveItem('trash');
   const isInSharedWithMe = viewId === 'shared_with_me';
   return (
-    <div className="flex items-center">
+    <div className={`flex items-center ${!first ? 'overflow-hidden' : ''}`}>
       <a
         href="#"
-        className="text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white"
+        className={`text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white ${!first ? 'overflow-hidden' : ''}`}
         onClick={evt => {
           evt.preventDefault();
 
@@ -173,7 +173,7 @@ const PathItem = ({
           }
         }}
       >
-        <Title noColor={last} className={last ? 'text-blue-500' : ''}>
+        <Title noColor={last} className={!first ? 'text-blue-500 inline-block overflow-hidden text-ellipsis max-w-36' : ''}>
           {(() => {
             const isTrash = viewId?.includes('trash_') || viewId === 'trash';
             const fileName = cutFileName(item?.name) || '';

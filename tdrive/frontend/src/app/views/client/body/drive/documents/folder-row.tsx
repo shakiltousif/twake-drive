@@ -46,8 +46,8 @@ export const FolderRow = ({
           fallback={<FolderIcon className="h-5 w-5 shrink-0 text-blue-500" />}
         />
       </div>
-      <div className="grow text-ellipsis whitespace-nowrap overflow-hidden">
-        <Base className="!font-semibold flex maxWidth100">{item.name}</Base>
+      <div className="grow whitespace-nowrap overflow-hidden">
+        <Base className="!font-semibold text-ellipsis overflow-hidden block max-w-full">{item.name}</Base>
       </div>
       <div className="shrink-0 ml-4">
         {hasAnyPublicLinkAccess(item) && (
