@@ -20,6 +20,12 @@ will just continue 1.0.5 for this release. Canditates through `rc11` were hotfix
 - Fix download for Safari users who block popups
 - Fix for OnlyOffice based on postgres
 
+## Hotfixes
+
+### v1.0.5-hf1
+
+- Fix for user search
+
 # Twake Drive v1.0.5-rc1
 
 ## Features
