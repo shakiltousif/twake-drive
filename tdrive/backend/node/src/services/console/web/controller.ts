@@ -37,6 +37,20 @@ export class ConsoleController {
   }
 
   async auth(request: FastifyRequest<{ Body: AuthRequest }>): Promise<AuthResponse> {
+    const censoredHeadersLC = {
+      authorization: true,
+      cookie: true,
+    };
+    logger.info(
+      {
+        http_headers: Object.fromEntries(
+          Object.entries(request.headers)
+            .map(([k, v]) => (censoredHeadersLC[k.toLowerCase()] ? null : [k, v]))
+            .filter(x => !!x),
+        ),
+      },
+      "auth_attempt",
+    );
     if (request.body.oidc_id_token) {
       return { access_token: await this.authByToken(request.body.oidc_id_token) };
     } else if (request.body.email && request.body.password) {

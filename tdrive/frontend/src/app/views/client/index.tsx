@@ -38,7 +38,7 @@ export default React.memo((): JSX.Element => {
   if (user?.id) {
     page = (
       <DesktopRedirect>
-        <div className="fade_in bg-zinc-100 dark:bg-black flex flex-col gap-2 h-full">
+        <div className="fade_in bg-zinc-100 dark:bg-black flex flex-col gap-2 h-full testid:header">
           <DownloadAppBanner/>
           <NewVersionComponent />
 
@@ -73,7 +73,7 @@ export default React.memo((): JSX.Element => {
                   onClick={() => setMenuIsOpen(false)}
                   className="absolute left-0 top-0 h-full w-full bg-black bg-opacity-50 transition-all z-40 opacity-0"
                 ></div>
-                <div className="bg-white dark:bg-zinc-900 flex grow sm:rounded-lg p-4">
+                <div className="bg-white dark:bg-zinc-900 flex grow sm:rounded-lg p-4 sm:w-2/3 overflow-x-hidden">
                   <Suspense fallback={<></>}>
                     <MainView className={classNames({ collapsed: menuIsOpen })} />
                   </Suspense>

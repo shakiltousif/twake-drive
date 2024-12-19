@@ -3,6 +3,8 @@ import { logger } from "../../../../../../core/platform/framework";
 import { Readable } from "stream";
 import { StorageConnectorAPI, WriteMetadata } from "../../provider";
 import { randomUUID } from "crypto";
+import _ from "lodash";
+import { TDiagnosticResult, TServiceDiagnosticDepth } from "../../../../framework/api/diagnostics";
 
 export type S3Configuration = {
   id: string;
@@ -22,8 +24,15 @@ export default class S3ConnectorService implements StorageConnectorAPI {
   id: string;
 
   constructor(S3Configuration: S3Configuration) {
-    this.client = new Minio.Client(S3Configuration);
-    this.minioConfiguration = S3Configuration;
+    const confCopy = _.cloneDeep(S3Configuration) as S3Configuration;
+    if (confCopy.port && typeof confCopy.port === "string") {
+      confCopy.port = parseInt(confCopy.port, 10);
+    }
+    if (confCopy.useSSL && typeof confCopy.useSSL === "string") {
+      confCopy.useSSL = !(!confCopy.useSSL || confCopy.useSSL === "false");
+    }
+    this.client = new Minio.Client(confCopy);
+    this.minioConfiguration = confCopy;
     this.id = this.minioConfiguration.id;
     if (!this.id) {
       this.id = randomUUID();
@@ -33,6 +42,21 @@ export default class S3ConnectorService implements StorageConnectorAPI {
 
   getId() {
     return this.id;
+  }
+
+  async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
+    switch (depth) {
+      case TServiceDiagnosticDepth.alive:
+        return { ok: await this.client.bucketExists(this.minioConfiguration.bucket) };
+      case TServiceDiagnosticDepth.stats_basic:
+      case TServiceDiagnosticDepth.stats_track:
+      case TServiceDiagnosticDepth.stats_deep:
+        // Local store is always ok... should never be used outside dev environments
+        return { ok: true, empty: true };
+
+      default:
+        throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
+    }
   }
 
   write(path: string, stream: Readable): Promise<WriteMetadata> {

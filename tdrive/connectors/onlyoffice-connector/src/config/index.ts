@@ -16,6 +16,8 @@ export const {
   OOCONNECTOR_HEALTH_SECRET,
 } = process.env;
 
+export const isProductionEnv = (NODE_ENV ?? '').toLocaleLowerCase().trim() === 'production';
+
 const secs = 1000,
   mins = 60 * secs;
 
