@@ -77,6 +77,7 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
         logger.error(
           new OneOfStorageWriteOneFailedException(
             storageId,
+            path,
             `Error writing to storage ${storageId}`,
             (result as PromiseRejectedResult).reason,
           ),
@@ -85,7 +86,7 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
       }
     });
     if (errorsCount === this.storages.length) {
-      throw new WriteFileException(`Write ${path} failed for all storages`);
+      throw new WriteFileException(path, `Write ${path} failed for all storages`);
     }
 
     const successResult = writeResults.filter(
@@ -111,13 +112,14 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
         logger.error(
           new OneOfStorageReadOneFailedException(
             storage.getId(),
+            path,
             `Reading ${path} from storage ${storage} failed.`,
             err,
           ),
         );
       }
     }
-    throw new FileNotFountException(`Error reading ${path}`);
+    throw new FileNotFountException(path, `Error reading ${path}`);
   };
 
   /**
@@ -135,6 +137,7 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
       } catch (e) {
         throw new OneOfStorageReadOneFailedException(
           storage.getId(),
+          path,
           `Reading ${path} from storage ${storage} failed.`,
           e,
         );
@@ -159,7 +162,7 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
  * Throw when read from one of the storages is filed.
  */
 class StorageException extends Error {
-  constructor(readonly storageId: string, details: string, error: Error) {
+  constructor(readonly storageId: string, readonly path: string, details: string, error: Error) {
     super(details, error);
   }
 }
