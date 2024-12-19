@@ -166,6 +166,7 @@ export default () => {
 
               <Button
                 onClick={() => uploadItemModal()}
+                shortcut='U'
                 size="lg"
                 theme="primary"
                 className="w-full mb-2 justify-center"
@@ -176,6 +177,7 @@ export default () => {
               </Button>
               <Button
                 onClick={() => openItemModal()}
+                shortcut='C'
                 size="lg"
                 theme="secondary"
                 className="w-full mb-2 justify-center"
