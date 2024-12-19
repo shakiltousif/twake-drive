@@ -70,18 +70,21 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
     );
 
     // Log all errors and throw if all write operations fail
-    const errors = writeResults.filter(result => result.status === "rejected");
-    errors.forEach((error, index) => {
-      const storageId = this.storages[index].getId();
-      logger.error(
-        new OneOfStorageWriteOneFailedException(
-          storageId,
-          `Error writing to storage ${storageId}`,
-          (error as PromiseRejectedResult).reason,
-        ),
-      );
+    let errorsCount = 0;
+    writeResults.forEach((result, index) => {
+      if (result.status === "rejected") {
+        const storageId = this.storages[index].getId();
+        logger.error(
+          new OneOfStorageWriteOneFailedException(
+            storageId,
+            `Error writing to storage ${storageId}`,
+            (result as PromiseRejectedResult).reason,
+          ),
+        );
+        errorsCount++;
+      }
     });
-    if (errors.length === this.storages.length) {
+    if (errorsCount === this.storages.length) {
       throw new WriteFileException(`Write ${path} failed for all storages`);
     }
 
