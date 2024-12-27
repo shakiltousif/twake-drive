@@ -5,6 +5,7 @@ FROM node:lts-alpine AS node-base
 RUN apk add --update-cache \
       ghostscript \
       graphicsmagick \
+      curl \
     && rm -rf /var/cache/apk/*
 
 

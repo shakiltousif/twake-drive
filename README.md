@@ -38,8 +38,10 @@ To get a local copy up and running, please follow these simple steps.
    ```
 2. Run it with Docker
    ```sh
-   docker-compose up -d
+   cd tdrive
+   docker compose -f docker-compose.minimal.yml up
    ```
+3. Open <http://localhost/> in a browser
 
 
 ## Development
