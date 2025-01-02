@@ -17,13 +17,11 @@ services:
       - 27017:27017
 
   node_create_user:
-    build:
+    build: &backend_docker_build
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
       # target: development
       target: production
-    container_name: tdrive-node_create_user
-    hostname: tdrive-node_create_user
     environment: &backend_env_vars
       - DEV=dev
       - ACCOUNTS_TYPE=internal
@@ -37,33 +35,24 @@ services:
       - DIAG_PROBE_SECRET=diag-secret
     
     command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
-    volumes:
+    volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
-    depends_on:
+    depends_on: &backend_dependencies
       mongo:
         condition: service_healthy
   
   node:
-    build:
-      context: .
-      dockerfile: docker/tdrive-node/Dockerfile
-      # target: development
-      target: production
-    container_name: tdrive-node
-    hostname: tdrive_node
+    build: *backend_docker_build
     ports:
       - 4000:4000
       - 9229:9229
     environment: *backend_env_vars
     healthcheck:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
-    volumes:
-      - ./backend/node/profiles:/usr/src/app/profiles
-      - ./backend/node/src:/usr/src/app/src
+    volumes: *backend_volumes
     depends_on:
-      mongo:
-        condition: service_healthy
+      <<: *backend_dependencies
       node_create_user:
         condition: service_completed_successfully
   
@@ -82,7 +71,6 @@ services:
     depends_on:
       node:
         condition: service_healthy
-      # - node
     volumes:
       - ./docker-data/logs/nginx/:/var/log/nginx
       - ./docker-data/letsencrypt/:/etc/letsencrypt/
