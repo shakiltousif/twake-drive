@@ -52,7 +52,8 @@ export const CopyLinkButton = (props: {
       disabled={!haveTextToCopy && !props.onGetTextToCopy}
       theme={didJustCompleteACopy ? "green" : "primary"}
       className="justify-center w-64"
-      >
+      testClassId="copy-link-button"
+    >
       { didJustCompleteACopy
         ? <CheckCircleIcon className="w-5 mr-2" />
         : (isGettingTextToCopy || <LinkIcon className="w-5 mr-2" />)

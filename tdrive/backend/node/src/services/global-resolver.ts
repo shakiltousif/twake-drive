@@ -15,7 +15,7 @@ import TrackerAPI from "../core/platform/services/tracker/provider";
 import WebServerAPI from "../core/platform/services/webserver/provider";
 
 import assert from "assert";
-import { logger } from "../core/platform/framework";
+import { logger, TdriveServiceState } from "../core/platform/framework";
 import { ApplicationServiceImpl } from "./applications/services/applications";
 import { CompanyApplicationServiceImpl } from "./applications/services/company-applications";
 import { ApplicationHooksService } from "./applications/services/hooks";
@@ -80,6 +80,7 @@ class GlobalResolver {
   public services: TdriveServices;
   public platformServices: PlatformServices;
   public database: DatabaseServiceAPI;
+  private platform?: TdrivePlatform;
 
   public fastify: FastifyInstance<Server, IncomingMessage, ServerResponse>;
 
@@ -89,6 +90,7 @@ class GlobalResolver {
     if (this.alreadyInitialized) {
       return;
     }
+    this.platform = platform;
     this.database = platform.getProvider<DatabaseServiceAPI>("database");
 
     this.platformServices = {
@@ -154,6 +156,11 @@ class GlobalResolver {
 
     logger.info("Global resolver finished initializing services");
     this.alreadyInitialized = true;
+  }
+
+  /** `true` if all components are in the started state. This means we should respond to http at least (for kubernetes Startup probe). */
+  isPlatformStarted(): boolean {
+    return this.alreadyInitialized && this.platform?.state.getValue() == TdriveServiceState.Started;
   }
 }
 

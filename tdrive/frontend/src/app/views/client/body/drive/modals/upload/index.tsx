@@ -39,12 +39,13 @@ export const UploadModal = ({
   return (
     <Modal
       open={state.open}
+      closable={true}
       onClose={() => setState({ ...state, open: false })}
-      className="!max-w-sm"
+      className="md:!max-w-sm testid:upload-modal"
     >
       <ModalContent
         title={
-          <div className="flex flex-row items-center justify-start">
+          <div className="hidden md:flex flex-row items-center justify-start">
             {!!state.type && (
               <A onClick={() => setState({ ...state, type: '' })}>
                 <ChevronLeftIcon className="w-6 h-6" />
@@ -69,18 +70,20 @@ export const UploadModal = ({
             as="div"
             {...(!state.type ? slideXTransitionReverted : slideXTransition)}
           >
-          <div className="-m-2" >
-                  <CreateModalOption
-                      icon={<DocumentDownloadIcon className="w-5 h-5" />}
-                      text={Languages.t('components.create_modal.upload_files')}
-                      onClick={() => selectFromDevice()}
-                  />
-                  <CreateModalOption
-                      icon={<FolderDownloadIcon className="w-5 h-5" />}
-                      text={Languages.t('components.create_modal.upload_folders')}
-                      onClick={() => selectFolderFromDevice()}
-                  />
-                </div>
+            <div className="-m-2" >
+              <CreateModalOption
+                icon={<DocumentDownloadIcon className="w-5 h-5" />}
+                text={Languages.t('components.create_modal.upload_files')}
+                onClick={() => selectFromDevice()}
+                testClassId="upload-file-from-device"
+              />
+              <CreateModalOption
+                icon={<FolderDownloadIcon className="w-5 h-5" />}
+                text={Languages.t('components.create_modal.upload_folders')}
+                onClick={() => selectFolderFromDevice()}
+                testClassId="upload-folder-from-device"
+              />
+            </div>
           </Transition>
         </div>
       </ModalContent>
@@ -88,11 +91,25 @@ export const UploadModal = ({
   );
 };
 
-const CreateModalOption = (props: { icon: ReactNode; text: string; onClick: () => void }) => {
+const CreateModalOption = (props: {
+  icon: ReactNode;
+  text: string;
+  onClick: () => void;
+  testClassId?: string;
+}) => {
+  // on press enter
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      props.onClick();
+    }
+  };
+
   return (
     <div
       onClick={props.onClick}
-      className="flex flex-row p-4 dark:bg-zinc-900 dark:text-white bg-zinc-100 hover:bg-opacity-75 cursor-pointer rounded-md m-2"
+      className={`flex flex-row py-2 md:p-4 md:dark:bg-zinc-900 dark:text-white md:bg-zinc-100 md:hover:bg-opacity-75 cursor-pointer rounded-md m-2 focus:bg-zinc-800 dark:focus:bg-zinc-800 outline-none focus:border-none testid:${props.testClassId}`}
+      tabIndex={0}
+      onKeyUp={handleKeyPress}
     >
       <div className="flex items-center justify-center">{props.icon}</div>
       <div className="grow flex items-center ml-2">

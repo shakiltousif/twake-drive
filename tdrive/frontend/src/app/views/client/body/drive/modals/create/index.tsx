@@ -45,12 +45,13 @@ export const CreateModal = ({
   return (
     <Modal
       open={state.open}
+      closable={true}
       onClose={() => setState({ ...state, open: false })}
-      className="!max-w-sm"
+      className="md:!max-w-sm testid:create-modal"
     >
       <ModalContent
         title={
-          <div className="flex flex-row items-center justify-start">
+          <div className="hidden md:flex flex-row items-center justify-start">
             {!!state.type && (
               <A onClick={() => setState({ ...state, type: '' })}>
                 <ChevronLeftIcon className="w-6 h-6" />
@@ -82,11 +83,13 @@ export const CreateModal = ({
                 icon={<FolderAddIcon className="w-5 h-5" />}
                 text={Languages.t('components.create_modal.create_folder')}
                 onClick={() => setState({ ...state, type: 'folder' })}
+                testClassId="create-folder-option"
               />
               <CreateModalOption
                 icon={<LinkIcon className="w-5 h-5" />}
                 text={Languages.t('components.create_modal.create_link')}
                 onClick={() => setState({ ...state, type: 'link' })}
+                testClassId="create-link-option"
               />
 
               {(applications || [])
@@ -132,6 +135,7 @@ export const CreateModal = ({
                       onClick={() =>
                         addFromUrl(app.emptyFile.url, app.emptyFile.filename || app.emptyFile.name)
                       }
+                      testClassId={app.emptyFile.name}
                     />
                   );
                 })}
@@ -167,11 +171,22 @@ export const CreateModal = ({
   );
 };
 
-const CreateModalOption = (props: { icon: ReactNode; text: string; onClick: () => void }) => {
+const CreateModalOption = (props: { testClassId?: string; icon: ReactNode; text: string; onClick: () => void }) => {
+  // on press enter
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      props.onClick();
+    }
+  };
+
+  const testId = props.testClassId ? `testid:${props.testClassId}` : '';
+
   return (
     <div
       onClick={props.onClick}
-      className="flex flex-row p-4 dark:bg-zinc-900 dark:text-white bg-zinc-100 hover:bg-opacity-75 cursor-pointer rounded-md m-2"
+      className={`flex flex-row py-2 md:p-4 md:dark:bg-zinc-900 dark:text-white md:bg-zinc-100 md:hover:bg-opacity-75 cursor-pointer rounded-md m-2 focus:bg-zinc-800 dark:focus:bg-zinc-800 outline-none focus:border-none ${testId}`}
+      tabIndex={0}
+      onKeyUp={handleKeyPress}
     >
       <div className="flex items-center justify-center">{props.icon}</div>
       <div className="grow flex items-center ml-2">

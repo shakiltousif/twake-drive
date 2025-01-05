@@ -48,14 +48,28 @@ export default () => {
     dirId && viewId && setParentId(dirId);
   }, [viewId, itemId, dirId]);
   return (
-    <div className="grow flex flex-col overflow-auto -m-4 p-4 relative">
+    <div className="grow flex flex-col overflow-auto -m-4 p-4 relative testid:sidebar">
       <div className="grow">
         <div className="sm:hidden block mb-2">
           <div className="flex flex-row space-between w-full">
-            <div className="grow">
+            <div className="flex items-center order-1 grow">
+              <img
+                src="/public/img/logo/logo-text-black.svg"
+                className="h-6 ml-1 dark:hidden block"
+                alt="Tdrive"
+              />
+              <img
+                src="/public/img/logo/logo-text-white.svg"
+                className="h-6 ml-1 dark:block hidden"
+                alt="Tdrive"
+              />
+            </div>
+            <div className="md:grow order-3 md:order-2">
               <Account />
             </div>
-            <AppGrid />
+            <div className="order-2 md:order-3 mr-2 md:mr-0">
+              <AppGrid />
+            </div>
           </div>
 
           <div className="mt-6" />
@@ -86,6 +100,7 @@ export default () => {
               ? activeClass
               : '')
           }
+          testClassId="sidebar-menu-my-drive"
         >
           <UserIcon className="w-5 h-5 mr-4" /> {Languages.t('components.side_menu.my_drive')}
         </Button>
@@ -107,6 +122,7 @@ export default () => {
             className={
               'w-full mb-1 ' + (folderType === 'home' && viewId == 'root' ? activeClass : '')
             }
+            testClassId="sidebar-menu-shared-drive"
           >
             <CloudIcon className="w-5 h-5 mr-4" /> {Languages.t('components.side_menu.home')}
           </Button>
@@ -130,6 +146,7 @@ export default () => {
               'w-full mb-1 ' +
               (folderType === 'shared' && viewId == 'shared_with_me' ? activeClass : '')
             }
+            testClassId="sidebar-menu-share-with-me"
           >
             <UserGroupIcon className="w-5 h-5 mr-4" />{' '}
             {Languages.t('components.side_menu.shared_with_me')}
@@ -168,6 +185,7 @@ export default () => {
           size="lg"
           theme="white"
           className={'w-full mb-1 ' + (viewId?.includes('trash') ? activeClass : '')}
+          testClassId="sidebar-menu-trash"
         >
           <TrashIcon className="w-5 h-5 mr-4 text-rose-500" />{' '}
           {Languages.t('components.side_menu.trash')}

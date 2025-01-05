@@ -5,6 +5,7 @@ import { StorageConnectorAPI, WriteMetadata } from "../../provider";
 import { createStreamSizeCounter } from "../../../../../../utils/files";
 import { randomUUID } from "crypto";
 import _ from "lodash";
+import { TDiagnosticResult, TServiceDiagnosticDepth } from "../../../../framework/api/diagnostics";
 
 export type S3Configuration = {
   id: string;
@@ -44,12 +45,49 @@ export default class S3ConnectorService implements StorageConnectorAPI {
     return this.id;
   }
 
-  async write(path: string, stream: Readable): Promise<WriteMetadata> {
-    const sizeCounter = createStreamSizeCounter(stream);
-    await this.client.putObject(this.minioConfiguration.bucket, path, sizeCounter.stream);
-    return {
-      size: sizeCounter.getSize(),
-    };
+  async getDiagnostics(depth: TServiceDiagnosticDepth): Promise<TDiagnosticResult> {
+    switch (depth) {
+      case TServiceDiagnosticDepth.alive:
+        return { ok: await this.client.bucketExists(this.minioConfiguration.bucket) };
+      case TServiceDiagnosticDepth.stats_basic:
+      case TServiceDiagnosticDepth.stats_track:
+      case TServiceDiagnosticDepth.stats_deep:
+        // Local store is always ok... should never be used outside dev environments
+        return { ok: true, empty: true };
+
+      default:
+        throw new Error(`Unexpected TServiceDiagnosticDepth: ${JSON.stringify(depth)}`);
+    }
+  }
+
+  write(path: string, stream: Readable): Promise<WriteMetadata> {
+    return new Promise((resolve, reject) => {
+      let totalSize = 0;
+      let didCompletePutObject = false;
+      let didCompleteCalculateSize = false;
+      const doResolve = () =>
+        didCompletePutObject &&
+        didCompleteCalculateSize &&
+        resolve({
+          size: totalSize,
+        });
+      stream
+        .on("data", function (chunk) {
+          totalSize += chunk.length;
+        })
+        .on("end", () => {
+          // TODO: this could be bad practice as it puts the stream in flow mode before putObject gets to it
+          didCompleteCalculateSize = true;
+          doResolve();
+        });
+      this.client
+        .putObject(this.minioConfiguration.bucket, path, stream)
+        .then(_x => {
+          didCompletePutObject = true;
+          doResolve();
+        })
+        .catch(reject);
+    });
   }
 
   async read(path: string): Promise<Readable> {
