@@ -475,7 +475,7 @@ export const getFileMetadata = async (
       company_id: context.company.id,
     },
     context,
-    { ...(context.user?.server_request ? {} : { waitForThumbnail: true }) },
+    { ...(context.user?.server_request ? {} : { waitForThumbnail: false }) },
   );
 
   if (!file) {

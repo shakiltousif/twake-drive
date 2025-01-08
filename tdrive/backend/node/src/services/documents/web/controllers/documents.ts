@@ -63,8 +63,8 @@ export class DocumentsController {
           chunkNumber: parseInt(q.resumableChunkNumber || q.chunk_number) || 1,
           filename: q.resumableFilename || q.filename || file?.filename || undefined,
           type: q.resumableType || q.type || file?.mimetype || undefined,
-          waitForThumbnail: !!q.thumbnail_sync,
-          ignoreThumbnails: false,
+          waitForThumbnail: false,
+          ignoreThumbnails: true,
         };
 
         createdFile = await globalResolver.services.files.save(null, file, options, context);
