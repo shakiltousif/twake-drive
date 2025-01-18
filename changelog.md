@@ -1,3 +1,15 @@
+# Twake Drive v1.0.6
+
+## Fixes and Improvements
+
+- Update of quota is severely optimised
+- Infinite scrolling automatic until a scroll bar is visible
+- Accounts menu re-design
+- Various layout fixes for small screens and large contents
+- Tuning warnings for AV status of un-scanned files
+- Fix for preview breaking when switching too fast between files
+- Added E2E testing identifiers on key components for i18n and style resiliance
+
 # Twake Drive v1.0.5
 
 *Note: `-rc2` should be 1.0.6, but to align with internal release cycle numbering, we
