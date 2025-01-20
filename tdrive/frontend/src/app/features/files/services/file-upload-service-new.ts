@@ -24,7 +24,6 @@ const logger = Logger.getLogger('Services/FileUploadService');
 class FileUploadService {
   private isPaused = false;
   private isCancelled = false;
-  private pausedRoots: { [key: string]: boolean } = {};
   private pendingFiles: PendingFileType[] = [];
   private GroupedPendingFiles: { [key: string]: PendingFileType[] } = {};
   private RootSizes: { [key: string]: number } = {};
@@ -43,11 +42,10 @@ class FileUploadService {
    * Helper method to pause execution when `isPaused` is true.
    * @private
    */
-  async _waitWhilePaused(id?: string) {
-    while (this.isPaused || (id && this.pausedRoots[id])) {
+  async _waitWhilePaused() {
+    while (this.isPaused) {
       if (this.isCancelled) return;
       await new Promise(resolve => setTimeout(resolve, 100)); // Check every 100ms
-      console.log('waiting while paused:: ', id);
     }
   }
 
@@ -83,18 +81,12 @@ class FileUploadService {
             return 0;
           })
           .reduce((acc: number, size: number) => acc + size, 0);
-        // status can be "uploading", "completed", "paused" based on the size, uploadedSize and pausedRoots
-        const status = this.pausedRoots[key]
-          ? 'paused'
-          : uploadedSize === this.RootSizes[key]
-          ? 'completed'
-          : 'uploading';
         // Add to the accumulator object
         acc[key] = {
-          items: [],
           size: this.RootSizes[key],
+          status: this.isPaused,
+          items: [],
           uploadedSize,
-          status,
         };
         return acc;
       },
@@ -142,9 +134,8 @@ class FileUploadService {
 
       // start descending the tree
       for (const directory of Object.keys(tree)) {
-        const root = tree[directory].root as string;
         await this.checkCancellation();
-        await this._waitWhilePaused(root);
+        await this._waitWhilePaused();
         if (tree[directory].file instanceof File && !this.isCancelled) {
           logger.trace(`${directory} is a file, save it for future upload`);
           filesPerParentId[parentId].push({
@@ -228,9 +219,7 @@ class FileUploadService {
                 external_id: file.id,
               },
             } as Partial<DriveItemVersion>;
-
-            // create the document
-            await DriveApiClient.create(context.companyId, { item, version });
+            const driveFile = await DriveApiClient.create(context.companyId, { item, version });
           }
         },
       });
@@ -387,45 +376,6 @@ class FileUploadService {
     return this.pendingFiles.filter(f => f.uploadTaskId === this.currentTaskId);
   }
 
-  public async getFile({
-    companyId,
-    fileId,
-  }: {
-    fileId: string;
-    companyId: string;
-  }): Promise<FileType> {
-    return _.cloneDeep((await FileUploadAPIClient.get({ fileId, companyId }))?.resource);
-  }
-
-  public getPendingFile(id: string): PendingFileType {
-    return this.pendingFiles.filter(f => f.id === id)[0];
-  }
-
-  public getPendingFileByBackendId(id: string): PendingFileType {
-    return this.pendingFiles.filter(f => f.backendFile?.id && f.backendFile.id === id)[0];
-  }
-
-  public cancelRoot(id: string, timeout = 1000) {
-    const filesToCancel = this.GroupedPendingFiles[id];
-
-    for (const file of filesToCancel) {
-      file.status = 'cancel';
-      if (file.resumable) {
-        file.resumable.cancel();
-        if (file.backendFile)
-          this.deleteOneFile({
-            companyId: file.backendFile.company_id,
-            fileId: file.backendFile.id,
-          });
-      }
-    }
-
-    setTimeout(() => {
-      this.pendingFiles = this.pendingFiles.filter(f => f.id !== id);
-      this.notify();
-    }, timeout);
-  }
-
   public cancelUpload() {
     this.isCancelled = true;
 
@@ -465,76 +415,36 @@ class FileUploadService {
     this.notify();
   }
 
-  public retry(id: string) {
-    const fileToRetry = this.pendingFiles.filter(f => f.id === id)[0];
-
-    if (fileToRetry.status === 'error') {
-      fileToRetry.status = 'pending';
-      fileToRetry.resumable.upload();
-
-      this.notify();
-    }
-  }
-
-  private pauseOrResumeFile(file: PendingFileType) {
-    try {
-      if (file.resumable) {
-        if (file.status !== 'pause') {
-          file.status = 'pause';
-          file.resumable.pause();
-        } else {
-          file.status = 'pending';
-          file.resumable.upload();
-        }
-      } else {
-        console.warn('Resumable object is not available for file', file);
-      }
-    } catch (error) {
-      console.error('Error while pausing or resuming file', file, error);
-    }
-  }
-
   public pauseOrResume() {
     // pause or resume the curent upload task
     this.isPaused = !this.isPaused;
 
     // pause or resume the resumable tasks
-    const filesToProcess = this.pendingFiles;
+    const fileToCancel = this.pendingFiles;
 
-    if (!filesToProcess || filesToProcess.length === 0) {
+    if (!fileToCancel) {
       console.error(`No files found for id`);
       return;
     }
 
-    for (const file of filesToProcess) {
-      if (file.status === 'success') continue;
-      this.pauseOrResumeFile(file);
-    }
-
-    this.notify();
-  }
-
-  public pauseOrResumeRoot(id: string) {
-    // set the pause status for the root
-    if (Object.keys(this.pausedRoots).includes(id)) {
-      this.pausedRoots[id] = !this.pausedRoots[id];
-    } else {
-      this.pausedRoots[id] = true;
-    }
-
-    // pause or resume the resumable tasks
-    const filesToProcess = this.GroupedPendingFiles[id];
-
-    if (!filesToProcess || filesToProcess.length === 0) {
-      console.error(`No files found for id: ${id}`);
-      return;
-    }
-
-    for (const file of filesToProcess) {
+    for (const file of fileToCancel) {
       if (file.status === 'success') continue;
 
-      // pause or resume the file
-      this.pauseOrResumeFile(file);
+      try {
+        if (file.resumable) {
+          if (file.status !== 'pause') {
+            file.status = 'pause';
+            file.resumable.pause();
+          } else {
+            file.status = 'pending';
+            file.resumable.upload();
+          }
+        } else {
+          console.warn('Resumable object is not available for file', file);
+        }
+      } catch (error) {
+        console.error('Error while pausing or resuming file', file, error);
+      }
     }
 
     this.notify();
@@ -583,26 +493,6 @@ class FileUploadService {
     } else {
       logger.error(`Error while processing delete for file`, fileId);
     }
-  }
-
-  public download({ companyId, fileId }: { companyId: string; fileId: string }): Promise<Blob> {
-    return FileUploadAPIClient.download({
-      companyId: companyId,
-      fileId: fileId,
-    });
-  }
-
-  public getDownloadRoute({ companyId, fileId }: { companyId: string; fileId: string }): string {
-    return FileUploadAPIClient.getDownloadRoute({
-      companyId: companyId,
-      fileId: fileId,
-    });
-  }
-
-  public clearRoots() {
-    this.GroupedPendingFiles = {};
-    this.GroupIds = {};
-    this.notify();
   }
 
   public getPauseStatus() {

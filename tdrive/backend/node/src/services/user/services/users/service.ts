@@ -173,6 +173,8 @@ export class UserServiceImpl {
       findOptions.$in = [["id", options.userIds]];
     }
 
+    console.log("🚀🚀 Finding user:: ", findFilter, findOptions, context);
+
     return this.repository.find(findFilter, findOptions, context);
   }
 

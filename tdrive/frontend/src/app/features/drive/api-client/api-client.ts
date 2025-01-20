@@ -106,17 +106,17 @@ export class DriveApiClient {
 
   static async create(
     companyId: string,
-    data: { item: Partial<DriveItem>; version?: Partial<DriveItemVersion> },
+    data: { item: Partial<DriveItem>; version?: Partial<DriveItemVersion>; tmp?: boolean },
   ) {
     if (!data.version) data.version = {} as Partial<DriveItemVersion>;
 
     return new Promise<DriveItem>((resolve, reject) => {
       Api.post<
-        { item: Partial<DriveItem>; version: Partial<DriveItemVersion> },
+        { item: Partial<DriveItem>; version: Partial<DriveItemVersion>; tmp?: boolean },
         DriveItem
       >(
         `/internal/services/documents/v1/companies/${companyId}/item${appendTdriveToken()}`,
-        data as { item: Partial<DriveItem>; version: Partial<DriveItemVersion> },
+        data as { item: Partial<DriveItem>; version: Partial<DriveItemVersion>; tmp?: boolean },
         (res) => {
           if ((res as any)?.statusCode || (res as any)?.error) {
             reject(res);

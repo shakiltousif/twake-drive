@@ -79,7 +79,11 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                 {capitalize(pendingFile?.originalFile.name)}
               </Text>
               {isPendingFileStatusPause(pendingFile.status) && (
-                <Text type="secondary" className='ant-typography-single-line' style={{ verticalAlign: 'middle', marginLeft: 4 }}>
+                <Text
+                  type="secondary"
+                  className="ant-typography-single-line"
+                  style={{ verticalAlign: 'middle', marginLeft: 4 }}
+                >
                   ({Languages.t('general.paused')})
                 </Text>
               )}
@@ -150,7 +154,6 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                       <PauseCircle size={16} color="var(--black)" />
                     )
                   }
-                  onClick={() => pauseOrResumeUpload(pendingFileState.id)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -189,7 +192,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                 type="link"
                 shape="circle"
                 icon={<Trash2 size={16} color={'var(--black)'} />}
-                onClick={() => cancelUpload(pendingFileState.id)}
+                // onClick={() => cancelUpload(pendingFileState.id)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               />
             </Tooltip>

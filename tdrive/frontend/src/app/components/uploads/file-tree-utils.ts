@@ -119,6 +119,7 @@ export const getFilesTree = (
         });
       }
 
+      let timeBegin = Date.now();
       [].slice.call(items).forEach(function (entry: any) {
         entry = entry.webkitGetAsEntry();
         if (entry) {
@@ -134,21 +135,29 @@ export const getFilesTree = (
                   resolve(true);
                 }, resolve.bind(null, true));
               } else if (entry.isDirectory) {
+                console.log('GetFilesTree:: entriesApi: readDirectory');
+                const timeToRead = Date.now();
                 readDirectory(entry, null, resolve);
+                console.log('GetFilesTree:: entriesApi: readDirectory: ', Date.now() - timeToRead);
               }
             }),
           );
         }
       });
+      console.log('GetFilesTree:: entriesApi: slice.call: ', Date.now() - timeBegin);
+      console.log('GetFilesTree:: entriesApi: rootPromises: ', rootPromises.length, rootPromises);
 
       if (files.length > 1000000) {
         return false;
       }
 
+      timeBegin = Date.now();
       Promise.all(rootPromises).then(cb.bind(null, fd, files));
+      console.log('GetFilesTree:: entriesApi: solvePromises: ', Date.now() - timeBegin);
     }
 
     const cb = function (event: Event, files: File[], paths?: string[]) {
+      const begin = Date.now();
       const documents_number = paths ? paths.length : 0;
       let total_size = 0;
       const tree: any = {};
@@ -175,31 +184,72 @@ export const getFilesTree = (
           }
         });
       });
-      console.log("tree is:: ", tree);
+      console.log('GetFilesTree:: cb: ', (Date.now() - begin) / 1000);
+      console.log('tree is:: ', tree);
       // fcb && fcb(tree, documents_number, total_size);
       resolve({ tree, documentsCount: documents_number, totalSize: total_size });
     };
 
+    // Handle file input based on the event type, starting with `dataTransfer` for drag-and-drop events
     if (event.dataTransfer) {
+      console.log('GetFilesTree:: event.dataTransfer');
       const dt = event.dataTransfer;
+
+      // When dragging files into the browser, `dataTransfer.items` contains a list of the dragged items.
+      // `webkitGetAsEntry` allows access to a directory-like API, letting us explore folders and subfolders.
+      // This means we can recursively scan for files in folders without relying on manual user input.
       if (dt.items && dt.items.length && 'webkitGetAsEntry' in dt.items[0]) {
+        console.log('GetFilesTree:: webkitGetAsEntry');
+        // Use `entriesApi` to iterate through items, handling directories and files.
+        // This is ideal for cases where users drag entire folder structures into the app.
         entriesApi(dt.items, (files, paths) => cb(event, files || [], paths));
-      } else if ('getFilesAndDirectories' in dt) {
+      }
+      // If `getFilesAndDirectories` is available on `dataTransfer`, it indicates a newer API is supported.
+      // This API directly provides both files and directories, making it easier to process structured uploads.
+      else if ('getFilesAndDirectories' in dt) {
+        console.log('GetFilesTree:: getFilesAndDirectories');
+        // Use `newDirectoryApi` to process files and directories in a standardized way.
         newDirectoryApi(dt, (files, paths) => cb(event, files || [], paths));
-      } else if (dt.files) {
+      }
+      // If neither of the advanced APIs (`webkitGetAsEntry` or `getFilesAndDirectories`) is available,
+      // fall back to using the basic `dataTransfer.files` property.
+      // This works only for files, meaning directories won’t be detected or handled.
+      else if (dt.files) {
+        // Use `arrayApi` to process the flat list of files.
         arrayApi(dt, (files, paths) => cb(event, files || [], paths));
-      } else cb(event, [], []);
-    } else if (event.target) {
+      }
+      // If no files or directories can be detected (e.g., if the user drops something invalid),
+      // return an empty response to ensure the application doesn’t break.
+      else cb(event, [], []);
+    }
+    // If the event comes from a file input field rather than drag-and-drop (`event.target` exists):
+    else if (event.target) {
       const t = event.target as any;
+
+      // When a file input element (`<input type="file">`) is used, it stores the selected files in `target.files`.
+      // This is the standard way for users to upload files through a file picker dialog.
       if (t.files && t.files.length) {
+        // Process the selected files as a flat array using `arrayApi`.
         arrayApi(t, (files, paths) => cb(event, files || [], paths));
-      } else if ('getFilesAndDirectories' in t) {
+      }
+      // If the input element supports `getFilesAndDirectories`, handle structured uploads.
+      // This could occur in custom or enhanced file inputs that allow folder selection.
+      else if ('getFilesAndDirectories' in t) {
         newDirectoryApi(t, (files, paths) => cb(event, files || [], paths));
-      } else {
+      }
+      // If no valid files or directories can be detected, return an empty response.
+      else {
         cb(event, [], []);
       }
-    } else {
+    }
+    // Fallback for cases where neither `dataTransfer` nor `target` is available:
+    // This typically occurs in unusual scenarios, such as handling a manually triggered upload.
+    else {
+      // If a callback (`fcb`) is provided, call it with the first file found (if any).
+      // This is a last-resort assumption that `event.target.files` has at least one valid file.
       fcb && fcb([(event.target as any).files[0]], 1, (event.target as any).files[0].size);
+
+      // Resolve the promise with a default response, treating the single file as the entire tree.
       resolve({
         tree: (event.target as any).files[0],
         documentsCount: 1,

@@ -97,7 +97,7 @@ window.define =
       },
       minFileSize: 1,
       minFileSizeErrorCallback: function (file, errorCount) {
-        alert(
+        console.log(
           file.fileName ||
             file.name +
               ' is too small, please upload files larger than ' +

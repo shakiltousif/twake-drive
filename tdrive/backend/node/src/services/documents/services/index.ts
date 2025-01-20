@@ -368,6 +368,7 @@ export class DocumentsService {
     content: Partial<DriveFile>,
     version: Partial<FileVersion>,
     context: DriveExecutionContext,
+    tmp = false,
   ): Promise<DriveFile> => {
     try {
       const driveItem = getDefaultDriveItem(content, context);
@@ -468,6 +469,8 @@ export class DocumentsService {
         logger.error(error, "🚀🚀 error:");
       }
 
+      if (tmp) driveItem.is_in_trash = true;
+
       await this.repository.save(driveItem);
       driveItemVersion.drive_item_id = driveItem.id;
 
@@ -476,8 +479,12 @@ export class DocumentsService {
 
       await this.repository.save(driveItem);
 
+      console.log("🚀🚀 DRIVE ITEM SAVED:: ", driveItem);
+
       //TODO[ASH] update item size only for files, there is not need to do during direcotry creation
       await updateItemSize(driveItem.parent_id, this.repository, context);
+      
+      console.log("🚀🚀 DRIVE ITEM SIZE UPDATED:: ", driveItem);
 
       // If AV feature is enabled, scan the file
       if (!driveItem.is_directory && globalResolver.services.av?.avEnabled && version) {

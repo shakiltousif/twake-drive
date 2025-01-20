@@ -8,16 +8,19 @@ import { CurrentTaskSelector } from '../state/selectors/current-task';
 export const useUpload = () => {
   const { companyId } = RouterServices.getStateFromRoute();
   const [pendingFilesListState, setPendingFilesListState] = useRecoilState(PendingFilesListState);
-  const [rootPendingFilesListState, setRootPendingFilesListState] =
+  const [_rootPendingFilesListState, setRootPendingFilesListState] =
     useRecoilState(RootPendingFilesListState);
   FileUploadService.setRecoilHandler(setPendingFilesListState, setRootPendingFilesListState);
-  // FileUploadService.setRecoilHandler(setPendingFilesListState);
 
   const currentTask = useRecoilValue(CurrentTaskSelector);
 
-  const pauseOrResumeUpload = (id: string) => FileUploadService.pauseOrResume(id);
+  const pauseOrResumeUpload = () => FileUploadService.pauseOrResume();
 
-  const cancelUpload = (id: string) => FileUploadService.cancel(id);
+  const pauseOrResumeRootUpload = (id: string) => FileUploadService.pauseOrResumeRoot(id);
+
+  const cancelUpload = () => FileUploadService.cancelUpload();
+
+  const cancelRootUpload = (id: string) => FileUploadService.cancelRoot(id);
 
   const getOnePendingFile = (id: string) => FileUploadService.getPendingFile(id);
 
@@ -27,13 +30,21 @@ export const useUpload = () => {
 
   const retryUpload = (id: string) => FileUploadService.retry(id);
 
+  const clearRoots = () => FileUploadService.clearRoots();
+
+  const isPaused = () => FileUploadService.getPauseStatus();
+
   return {
     pendingFilesListState,
     pauseOrResumeUpload,
+    pauseOrResumeRootUpload,
     cancelUpload,
+    cancelRootUpload,
     getOnePendingFile,
     currentTask,
     deleteOneFile,
     retryUpload,
+    clearRoots,
+    isPaused,
   };
 };

@@ -49,6 +49,7 @@ import { useCurrentUser } from 'app/features/users/hooks/use-current-user';
 import { ConfirmModal } from './modals/confirm-move';
 import { useHistory } from 'react-router-dom';
 import { SortIcon } from 'app/atoms/icons-agnostic';
+import { useUploadExp } from 'app/features/files/hooks/use-exp-upload';
 
 export const DriveCurrentFolderAtom = atomFamily<
     string,
@@ -109,6 +110,7 @@ export default memo(
       paginateItem,
     } = useDriveItem(parentId);
     const { uploadTree } = useDriveUpload();
+    const { uploadTree: _uploadTree } = useUploadExp();
 
     const loading = loadingParent || loadingParentChange;
 
@@ -309,6 +311,8 @@ export default memo(
       }
     }, [paginateItem, loading, parentId, itemsPerPage]);
 
+    const [isPreparingUpload, setIsPreparingUpload] = useState(false);
+
     return (
       <>
         {viewId == 'shared-with-me' ? (
@@ -329,7 +333,16 @@ export default memo(
             ref={uploadZoneRef}
             driveCollectionKey={uploadZone}
             onAddFiles={async (_, event) => {
+              console.log('STARTING UPLOAD...');
+              setIsPreparingUpload(true);
+              const timeBeing = new Date().getTime();
               const tree = await getFilesTree(event);
+              // await new Promise(resolve => setTimeout(resolve, 3000));
+              const timeEnd = new Date().getTime();
+              console.log('TIME TO UPLOAD: ', (timeEnd - timeBeing) / 1000);
+              setIsPreparingUpload(false);
+              // _uploadTree(tree);
+              // // return;
               setCreationModalState({ parent_id: '', open: false });
               uploadTree(tree, {
                 companyId,
@@ -483,8 +496,10 @@ export default memo(
                           <br />
                           <Button
                             onClick={() => uploadItemModal()}
-                            theme="primary"
+                            theme={isPreparingUpload ? 'outline' : 'primary'}
                             className="mt-4"
+                            loading={isPreparingUpload}
+                            disabled={isPreparingUpload}
                           >
                             {Languages.t('scenes.app.drive.add_doc')}
                           </Button>
