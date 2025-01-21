@@ -16,7 +16,7 @@ const MainView: FC<PropsType> = ({ className }) => {
   const channelId = useRouterChannel();
 
   return (
-    <div className={'grow min-h-full relative ' + (className ? className : '')}>
+    <div className={'grow min-h-full relative overflow-x-hidden ' + (className ? className : '')}>
       <MainContentWrapper key={companyId + workspaceId + channelId} />
     </div>
   );

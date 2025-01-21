@@ -9,6 +9,7 @@ import ModalManagerDepreciated from '@deprecated/popupManager/popupManager';
 import FeatureTogglesService, {
   FeatureNames,
 } from '@features/global/services/feature-toggles-service';
+import Icon from '@components/icon/icon.jsx';
 
 export default (): JSX.Element => {
   const { user } = useCurrentUser();
@@ -22,19 +23,25 @@ export default (): JSX.Element => {
       menu={[
         // user name / email
         {
+          testClassId: 'username',
           type: 'text',
+          className: "username",
           text: currentUserService.getFullName(user),
         },
         {
+          testClassId: 'email',
           type: 'text',
           text: user.email,
-          icon: 'envelope-info',
+          className: 'email',
+          icon: <Icon type="envelope" className="text-black dark:text-white" />,
           hide: !FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_DISPLAY_EMAIL),
         },
         { type: 'separator' },
         {
+          testClassId: 'account-setting',
           type: 'menu',
-          icon: 'user',
+          className: 'account-menu',
+          icon: <Icon type="user-circle" className="text-black dark:text-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.title'),
           //hide: InitService.server_infos?.configuration?.accounts?.type === 'remote',
           onClick: () => {
@@ -42,21 +49,24 @@ export default (): JSX.Element => {
           },
         },
         {
+          testClassId: 'logout',
           type: 'menu',
-          icon: 'sign-out-alt',
+          className: 'account-menu',
+          icon: <Icon type="sign-out-alt" className="text-black dark:text-white" />,
           text: Languages.t('scenes.app.channelsbar.currentuser.logout'),
-          className: 'error',
           onClick: () => {
             LoginService.logout();
           },
         },
       ]}
+      testClassId="menu-account"
     >
       <Avatar
         size="md"
         className="shrink-0 border-0"
         avatar={user.thumbnail}
         title={currentUserService.getFullName(user)}
+        testClassId="account-avatar"
       />
     </Menu>
   );

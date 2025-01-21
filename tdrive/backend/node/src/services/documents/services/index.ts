@@ -133,6 +133,9 @@ export class DocumentsService {
       options.sort = this.getSortFieldMapping(options.sort);
     }
 
+    // Handle pagination differently for non-MongoDB platforms
+    globalResolver.platformServices.search.handlePagination(options);
+
     const fileList: ListResult<DriveFile> = await this.search(options, context);
     const result = fileList.getEntities();
 

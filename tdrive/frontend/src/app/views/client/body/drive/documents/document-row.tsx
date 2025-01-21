@@ -1,6 +1,5 @@
 import {
   DotsHorizontalIcon,
-  ShieldCheckIcon,
   ShieldExclamationIcon,
   BanIcon,
 } from '@heroicons/react/outline';
@@ -45,6 +44,8 @@ export const DocumentRow = ({
     // history.push(RouterServices.generateRouteFromState({ companyId: company, itemId: item.id }));
   };
 
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   return (
     <div
       className={
@@ -52,7 +53,8 @@ export const DocumentRow = ({
         (checked
           ? (notSafe ? 'bg-rose-500' : 'bg-blue-500') + ' bg-opacity-10 hover:bg-opacity-25'
           : 'hover:bg-zinc-500 hover:bg-opacity-10 ') +
-        (className || '')
+        (className || '') + ' ' +
+        'testid:document-row'
       }
       id={`DR-${item.id}`}
       onMouseEnter={() => setHover(true)}
@@ -79,16 +81,16 @@ export const DocumentRow = ({
         />
       </div>
       <div className="grow text-ellipsis whitespace-nowrap overflow-hidden">
-        <Base className="flex maxWidth100">{item.name}</Base>
+        <Base className={`block text-ellipsis whitespace-nowrap overflow-hidden max-w-full`}>{item.name}</Base>
       </div>
-      <div className="shrink-0 ml-4">
-        {hasAnyPublicLinkAccess(item) && <PublicIcon className="h-5 w-5 text-blue-500" />}
+      <div className="shrink-0 md:ml-4">
+        {hasAnyPublicLinkAccess(item) && <PublicIcon className="h-5 w-5 ml-4 text-gray-500 md:text-blue-500" />}
       </div>
-      <div className="shrink-0 ml-4 mr-12">
+      <div className="shrink-0 ml-4 md:mr-12 hidden md:block">
         <BaseSmall>{formatDateShort(item?.last_version_cache?.date_added)}</BaseSmall>
       </div>
-      <div className="shrink-0 ml-4 text-right lg:w-24 sm:w-20 ">
-        <BaseSmall>{formatBytes(item.size)}</BaseSmall>
+      <div className="shrink-0 ml-4 mr-4 md:mr-none text-right lg:w-24 sm:w-20 ">
+        <BaseSmall className="text-gray-500 dark:md:text-white md:text-black">{formatBytes(item.size)}</BaseSmall>
       </div>
       {FeatureTogglesService.isActiveFeatureName(FeatureNames.COMPANY_AV_ENABLED) && (
         <div className="shrink-0 ml-4 text-right lg:w-24 sm:w-20 ">
@@ -101,13 +103,14 @@ export const DocumentRow = ({
           </BaseSmall>
         </div>
       )}
-      <div className="shrink-0 ml-4">
-        <Menu menu={onBuildContextMenu}>
+      <div className="shrink-0 ml-auto md:ml-4">
+        <Menu menu={onBuildContextMenu} enableMobileMenu={isMobile} testClassId="document-row-menu">
           <Button
             theme={'secondary'}
             size="sm"
-            className={'!rounded-full '}
+            className={'!rounded-full !text-gray-500 md:!text-blue-500 bg-transparent md:bg-blue-500 md:bg-opacity-25 '}
             icon={DotsHorizontalIcon}
+            testClassId="document-row-button-open-menu"
           />
         </Menu>
       </div>

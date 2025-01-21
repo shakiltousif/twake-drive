@@ -10,7 +10,7 @@ import { useDriveUpload } from '@features/drive/hooks/use-drive-upload';
 import { DriveItemSelectedList, DriveItemSort } from '@features/drive/state/store';
 import { formatBytes } from '@features/drive/utils';
 import useRouterCompany from '@features/router/hooks/use-router-company';
-import _, { get, set } from 'lodash';
+import _ from 'lodash';
 import { memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { atomFamily, useRecoilState, useSetRecoilState } from 'recoil';
 import { DrivePreview } from '../../viewer/drive-preview';
@@ -139,7 +139,6 @@ export default memo(
     useEffect(() => {
       setChecked({});
       refresh(parentId);
-      if (!inPublicSharing) refresh('trash');
     }, [parentId, refresh, filter]);
 
     const uploadItemModal = useCallback(() => {
@@ -226,7 +225,8 @@ export default memo(
         key: index,
         className:
           (index === 0 ? 'rounded-t-md ' : '-mt-px ') +
-          (index === items.length - 1 ? 'rounded-b-md ' : ''),
+          (index === items.length - 1 ? 'rounded-b-md ' : '') +
+          'border-0 md:border',
         item: child,
         checked: checked[child.id] || false,
         onCheck: (v: boolean) => setChecked(_.pickBy({ ...checked, [child.id]: v }, _.identity)),
@@ -352,6 +352,7 @@ export default memo(
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             disabled={inTrash || access === 'read'}
+            testClassId="browser-upload-zone"
           >
             {role == 'admin' && <UsersModal />}
             <VersionsModal />
@@ -370,7 +371,7 @@ export default memo(
                 (loading && (!items?.length || loadingParentChange) ? 'opacity-50 ' : '')
               }
             >
-              <div className="flex flex-row shrink-0 items-center mb-4">
+              <div className={`flex flex-row shrink-0 items-center mb-4 ${!sharedWithMe ? 'flex-wrap' : ''} border-b md:border-b-0 px-4 py-2 md:px-0 md:py-0`}>
                 {sharedWithMe ? (
                   <div>
                     <Title className="mb-4 block">
@@ -387,8 +388,11 @@ export default memo(
                               buildFileTypeContextMenu(),
                               { x: evt.clientX, y: evt.clientY },
                               'center',
+                              undefined,
+                              "browser-share-with-me-menu-file-type"
                             );
                           }}
+                          testClassId="button-open-menu-file-type"
                         >
                           <span>
                             {filter.mimeType.key && filter.mimeType.key != 'All'
@@ -407,8 +411,11 @@ export default memo(
                               buildPeopleContextMen(),
                               { x: evt.clientX, y: evt.clientY },
                               'center',
+                              undefined,
+                              "browser-share-with-me-menu-people"
                             );
                           }}
+                          testClassId="button-open-menu-people"
                         >
                           <span>{Languages.t('scenes.app.shared_with_me.people')}</span>
                           <ChevronDownIcon className="h-4 w-4 ml-2 -mr-1" />
@@ -424,8 +431,11 @@ export default memo(
                               buildDateContextMenu(),
                               { x: evt.clientX, y: evt.clientY },
                               'center',
+                              undefined,
+                              "browser-share-with-me-menu-last-modified"
                             );
                           }}
+                          testClassId="button-open-menu-last-modified"
                         >
                           <span>
                             {filter.date.key && filter.date.key != 'All'
@@ -448,14 +458,14 @@ export default memo(
                 <div className="grow" />
 
                 {access !== 'read' && (
-                  <BaseSmall>
+                  <BaseSmall className="hidden md:block">
                     {formatBytes(item?.size || 0)} {Languages.t('scenes.app.drive.used')}
                   </BaseSmall>
                 )}
 
-                <Menu menu={() => onBuildSortContextMenu()} sortData={sortLabel}>
+                <Menu menu={() => onBuildSortContextMenu()} sortData={sortLabel} testClassId="browser-menu-sorting">
                   {' '}
-                  <Button theme="outline" className="ml-4 flex flex-row items-center">
+                  <Button theme="outline" className="ml-4 flex flex-row items-center border-0 md:border !text-gray-500 md:!text-blue-500 px-0 md:px-4" testClassId="button-sorting">
                     <SortIcon
                       className={`h-4 w-4 mr-2 -ml-1 ${
                         sortLabel.order === 'asc' ? 'transform rotate-180' : ''
@@ -468,9 +478,9 @@ export default memo(
                   </Button>
                 </Menu>
                 {viewId !== 'shared_with_me' && (
-                  <Menu menu={() => onBuildContextMenu(details)}>
+                  <Menu menu={() => onBuildContextMenu(details)} testClassId="browser-menu-more">
                     {' '}
-                    <Button theme="secondary" className="ml-4 flex flex-row items-center">
+                    <Button theme="secondary" className="ml-4 flex flex-row items-center bg-transparent md:bg-blue-500 md:bg-opacity-25 !text-gray-500 md:!text-blue-500 px-0 md:px-4" testClassId="button-more">
                       <span>
                         {selectedCount > 1
                           ? `${selectedCount} items`
@@ -500,6 +510,7 @@ export default memo(
                             className="mt-4"
                             loading={isPreparingUpload}
                             disabled={isPreparingUpload}
+                            testClassId="button-add-doc"
                           >
                             {Languages.t('scenes.app.drive.add_doc')}
                           </Button>
@@ -514,7 +525,8 @@ export default memo(
                           key={index}
                           className={
                             (index === 0 ? 'rounded-t-md ' : '-mt-px ') +
-                            (index === items.length - 1 ? 'rounded-b-md ' : '')
+                            (index === items.length - 1 ? 'rounded-b-md ' : '') +
+                            'border-0 md:border'
                           }
                           item={child}
                           onClick={() => {

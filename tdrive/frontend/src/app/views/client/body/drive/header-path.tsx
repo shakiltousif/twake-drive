@@ -1,6 +1,6 @@
 import { Title } from '@atoms/text';
 import { DriveItem } from '@features/drive/types';
-import { ChevronDownIcon } from '@heroicons/react/solid';
+import { ChevronDownIcon, ChevronLeftIcon } from '@heroicons/react/solid';
 import { useEffect, useState } from 'react';
 import { PublicIcon } from './components/public-icon';
 import MenusManager from '@components/menus/menus-manager.jsx';
@@ -74,46 +74,65 @@ export const PathRender = ({
   const pathLength = (pathToRender || []).reduce((acc, curr) => acc + curr.name.length, 0);
 
   return (
-    <nav className="overflow-hidden whitespace-nowrap mr-2 pl-px inline-flex">
-      {pathLength < 70 ? (
-        (pathToRender || [])?.map((a, i) => (
-          <PathItem
-            key={a.id}
-            item={a}
-            first={i === 0}
-            last={i + 1 === pathToRender?.length}
-            onClick={onClick}
-          />
-        ))
-      ) : (
-        <>
-          <PathItem
-            key={pathToRender[pathToRender.length - 3]?.id}
-            item={{
-              ...pathToRender[pathToRender?.length - 3],
-              name: '...',
-            }}
-            first={true}
-            last={false}
-            onClick={onClick}
-          />
-          <PathItem
-            key={pathToRender[pathToRender.length - 2]?.id}
-            item={pathToRender[pathToRender?.length - 2]}
-            first={false}
-            last={false}
-            onClick={onClick}
-          />
-          <PathItem
-            key={pathToRender[pathToRender.length - 1]?.id}
-            item={pathToRender[pathToRender?.length - 1]}
-            first={false}
-            last={true}
-            onClick={onClick}
-          />
-        </>
-      )}
-    </nav>
+    <>
+      <nav className="overflow-hidden whitespace-nowrap mr-2 pl-px hidden md:inline-flex max-w-[50%] testid:header-path">
+        {pathLength < 70 ? (
+          (pathToRender || [])?.map((a, i) => (
+            <PathItem
+              key={a.id}
+              item={a}
+              first={i === 0}
+              last={i + 1 === pathToRender?.length}
+              onClick={onClick}
+            />
+          ))
+        ) : (
+          <>
+            <PathItem
+              key={pathToRender[pathToRender.length - 3]?.id}
+              item={{
+                ...pathToRender[pathToRender?.length - 3],
+                name: '...',
+              }}
+              first={true}
+              last={false}
+              onClick={onClick}
+            />
+            <PathItem
+              key={pathToRender[pathToRender.length - 2]?.id}
+              item={pathToRender[pathToRender?.length - 2]}
+              first={false}
+              last={false}
+              onClick={onClick}
+            />
+            <PathItem
+              key={pathToRender[pathToRender.length - 1]?.id}
+              item={pathToRender[pathToRender?.length - 1]}
+              first={false}
+              last={true}
+              onClick={onClick}
+            />
+          </>
+        )}
+      </nav>
+      <nav className="overflow-hidden whitespace-nowrap mr-2 pl-px inline-flex md:hidden max-w-[50%] testid:header-path">
+        <PathItem
+          key={pathToRender[pathToRender.length - 2]?.id}
+          item={pathToRender[pathToRender?.length - 2]}
+          first={false}
+          last={false}
+          isPreviousItemInMobile={true}
+          onClick={onClick}
+        />
+        <PathItem
+          key={pathToRender[pathToRender.length - 1]?.id}
+          item={pathToRender[pathToRender?.length - 1]}
+          first={false}
+          last={true}
+          onClick={onClick}
+        />
+      </nav>
+    </>
   );
 };
 
@@ -121,11 +140,13 @@ const PathItem = ({
   item,
   first,
   last,
+  isPreviousItemInMobile,
   onClick,
 }: {
   item: Partial<DriveItem>;
   last?: boolean;
   first?: boolean;
+  isPreviousItemInMobile?: boolean;
   onClick: (viewId: string, dirId: string) => void;
 }) => {
   const { user } = useCurrentUser();
@@ -133,20 +154,22 @@ const PathItem = ({
   const { access: trashAccess } = useDriveItem('trash');
   const isInSharedWithMe = viewId === 'shared_with_me';
   return (
-    <div className="flex items-center">
+    <div className={`flex items-center ${!first ? 'overflow-hidden' : ''} testid:header-path-item`}>
       <a
         href="#"
-        className="text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white"
+        className={`text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white ${!first ? 'overflow-hidden' : ''} testid:item-link`}
         onClick={evt => {
           evt.preventDefault();
 
           const trashMenuItems = [
             {
+              testClassId: 'my-trash',
               type: 'menu',
               text: Languages.t('components.header_path.my_trash'),
               onClick: () => onClick('trash_' + user?.id, ''),
             },
             {
+              testClassId: 'shared-trash',
               type: 'menu',
               text: Languages.t('components.header_path.shared_trash'),
               onClick: () => onClick('trash', ''),
@@ -160,7 +183,13 @@ const PathItem = ({
 
           if (first && user?.id) {
             if (viewId?.includes('trash')) {
-              MenusManager.openMenu(trashMenuItems, { x: evt.clientX, y: evt.clientY }, 'center');
+              MenusManager.openMenu(
+                trashMenuItems,
+                { x: evt.clientX, y: evt.clientY },
+                'center',
+                undefined,
+                'menu-trash'
+              );
             } else {
               if (viewId === 'root') {
                 onClick('root', '');
@@ -173,10 +202,14 @@ const PathItem = ({
           }
         }}
       >
-        <Title noColor={last} className={last ? 'text-blue-500' : ''}>
+        <Title noColor={last} className={!first ? 'text-black dark:text-white md:text-blue-500 inline-block overflow-hidden text-ellipsis max-w-full' : ''}>
           {(() => {
             const isTrash = viewId?.includes('trash_') || viewId === 'trash';
             const fileName = cutFileName(item?.name) || '';
+
+            if (isPreviousItemInMobile && fileName) {
+              return <ChevronLeftIcon className="w-6 h-6 mr-2 ml-[-6px]" />
+            }
 
             if (first) {
               if (isTrash) {
@@ -194,15 +227,15 @@ const PathItem = ({
           })()}
         </Title>
       </a>
-      {hasAnyPublicLinkAccess(item) && (
+      {hasAnyPublicLinkAccess(item) && !isPreviousItemInMobile && (
         <PublicIcon className="h-5 w-5 ml-2" />
       )}
-      {first && !!user?.id && viewId?.includes('trash') && (
+      {first && !!user?.id && viewId?.includes('trash') && !isPreviousItemInMobile && (
         <span className="ml-2 -mr-1 text-gray-700">
           <ChevronDownIcon className="w-4 h-4" />
         </span>
       )}
-      {!last && (
+      {!last && !isPreviousItemInMobile && (
         <svg
           aria-hidden="true"
           className="w-6 h-6 text-gray-400 mx-1"

@@ -29,7 +29,7 @@ export const VersionsModal = () => {
   const [state, setState] = useRecoilState(VersionsModalAtom);
 
   return (
-    <Modal open={state.open} onClose={() => setState({ ...state, open: false })}>
+    <Modal className="testid:version-modal" open={state.open} onClose={() => setState({ ...state, open: false })}>
       {!!state.id && <VersionModalContent id={state.id} />}
     </Modal>
   );
@@ -64,6 +64,7 @@ const VersionModalContent = ({ id }: { id: string }) => {
           await uploadVersion(file);
           await refresh(id);
         }}
+        testClassId="upload-zone"
       >
         {access !== 'read' && (
           <div
@@ -80,6 +81,7 @@ const VersionModalContent = ({ id }: { id: string }) => {
                   theme="primary"
                   onClick={() => uploadZoneRef.current?.open()}
                   loading={loading}
+                  testClassId="button-create-version"
                 >
                   {Languages.t('components.VersionModalContent_create')}
                 </Button>
@@ -97,22 +99,24 @@ const VersionModalContent = ({ id }: { id: string }) => {
             className={
               'flex flex-row items-center border -mt-px px-4 py-3 cursor-pointer hover:bg-zinc-500 hover:bg-opacity-10 ' +
               (index === 0 ? 'rounded-t-md ' : '') +
-              (index === (versions || []).length - 1 ? 'rounded-b-md ' : '')
+              (index === (versions || []).length - 1 ? 'rounded-b-md ' : '') +
+              'testid:version-row'
             }
           >
             <div className="grow text-ellipsis whitespace-nowrap overflow-hidden">
-              <Base>{version.file_metadata.name}</Base>
+              <Base className="testid:name">{version.file_metadata.name}</Base>
             </div>
             <div className="shrink-0 ml-4">
-              <BaseSmall>{formatDate(version.date_added || 0)}</BaseSmall>
+              <BaseSmall className="testid:date-added">{formatDate(version.date_added || 0)}</BaseSmall>
             </div>
             <div className="shrink-0 ml-4">
-              <BaseSmall>{formatBytes(version.file_metadata.size || 0)}</BaseSmall>
+              <BaseSmall className="testid:file-size">{formatBytes(version.file_metadata.size || 0)}</BaseSmall>
             </div>
             <div className="shrink-0 ml-4">
               <Button
                 theme="outline"
                 onClick={() => download(id, item.av_status === 'malicious', version.id)}
+                testClassId="button-download-version"
               >
                 {Languages.t('components.VersionModalContent_donwload')}
               </Button>

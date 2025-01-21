@@ -58,6 +58,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
       }}
     >
       <Row
+        className="testid:pending-files-row"
         justify="space-between"
         align="middle"
         wrap={false}
@@ -75,6 +76,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                   maxWidth: isPendingFileStatusPause(pendingFile.status) ? 130 : 160,
                   verticalAlign: 'middle',
                 }}
+                className="testid:file-name"
               >
                 {capitalize(pendingFile?.originalFile.name)}
               </Text>
@@ -102,6 +104,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
           {pendingFile?.label ? (
             <Row justify="start" align="middle" wrap={false}>
               <Text
+                className="testid:file-label"
                 ellipsis
                 style={{
                   maxWidth: isPendingFileStatusPause(pendingFile.status) ? 130 : 160,
@@ -142,6 +145,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                     ? Languages.t('general.resume')
                     : Languages.t('general.pause')
                 }
+                className="pending-file-row-tooltip-file-status"
               >
                 <Button
                   type="link"
@@ -159,6 +163,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
+                  className="testid:button-toggle-tooltip-status"
                 />
               </Tooltip>
             ) : (
@@ -187,13 +192,14 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
         >
           {!isPendingFileStatusSuccess(pendingFileState.status) &&
           !isPendingFileStatusError(pendingFileState.status) ? (
-            <Tooltip title={Languages.t('general.cancel')} placement="top">
+            <Tooltip title={Languages.t('general.cancel')} placement="top" className="testid:pending-file-row-tooltip-cancel">
               <Button
                 type="link"
                 shape="circle"
                 icon={<Trash2 size={16} color={'var(--black)'} />}
                 // onClick={() => cancelUpload(pendingFileState.id)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                className="testid:button-toggle-tooltip-cancel"
               />
             </Tooltip>
           ) : (
@@ -201,7 +207,7 @@ export default ({ pendingFileState, pendingFile }: PropsType) => {
           )}
         </Col>
       </Row>
-      <div className="file-progress-bar-container">
+      <div className="file-progress-bar-container testid:progress-bar">
         <Progress
           type="line"
           className="file-progress-bar"

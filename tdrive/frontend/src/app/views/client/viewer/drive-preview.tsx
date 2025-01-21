@@ -25,6 +25,8 @@ import Controls from './controls';
 interface DrivePreviewProps {
   items: DriveItem[];
 }
+let currentItemIndex: number | undefined;
+
 export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
   const history = useHistory();
   const company = useRouterCompany();
@@ -37,21 +39,33 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
   const { type = '' } = useDrivePreviewDisplayData();
   const name = status.details?.item.name;
 
+  useEffect(() => {
+    if (!isOpen) {
+      currentItemIndex = undefined;
+      return;
+    }
+
+    if (currentItemIndex === undefined && items && status.item?.id) {
+      currentItemIndex = items.findIndex(x => x.id === status.item?.id);
+    }
+  }, [status.item?.id, items, isOpen]);
 
   const handleSwitchRight = () => {
-    const currentItem = status.item;
-    if (currentItem) {
-      const currentItemPos = items.findIndex(x => x.id === currentItem.id);
-      switchPreview(items[(currentItemPos + 1) % items.length]);
+    if (currentItemIndex === undefined || currentItemIndex < 0) {
+      return;
     }
+
+    currentItemIndex = (currentItemIndex + 1) % items.length;
+    switchPreview(items[currentItemIndex]);
   };
 
   const handleSwitchLeft = () => {
-    const currentItem = status.item;
-    if (currentItem) {
-      const currentItemPos = items.findIndex(x => x.id === currentItem.id);
-      switchPreview(items[(currentItemPos - 1 + items.length) % items.length]);
+    if (currentItemIndex === undefined || currentItemIndex < 0) {
+      return;
     }
+
+    currentItemIndex = (currentItemIndex - 1 + items.length) % items.length;
+    switchPreview(items[currentItemIndex]);
   };
 
   useEffect(() => {
@@ -66,14 +80,15 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
     if (items.length < 2)
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       return () => {};
+
     addShortcut({ shortcut: 'Right', handler: handleSwitchRight });
     addShortcut({ shortcut: 'Left', handler: handleSwitchLeft });
 
     return () => {
-      removeShortcut({ shortcut: 'Right', handler: handleSwitchRight });
-      removeShortcut({ shortcut: 'Left', handler: handleSwitchLeft });
+      removeShortcut({ shortcut: 'Right' });
+      removeShortcut({ shortcut: 'Left' });
     };
-  }, [status]);
+  }, [items?.map((item) => item.id).join(',')]);
 
   useEffect(() => {
     clearTimeout(animationTimeout);
@@ -86,7 +101,6 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
   }, [loading]);
 
   const switchPreview = async (item: DriveItem) => {
-    close();
     //TODO[ASH] fix state management for this component
     //right now changing the routing leads to a lot of components rerender
     //and galery become unusable
@@ -99,12 +113,12 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
     <Modal
       open={isOpen}
       closable={false}
-      className="bg-black bg-opacity-50 !sm:max-w-none !w-full !rounded-none !p-0"
+      className="bg-black bg-opacity-50 !sm:max-w-none !w-full !rounded-none !p-0 testid:preview-modal"
       style={{ maxWidth: 'none', margin: 0, left: 0, top: 0, height: '100vh' }}
       positioned={false}
     >
       <XIcon
-        className="z-10 cursor-pointer absolute right-5 top-5 w-20 h-20 text-white hover:text-black rounded-full p-1 bg-gray-500 hover:bg-white bg-opacity-25"
+        className="z-10 cursor-pointer absolute right-5 top-5 w-20 h-20 text-white hover:text-black rounded-full p-1 bg-gray-500 hover:bg-white bg-opacity-25 testid:preview-button-close"
         onClick={() => {
           close();
           // small delay to allow the modal to close
@@ -132,10 +146,10 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
         </div>
         <div className="z-10 p-5 bg-black w-full flex text-white">
           <div className="grow overflow-hidden text-ellipsis">
-            <Text.Base noColor className="w-full block text-white whitespace-nowrap">
+            <Text.Base noColor className="w-full block text-white whitespace-nowrap testid:preview-file-name">
               {name}
             </Text.Base>
-            <Text.Info className="whitespace-nowrap">
+            <Text.Info className="whitespace-nowrap testid:preview-file-info">
               {formatDate(
                 +(status.details?.item.added || '') ||
                 status.details?.item.last_version_cache.date_added,
@@ -158,6 +172,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
                   size="lg"
                   icon={ArrowLeftIcon}
                   onClick={ handleSwitchLeft }
+                  testClassId="drive-preview-button-switch-left"
                 />
                 <Button
                   iconSize="lg"
@@ -166,6 +181,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
                   size="lg"
                   icon={ArrowRightIcon}
                   onClick={ handleSwitchRight }
+                  testClassId="drive-preview-button-switch-right"
                 />
               </>
             }
@@ -178,6 +194,7 @@ export const DrivePreview: React.FC<DrivePreviewProps> = ({ items }) => {
               onClick= {() => {
                 download && (window.location.href = download);
               }}
+              testClassId="drive-preview-button-download"
             />
           </div>
         </div>
