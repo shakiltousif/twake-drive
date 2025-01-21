@@ -1,3 +1,5 @@
+import { number } from 'prop-types';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type TreeItem = { [key: string]: { root: string; file: File } | TreeItem };
 
@@ -5,6 +7,7 @@ export type FileTreeObject = {
   tree: TreeItem;
   documentsCount: number;
   totalSize: number;
+  sizePerRoot: { [key: string]: number };
 };
 
 export const getFilesTree = (
@@ -152,10 +155,10 @@ export const getFilesTree = (
     }
 
     const cb = function (event: Event, files: File[], paths?: string[]) {
-      const begin = Date.now();
       const documents_number = paths ? paths.length : 0;
       let total_size = 0;
       const tree: any = {};
+      const size_per_root: { [key: string]: number } = {};
       (paths || []).forEach(function (path, file_index) {
         let dirs = tree;
         const real_file = files[file_index];
@@ -167,10 +170,17 @@ export const getFilesTree = (
             return;
           }
           if (dir_index === path.split('/').length - 1) {
+            const root = path.split('/')[0];
             dirs[dir] = {
-              root: path.split('/')[0],
               file: real_file,
+              root,
             };
+            // Calculate the total size of each root
+            if (!size_per_root[root]) {
+              size_per_root[root] = real_file.size;
+            } else {
+              size_per_root[root] += real_file.size;
+            }
           } else {
             if (!dirs[dir]) {
               dirs[dir] = {};
@@ -179,9 +189,12 @@ export const getFilesTree = (
           }
         });
       });
-      console.log('tree is:: ', tree);
-      // fcb && fcb(tree, documents_number, total_size);
-      resolve({ tree, documentsCount: documents_number, totalSize: total_size });
+      resolve({
+        tree,
+        documentsCount: documents_number,
+        totalSize: total_size,
+        sizePerRoot: size_per_root,
+      });
     };
 
     // Handle file input based on the event type, starting with `dataTransfer` for drag-and-drop events
@@ -245,6 +258,7 @@ export const getFilesTree = (
         tree: (event.target as any).files[0],
         documentsCount: 1,
         totalSize: (event.target as any).files[0].size,
+        sizePerRoot: { [(event.target as any).files[0].name]: (event.target as any).files[0].size },
       });
     }
   });

@@ -18,6 +18,7 @@ export const CurrentTaskSelector = selector({
       : [];
 
     return {
+      parentId: FileUploadService.parentId,
       roots: rootList,
       files: currentTaskFiles,
       total: currentTaskFiles.length,

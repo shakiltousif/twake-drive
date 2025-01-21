@@ -48,9 +48,7 @@ export const useDriveUpload = () => {
     context: { companyId: string; parentId: string },
   ) => {
     logger.debug('Start creating directories and file upload ...');
-    const { idsToBeRestored } = await FileUploadService.createDirectories(tree.tree, context);
-
-    await Promise.all(idsToBeRestored.map(id => restore(id, context.parentId)));
+    await FileUploadService.createDirectories(tree, context);
 
     await refresh(context.parentId, true);
   };

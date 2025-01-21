@@ -89,6 +89,7 @@ export type PendingFileType = {
 };
 
 export type UploadRootType = {
+  id: string;
   size: number;
   uploadedSize: number;
   status: string;

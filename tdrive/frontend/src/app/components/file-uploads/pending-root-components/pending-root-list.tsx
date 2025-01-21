@@ -67,9 +67,11 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
 const PendingRootList = ({
   roots,
   status,
+  parentId,
 }: {
   roots: UploadRootListType;
   status: UploadStateEnum;
+  parentId: string;
 }): JSX.Element => {
   const [modalExpanded, setModalExpanded] = useState(true);
   const { pauseOrResumeUpload, cancelUpload } = useUpload();
@@ -104,7 +106,7 @@ const PendingRootList = ({
             <div className="modal-body">
               <div className="bg-white px-4 py-2">
                 {keys.map(key => (
-                  <PendingRootRow key={key} rootKey={key} root={roots[key]} />
+                  <PendingRootRow key={key} rootKey={key} root={roots[key]} parentId={parentId} />
                 ))}
               </div>
               <ModalFooter

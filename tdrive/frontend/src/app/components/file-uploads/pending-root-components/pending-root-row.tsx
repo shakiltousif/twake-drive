@@ -12,16 +12,20 @@ import {
   ShowFolderIcon,
 } from 'app/atoms/icons-colored';
 import { fileTypeIconsMap } from './file-type-icon-map';
+import { useDriveActions } from 'app/features/drive/hooks/use-drive-actions';
 
 const PendingRootRow = ({
   rootKey,
   root,
+  parentId,
 }: {
   rootKey: string;
   root: UploadRootType;
+  parentId: string;
 }): JSX.Element => {
   const { pauseOrResumeRootUpload, cancelRootUpload, clearRoots } = useUpload();
   const [showFolder, setShowFolder] = useState(false);
+  const { restore } = useDriveActions();
 
   const firstPendingFile = root.items[0];
   const uploadedFilesSize = root.uploadedSize;
@@ -55,7 +59,10 @@ const PendingRootRow = ({
   // after the green check icon appears
   useEffect(() => {
     if (isUploadCompleted) {
-      const timeout = setTimeout(() => setShowFolder(true), 1500);
+      const timeout = setTimeout(async () => {
+        setShowFolder(true);
+        await restore(root.id, parentId);
+      }, 1500);
       return () => clearTimeout(timeout);
     }
   }, [isUploadCompleted]);

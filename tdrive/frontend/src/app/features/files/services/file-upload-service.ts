@@ -35,6 +35,7 @@ class FileUploadService {
   private GroupIds: { [key: string]: string } = {};
   private pausedRoots: { [key: string]: boolean } = {};
   public currentTaskId = '';
+  public parentId = '';
   public uploadStatus = UploadStateEnum.Progress;
   private recoilHandler: Function = () => undefined;
   private logger: Logger.Logger = Logger.getLogger('FileUploadService');
@@ -86,6 +87,7 @@ class FileUploadService {
         : 'uploading';
       // Add to the accumulator object
       acc[key] = {
+        id: this.GroupIds[key],
         items: [],
         size: this.RootSizes[key],
         uploadedSize,
@@ -97,25 +99,11 @@ class FileUploadService {
   }
 
   public async createDirectories(
-    root: FileTreeObject['tree'],
+    tree: FileTreeObject,
     context: { companyId: string; parentId: string },
   ) {
-    // loop through the tree and determine root sizes and set it to the rootSizes object
-    const traverser = (tree: FileTreeObject['tree']) => {
-      for (const directory of Object.keys(tree)) {
-        const root = tree[directory].root as string;
-        if (tree[directory].file instanceof File) {
-          // if root is not in the rootSizes object, add it
-          if (!this.RootSizes[root] && this.uploadStatus !== UploadStateEnum.Cancelled) {
-            this.RootSizes[root] = 0;
-          }
-          this.RootSizes[root] += (tree[directory].file as File).size;
-        } else {
-          traverser(tree[directory] as FileTreeObject['tree']);
-        }
-      }
-    };
-    traverser(root);
+    const root = tree.tree;
+    this.RootSizes = tree.sizePerRoot || {};
     // Create all directories
     const filesPerParentId: { [key: string]: { root: string; file: File }[] } = {};
     filesPerParentId[context.parentId] = [];
@@ -184,7 +172,8 @@ class FileUploadService {
             this.notify();
             if (driveItem?.id) {
               filesPerParentId[driveItem.id] = [];
-              if (tmp && idsToBeRestored.includes(driveItem.id)) idsToBeRestored.push(driveItem.id);
+              if (tmp && !idsToBeRestored.includes(driveItem.id))
+                idsToBeRestored.push(driveItem.id);
               await traverserTreeLevel(tree[directory] as FileTreeObject['tree'], driveItem.id);
             }
           } catch (e) {

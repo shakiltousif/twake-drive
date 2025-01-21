@@ -129,7 +129,7 @@ export class DocumentsController {
       reply.status(200).send();
     } catch (error) {
       logger.error({ error: `${error}` }, "Failed to restore drive item");
-      throw new CrudException("Failed to restore drive item", 500);
+      throw new CrudException(`Failed to restore drive item: ${error}`, 500);
     }
   };
 

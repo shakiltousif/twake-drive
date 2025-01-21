@@ -5,7 +5,7 @@ const UploadsViewer = (): JSX.Element => {
   const { currentTask } = useUpload();
 
   // Destructure and provide default values for safety
-  const { roots = {}, status } = currentTask || {};
+  const { roots = {}, status, parentId } = currentTask || {};
   const rootKeys = Object.keys(roots);
 
   // Early return for clarity
@@ -13,7 +13,7 @@ const UploadsViewer = (): JSX.Element => {
     return <></>;
   }
 
-  return <PendingRootList roots={roots} status={status} />;
+  return <PendingRootList roots={roots} status={status} parentId={parentId} />;
 };
 
 export default UploadsViewer;
