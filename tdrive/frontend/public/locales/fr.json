@@ -176,6 +176,8 @@
     "general.resume": "Reprendre",
     "general.send": "Envoyer un message",
     "general.update": "Mettre à jour",
+    "general.uploading": "Téléchargement en cours",
+    "general.files": "fichiers",
     "general.user.anonymous": "Compte anonyme",
     "general.user.deactivated": "Cet utilisateur n'est plus dans cette l'entreprise",
     "general.user.deleted": "Compte supprimé",

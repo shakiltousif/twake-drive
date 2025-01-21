@@ -165,6 +165,8 @@
     "general.resume": "Tiếp tục",
     "general.send": "Gửi",
     "general.update": "Cập nhật",
+    "general.uploading": "Đang tải lên",
+    "general.files": "tệp",
     "general.user.anonymous": "Vô danh",
     "general.user.deactivated": "Người dùng không còn thuộc công ty này nữa",
     "general.user.deleted": "Tài khoản đã bị xóa",

@@ -20,23 +20,27 @@ export enum Events {
   ON_CHANGE = 'notify',
 }
 
+export enum UploadStateEnum {
+  Progress = 'progress',
+  Completed = 'completed',
+  Paused = 'paused',
+  Cancelled = 'cancelled',
+}
+
 const logger = Logger.getLogger('Services/FileUploadService');
 class FileUploadService {
-  private isPaused = false;
-  private isCancelled = false;
-  private pausedRoots: { [key: string]: boolean } = {};
   private pendingFiles: PendingFileType[] = [];
   private GroupedPendingFiles: { [key: string]: PendingFileType[] } = {};
   private RootSizes: { [key: string]: number } = {};
   private GroupIds: { [key: string]: string } = {};
+  private pausedRoots: { [key: string]: boolean } = {};
   public currentTaskId = '';
+  public uploadStatus = UploadStateEnum.Progress;
   private recoilHandler: Function = () => undefined;
-  private rootRecoilHandler: Function = () => undefined;
   private logger: Logger.Logger = Logger.getLogger('FileUploadService');
 
-  setRecoilHandler(handler: Function, rootHandler: Function) {
+  setRecoilHandler(handler: Function) {
     this.recoilHandler = handler;
-    this.rootRecoilHandler = rootHandler;
   }
 
   /**
@@ -44,8 +48,8 @@ class FileUploadService {
    * @private
    */
   async _waitWhilePaused(id?: string) {
-    while (this.isPaused || (id && this.pausedRoots[id])) {
-      if (this.isCancelled) return;
+    while (this.uploadStatus === UploadStateEnum.Paused || (id && this.pausedRoots[id])) {
+      if (this.uploadStatus === UploadStateEnum.Cancelled) return;
       await new Promise(resolve => setTimeout(resolve, 100)); // Check every 100ms
       console.log('waiting while paused:: ', id);
     }
@@ -56,52 +60,40 @@ class FileUploadService {
    * @private
    */
   private async checkCancellation() {
-    if (this.isCancelled) {
+    if (this.uploadStatus === UploadStateEnum.Cancelled) {
       logger.warn('Operation cancelled.');
       throw new Error('Upload process cancelled.');
     }
   }
 
   notify() {
-    const updatedState = this.pendingFiles.map((f: PendingFileType) => {
-      return {
-        id: f.id,
-        status: f.status,
-        progress: f.progress,
-        file: f.originalFile?.type,
+    const updatedState = Object.keys(this.GroupedPendingFiles).reduce((acc: any, key: string) => {
+      // uploaded size
+      const uploadedSize = this.GroupedPendingFiles[key]
+        .map((f: PendingFileType) => {
+          // if the file is successful and originalFile exists, add the size to the accumulator
+          if (f.status === 'success' && f.originalFile?.size) {
+            return f.originalFile.size;
+          }
+          return 0;
+        })
+        .reduce((acc: number, size: number) => acc + size, 0);
+      // status can be "uploading", "completed", "paused" based on the size, uploadedSize and pausedRoots
+      const status = this.pausedRoots[key]
+        ? 'paused'
+        : uploadedSize === this.RootSizes[key]
+        ? 'completed'
+        : 'uploading';
+      // Add to the accumulator object
+      acc[key] = {
+        items: [],
+        size: this.RootSizes[key],
+        uploadedSize,
+        status,
       };
-    });
-    const updatedRootState = Object.keys(this.GroupedPendingFiles).reduce(
-      (acc: any, key: string) => {
-        // uploaded size
-        const uploadedSize = this.GroupedPendingFiles[key]
-          .map((f: PendingFileType) => {
-            // if the file is successful and originalFile exists, add the size to the accumulator
-            if (f.status === 'success' && f.originalFile?.size) {
-              return f.originalFile.size;
-            }
-            return 0;
-          })
-          .reduce((acc: number, size: number) => acc + size, 0);
-        // status can be "uploading", "completed", "paused" based on the size, uploadedSize and pausedRoots
-        const status = this.pausedRoots[key]
-          ? 'paused'
-          : uploadedSize === this.RootSizes[key]
-          ? 'completed'
-          : 'uploading';
-        // Add to the accumulator object
-        acc[key] = {
-          items: [],
-          size: this.RootSizes[key],
-          uploadedSize,
-          status,
-        };
-        return acc;
-      },
-      {},
-    );
+      return acc;
+    }, {});
     this.recoilHandler(_.cloneDeep(updatedState));
-    this.rootRecoilHandler(_.cloneDeep(updatedRootState));
   }
 
   public async createDirectories(
@@ -114,7 +106,7 @@ class FileUploadService {
         const root = tree[directory].root as string;
         if (tree[directory].file instanceof File) {
           // if root is not in the rootSizes object, add it
-          if (!this.RootSizes[root] && !this.isCancelled) {
+          if (!this.RootSizes[root] && this.uploadStatus !== UploadStateEnum.Cancelled) {
             this.RootSizes[root] = 0;
           }
           this.RootSizes[root] += (tree[directory].file as File).size;
@@ -135,7 +127,7 @@ class FileUploadService {
       tmp = false,
     ) => {
       // cancel upload
-      if (this.isCancelled) return;
+      if (this.uploadStatus === UploadStateEnum.Cancelled) return;
 
       // check if upload is paused
       await this._waitWhilePaused();
@@ -145,7 +137,7 @@ class FileUploadService {
         const root = tree[directory].root as string;
         await this.checkCancellation();
         await this._waitWhilePaused(root);
-        if (tree[directory].file instanceof File && !this.isCancelled) {
+        if (tree[directory].file instanceof File) {
           logger.trace(`${directory} is a file, save it for future upload`);
           filesPerParentId[parentId].push({
             root: tree[directory].root as string,
@@ -250,7 +242,7 @@ class FileUploadService {
     try {
       await Promise.all(treePromises);
     } catch (error) {
-      if (!this.isCancelled) {
+      if (this.uploadStatus !== UploadStateEnum.Cancelled) {
         console.error('An error occurred while processing treePromises:', error);
         // Optionally, handle the error or rethrow it
         throw error; // Re-throw the error if necessary
@@ -427,7 +419,7 @@ class FileUploadService {
   }
 
   public cancelUpload() {
-    this.isCancelled = true;
+    this.uploadStatus === UploadStateEnum.Cancelled;
 
     // pause or resume the resumable tasks
     const fileToCancel = this.pendingFiles;
@@ -496,7 +488,18 @@ class FileUploadService {
 
   public pauseOrResume() {
     // pause or resume the curent upload task
-    this.isPaused = !this.isPaused;
+    switch (this.uploadStatus) {
+      case UploadStateEnum.Progress:
+        this.uploadStatus = UploadStateEnum.Paused;
+        break;
+      case UploadStateEnum.Paused:
+        this.uploadStatus = UploadStateEnum.Progress;
+        break;
+      case UploadStateEnum.Cancelled:
+        throw new Error('Cannot toggle upload status: Upload is cancelled.');
+      default:
+        throw new Error(`Unexpected upload status: ${this.uploadStatus}`);
+    }
 
     // pause or resume the resumable tasks
     const filesToProcess = this.pendingFiles;
@@ -603,10 +606,6 @@ class FileUploadService {
     this.GroupedPendingFiles = {};
     this.GroupIds = {};
     this.notify();
-  }
-
-  public getPauseStatus() {
-    return this.isPaused;
   }
 }
 

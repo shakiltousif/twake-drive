@@ -183,6 +183,8 @@
     "general.resume": "Resume",
     "general.send": "Send message",
     "general.update": "Update",
+    "general.uploading": "Uploading",
+    "general.files": "files",
     "general.user.anonymous": "Anonymous",
     "general.user.deactivated": "User is no longer in this company",
     "general.user.deleted": "Deleted Account",

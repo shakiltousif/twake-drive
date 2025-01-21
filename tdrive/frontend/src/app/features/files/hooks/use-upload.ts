@@ -7,10 +7,10 @@ import { CurrentTaskSelector } from '../state/selectors/current-task';
 
 export const useUpload = () => {
   const { companyId } = RouterServices.getStateFromRoute();
-  const [pendingFilesListState, setPendingFilesListState] = useRecoilState(PendingFilesListState);
+  const [pendingFilesListState, _setPendingFilesListState] = useRecoilState(PendingFilesListState);
   const [_rootPendingFilesListState, setRootPendingFilesListState] =
     useRecoilState(RootPendingFilesListState);
-  FileUploadService.setRecoilHandler(setPendingFilesListState, setRootPendingFilesListState);
+  FileUploadService.setRecoilHandler(setRootPendingFilesListState);
 
   const currentTask = useRecoilValue(CurrentTaskSelector);
 
@@ -32,8 +32,6 @@ export const useUpload = () => {
 
   const clearRoots = () => FileUploadService.clearRoots();
 
-  const isPaused = () => FileUploadService.getPauseStatus();
-
   return {
     pendingFilesListState,
     pauseOrResumeUpload,
@@ -44,7 +42,6 @@ export const useUpload = () => {
     currentTask,
     deleteOneFile,
     retryUpload,
-    clearRoots,
-    isPaused,
+    clearRoots
   };
 };

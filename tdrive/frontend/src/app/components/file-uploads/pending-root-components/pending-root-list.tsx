@@ -2,7 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { useUpload } from '@features/files/hooks/use-upload';
 import { ArrowDownIcon, ArrowUpIcon } from 'app/atoms/icons-colored';
 import { UploadRootListType } from 'app/features/files/types/file';
+import Languages from '@features/global/services/languages-service';
 import PendingRootRow from './pending-root-row';
+import { UploadStateEnum } from 'app/features/files/services/file-upload-service';
 
 const getFilteredRoots = (keys: string[], roots: UploadRootListType) => {
   const inProgress = keys.filter(key => roots[key].status === 'uploading');
@@ -27,7 +29,8 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({
 }) => (
   <div className="w-full flex bg-[#45454A] text-white p-4 items-center justify-between">
     <p>
-      Uploading {uploadingCount}/{totalRoots} files... {uploadingPercentage}%
+      {Languages.t('general.uploading')} {uploadingCount}/{totalRoots}{' '}
+      {Languages.t('general.files')}... {uploadingPercentage}%
     </p>
     <button className="ml-auto flex items-center" onClick={toggleModal}>
       {modalExpanded ? <ArrowDownIcon /> : <ArrowUpIcon />}
@@ -52,24 +55,32 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
         className="text-blue-500 px-4 py-2 rounded hover:bg-blue-600"
         onClick={pauseOrResumeUpload}
       >
-        {isPaused() ? 'Resume' : 'Pause'}
+        {isPaused() ? Languages.t('general.resume') : Languages.t('general.pause')}
       </button>
       <button className="text-blue-500 px-4 py-2 rounded hover:bg-blue-600" onClick={cancelUpload}>
-        Cancel
+        {Languages.t('general.cancel')}
       </button>
     </div>
   </div>
 );
 
-const PendingRootList = ({ roots }: { roots: UploadRootListType }): JSX.Element => {
+const PendingRootList = ({
+  roots,
+  status,
+}: {
+  roots: UploadRootListType;
+  status: UploadStateEnum;
+}): JSX.Element => {
   const [modalExpanded, setModalExpanded] = useState(true);
-  const { pauseOrResumeUpload, isPaused, cancelUpload } = useUpload();
+  const { pauseOrResumeUpload, cancelUpload } = useUpload();
   const keys = useMemo(() => Object.keys(roots || {}), [roots]);
 
   const { inProgress: rootsInProgress } = useMemo(
     () => getFilteredRoots(keys, roots),
     [keys, roots],
   );
+
+  const isPaused = useCallback(() => status === UploadStateEnum.Paused, [status]);
 
   const totalRoots = keys.length;
   const uploadingCount = rootsInProgress.length;

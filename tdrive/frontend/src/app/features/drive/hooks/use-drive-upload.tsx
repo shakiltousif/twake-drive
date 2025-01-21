@@ -47,67 +47,12 @@ export const useDriveUpload = () => {
     tree: FileTreeObject,
     context: { companyId: string; parentId: string },
   ) => {
-    // Create all directories
-    logger.debug('Start creating directories ...');
-    const { filesPerParentId, idsToBeRestored } = await FileUploadService.createDirectories(
-      tree.tree,
-      context,
-    );
-    idsToBeRestored.map(async (id: string) => {
-      await restore(id, context.parentId);
-    });
-    refresh(context.parentId, true);
-    // await refresh(context.parentId, true);
-    // logger.debug("All directories created");
-    // // Upload files into directories
-    // logger.debug("Start file uploading")
-    // //create counter to calculate number of uploaded files, and refresh browsing window only when all the files were uploaded
-    // let expectedUploadsCount = 0;
-    // const parentFolder = context.parentId;
-    // let uploadedFilesCount = 0;
-    // for (const parentId of Object.keys(filesPerParentId)) {
-    //   logger.debug(`Upload files for directory ${parentId}`);
-    //   expectedUploadsCount += filesPerParentId[parentId].length;
-    //   await FileUploadService.upload(filesPerParentId[parentId], {
-    //     context: {
-    //       companyId: context.companyId,
-    //       parentId: parentId,
-    //     },
-    //     callback: (file, context) => {
-    //       logger.debug('created file: ', file);
-    //       uploadedFilesCount++;
-    //       if (file) {
-    //         create(
-    //           {
-    //             company_id: context.companyId,
-    //             workspace_id: 'drive', //We don't set workspace ID for now
-    //             parent_id: context.parentId,
-    //             name: file.metadata?.name,
-    //             size: file.upload_data?.size,
-    //           },
-    //           {
-    //             provider: 'internal',
-    //             application_id: '',
-    //             file_metadata: {
-    //               name: file.metadata?.name,
-    //               size: file.upload_data?.size,
-    //               mime: file.metadata?.mime,
-    //               thumbnails: file?.thumbnails,
-    //               source: 'internal',
-    //               external_id: file.id,
-    //             },
-    //           },
-    //         );
-    //       }
-    //       if (uploadedFilesCount == expectedUploadsCount) {
-    //         idsToBeRestored.map( async (id: string) => {
-    //           await restore(id, parentFolder);
-    //         });
-    //         refresh(parentFolder, true);
-    //       }
-    //     },
-    //   });
-    // }
+    logger.debug('Start creating directories and file upload ...');
+    const { idsToBeRestored } = await FileUploadService.createDirectories(tree.tree, context);
+
+    await Promise.all(idsToBeRestored.map(id => restore(id, context.parentId)));
+
+    await refresh(context.parentId, true);
   };
 
   const uploadFromUrl = (

@@ -1,10 +1,19 @@
 import { useUpload } from '@features/files/hooks/use-upload';
 import PendingRootList from './pending-root-components/pending-root-list';
-const ChatUploadsViewer = (): JSX.Element => {
+
+const UploadsViewer = (): JSX.Element => {
   const { currentTask } = useUpload();
-  const roots = currentTask.roots || {};
-  const keys = Object.keys(roots);
-  return <>{keys.length > 0 && <PendingRootList roots={roots} />}</>;
+
+  // Destructure and provide default values for safety
+  const { roots = {}, status } = currentTask || {};
+  const rootKeys = Object.keys(roots);
+
+  // Early return for clarity
+  if (rootKeys.length === 0) {
+    return <></>;
+  }
+
+  return <PendingRootList roots={roots} status={status} />;
 };
 
-export default ChatUploadsViewer;
+export default UploadsViewer;

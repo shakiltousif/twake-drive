@@ -16,7 +16,7 @@ type PropsType = {
 const { Text } = Typography;
 const { Header, Content } = Layout;
 export default ({ rootPendingFilesState, visible }: PropsType) => {
-  const { getOnePendingFile, currentTask } = useUpload();
+  const { currentTask } = useUpload();
 
   return Object.keys(rootPendingFilesState || {}).length > 0 ? (
     <Layout className={'pending-files-list-layout ' + (visible ? 'visible' : '')}>

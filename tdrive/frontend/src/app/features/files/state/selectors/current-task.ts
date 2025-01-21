@@ -21,6 +21,7 @@ export const CurrentTaskSelector = selector({
       roots: rootList,
       files: currentTaskFiles,
       total: currentTaskFiles.length,
+      status: FileUploadService.uploadStatus,
       uploaded: currentTaskFiles.filter(f => f.status === 'success').length,
       completed: currentTaskFiles.every(f => f.status === 'success'),
     };
