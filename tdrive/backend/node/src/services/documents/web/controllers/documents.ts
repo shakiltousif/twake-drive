@@ -79,7 +79,7 @@ export class DocumentsController {
         item,
         version,
         context,
-        request.body.tmp
+        request.body.tmp,
       );
     } catch (error) {
       logger.error({ error: `${error}` }, "Failed to create Drive item");

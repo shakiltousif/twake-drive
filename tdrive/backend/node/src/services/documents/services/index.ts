@@ -482,12 +482,8 @@ export class DocumentsService {
 
       await this.repository.save(driveItem);
 
-      console.log("🚀🚀 DRIVE ITEM SAVED:: ", driveItem);
-
       //TODO[ASH] update item size only for files, there is not need to do during direcotry creation
       await updateItemSize(driveItem.parent_id, this.repository, context);
-      
-      console.log("🚀🚀 DRIVE ITEM SIZE UPDATED:: ", driveItem);
 
       // If AV feature is enabled, scan the file
       if (!driveItem.is_directory && globalResolver.services.av?.avEnabled && version) {

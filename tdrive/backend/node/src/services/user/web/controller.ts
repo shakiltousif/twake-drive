@@ -131,7 +131,6 @@ export class UsersCrudController
     const context = getExecutionContext(request);
 
     const userIds = request.query.user_ids ? request.query.user_ids.split(",") : [];
-    console.log("🚀🚀 userIds:: ", userIds);
 
     let users: ListResult<User>;
     if (request.query.search) {

@@ -21,14 +21,14 @@ import {
   useOnBuildDateContextMenu,
   useOnBuildSortContextMenu,
 } from './context-menu';
-import {DocumentRow, DocumentRowOverlay} from './documents/document-row';
+import { DocumentRow, DocumentRowOverlay } from './documents/document-row';
 import { FolderRow } from './documents/folder-row';
 import { FolderRowSkeleton } from './documents/folder-row-skeleton';
 import HeaderPath from './header-path';
 import { ConfirmDeleteModal } from './modals/confirm-delete';
 import { ConfirmTrashModal } from './modals/confirm-trash';
 import { CreateModalAtom } from './modals/create';
-import { UploadModelAtom } from './modals/upload'
+import { UploadModelAtom } from './modals/upload';
 import { PropertiesModal } from './modals/properties';
 import { AccessModal } from './modals/update-access';
 import { PublicLinkModal } from './modals/public-link';
@@ -52,8 +52,8 @@ import { SortIcon } from 'app/atoms/icons-agnostic';
 import { useUploadExp } from 'app/features/files/hooks/use-exp-upload';
 
 export const DriveCurrentFolderAtom = atomFamily<
-    string,
-    { context?: string; initialFolderId: string }
+  string,
+  { context?: string; initialFolderId: string }
 >({
   key: 'DriveCurrentFolderAtom',
   default: options => options.initialFolderId || 'root',
@@ -333,16 +333,8 @@ export default memo(
             ref={uploadZoneRef}
             driveCollectionKey={uploadZone}
             onAddFiles={async (_, event) => {
-              console.log('STARTING UPLOAD...');
-              setIsPreparingUpload(true);
-              const timeBeing = new Date().getTime();
               const tree = await getFilesTree(event);
-              // await new Promise(resolve => setTimeout(resolve, 3000));
-              const timeEnd = new Date().getTime();
-              console.log('TIME TO UPLOAD: ', (timeEnd - timeBeing) / 1000);
               setIsPreparingUpload(false);
-              // _uploadTree(tree);
-              // // return;
               setCreationModalState({ parent_id: '', open: false });
               uploadTree(tree, {
                 companyId,
@@ -371,7 +363,11 @@ export default memo(
                 (loading && (!items?.length || loadingParentChange) ? 'opacity-50 ' : '')
               }
             >
-              <div className={`flex flex-row shrink-0 items-center mb-4 ${!sharedWithMe ? 'flex-wrap' : ''} border-b md:border-b-0 px-4 py-2 md:px-0 md:py-0`}>
+              <div
+                className={`flex flex-row shrink-0 items-center mb-4 ${
+                  !sharedWithMe ? 'flex-wrap' : ''
+                } border-b md:border-b-0 px-4 py-2 md:px-0 md:py-0`}
+              >
                 {sharedWithMe ? (
                   <div>
                     <Title className="mb-4 block">
@@ -389,7 +385,7 @@ export default memo(
                               { x: evt.clientX, y: evt.clientY },
                               'center',
                               undefined,
-                              "browser-share-with-me-menu-file-type"
+                              'browser-share-with-me-menu-file-type',
                             );
                           }}
                           testClassId="button-open-menu-file-type"
@@ -412,7 +408,7 @@ export default memo(
                               { x: evt.clientX, y: evt.clientY },
                               'center',
                               undefined,
-                              "browser-share-with-me-menu-people"
+                              'browser-share-with-me-menu-people',
                             );
                           }}
                           testClassId="button-open-menu-people"
@@ -432,7 +428,7 @@ export default memo(
                               { x: evt.clientX, y: evt.clientY },
                               'center',
                               undefined,
-                              "browser-share-with-me-menu-last-modified"
+                              'browser-share-with-me-menu-last-modified',
                             );
                           }}
                           testClassId="button-open-menu-last-modified"
@@ -463,9 +459,17 @@ export default memo(
                   </BaseSmall>
                 )}
 
-                <Menu menu={() => onBuildSortContextMenu()} sortData={sortLabel} testClassId="browser-menu-sorting">
+                <Menu
+                  menu={() => onBuildSortContextMenu()}
+                  sortData={sortLabel}
+                  testClassId="browser-menu-sorting"
+                >
                   {' '}
-                  <Button theme="outline" className="ml-4 flex flex-row items-center border-0 md:border !text-gray-500 md:!text-blue-500 px-0 md:px-4" testClassId="button-sorting">
+                  <Button
+                    theme="outline"
+                    className="ml-4 flex flex-row items-center border-0 md:border !text-gray-500 md:!text-blue-500 px-0 md:px-4"
+                    testClassId="button-sorting"
+                  >
                     <SortIcon
                       className={`h-4 w-4 mr-2 -ml-1 ${
                         sortLabel.order === 'asc' ? 'transform rotate-180' : ''
@@ -480,7 +484,11 @@ export default memo(
                 {viewId !== 'shared_with_me' && (
                   <Menu menu={() => onBuildContextMenu(details)} testClassId="browser-menu-more">
                     {' '}
-                    <Button theme="secondary" className="ml-4 flex flex-row items-center bg-transparent md:bg-blue-500 md:bg-opacity-25 !text-gray-500 md:!text-blue-500 px-0 md:px-4" testClassId="button-more">
+                    <Button
+                      theme="secondary"
+                      className="ml-4 flex flex-row items-center bg-transparent md:bg-blue-500 md:bg-opacity-25 !text-gray-500 md:!text-blue-500 px-0 md:px-4"
+                      testClassId="button-more"
+                    >
                       <span>
                         {selectedCount > 1
                           ? `${selectedCount} items`

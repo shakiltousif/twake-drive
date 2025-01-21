@@ -55,7 +55,6 @@ export const useUploadExp = () => {
 
   // Main uploadTree function
   const uploadTree = (tree: FileTreeObject) => {
-    console.log('Uploading tree:: ', tree, ' for company: ', companyId);
     addFilesToResumable(tree.tree); // Add files from the tree
     startUpload(); // Start uploading
   };

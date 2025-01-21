@@ -135,17 +135,13 @@ export const getFilesTree = (
                   resolve(true);
                 }, resolve.bind(null, true));
               } else if (entry.isDirectory) {
-                console.log('GetFilesTree:: entriesApi: readDirectory');
                 const timeToRead = Date.now();
                 readDirectory(entry, null, resolve);
-                console.log('GetFilesTree:: entriesApi: readDirectory: ', Date.now() - timeToRead);
               }
             }),
           );
         }
       });
-      console.log('GetFilesTree:: entriesApi: slice.call: ', Date.now() - timeBegin);
-      console.log('GetFilesTree:: entriesApi: rootPromises: ', rootPromises.length, rootPromises);
 
       if (files.length > 1000000) {
         return false;
@@ -153,7 +149,6 @@ export const getFilesTree = (
 
       timeBegin = Date.now();
       Promise.all(rootPromises).then(cb.bind(null, fd, files));
-      console.log('GetFilesTree:: entriesApi: solvePromises: ', Date.now() - timeBegin);
     }
 
     const cb = function (event: Event, files: File[], paths?: string[]) {
@@ -184,7 +179,6 @@ export const getFilesTree = (
           }
         });
       });
-      console.log('GetFilesTree:: cb: ', (Date.now() - begin) / 1000);
       console.log('tree is:: ', tree);
       // fcb && fcb(tree, documents_number, total_size);
       resolve({ tree, documentsCount: documents_number, totalSize: total_size });
@@ -192,14 +186,12 @@ export const getFilesTree = (
 
     // Handle file input based on the event type, starting with `dataTransfer` for drag-and-drop events
     if (event.dataTransfer) {
-      console.log('GetFilesTree:: event.dataTransfer');
       const dt = event.dataTransfer;
 
       // When dragging files into the browser, `dataTransfer.items` contains a list of the dragged items.
       // `webkitGetAsEntry` allows access to a directory-like API, letting us explore folders and subfolders.
       // This means we can recursively scan for files in folders without relying on manual user input.
       if (dt.items && dt.items.length && 'webkitGetAsEntry' in dt.items[0]) {
-        console.log('GetFilesTree:: webkitGetAsEntry');
         // Use `entriesApi` to iterate through items, handling directories and files.
         // This is ideal for cases where users drag entire folder structures into the app.
         entriesApi(dt.items, (files, paths) => cb(event, files || [], paths));
@@ -207,7 +199,6 @@ export const getFilesTree = (
       // If `getFilesAndDirectories` is available on `dataTransfer`, it indicates a newer API is supported.
       // This API directly provides both files and directories, making it easier to process structured uploads.
       else if ('getFilesAndDirectories' in dt) {
-        console.log('GetFilesTree:: getFilesAndDirectories');
         // Use `newDirectoryApi` to process files and directories in a standardized way.
         newDirectoryApi(dt, (files, paths) => cb(event, files || [], paths));
       }
