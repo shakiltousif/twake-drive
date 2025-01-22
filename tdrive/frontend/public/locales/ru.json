@@ -185,6 +185,8 @@
     "general.send": "Отправить сообщение",
     "general.update": "Обновить",
     "general.uploading": "Загрузка",
+    "general.uploaded": "Загружено",
+    "general.close": "Закрыть",
     "general.files": "файлы",
     "general.user.anonymous": "Анонимный",
     "general.user.deactivated": "Пользователь больше не состоит в этой компании",

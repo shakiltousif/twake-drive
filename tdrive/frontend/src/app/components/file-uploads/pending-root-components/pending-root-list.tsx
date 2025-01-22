@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useUpload } from '@features/files/hooks/use-upload';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { ArrowDownIcon, ArrowUpIcon } from 'app/atoms/icons-colored';
 import { UploadRootListType } from 'app/features/files/types/file';
 import Languages from '@features/global/services/languages-service';
@@ -14,6 +15,7 @@ const getFilteredRoots = (keys: string[], roots: UploadRootListType) => {
 
 interface ModalHeaderProps {
   uploadingCount: number;
+  completedCount: number;
   totalRoots: number;
   uploadingPercentage: number;
   toggleModal: () => void;
@@ -22,6 +24,7 @@ interface ModalHeaderProps {
 
 const ModalHeader: React.FC<ModalHeaderProps> = ({
   uploadingCount,
+  completedCount,
   totalRoots,
   uploadingPercentage,
   toggleModal,
@@ -29,8 +32,9 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({
 }) => (
   <div className="w-full flex bg-[#45454A] text-white p-4 items-center justify-between">
     <p>
-      {Languages.t('general.uploading')} {uploadingCount}/{totalRoots}{' '}
-      {Languages.t('general.files')}... {uploadingPercentage}%
+      {uploadingCount ? Languages.t('general.uploading') : Languages.t('general.uploaded')}{' '}
+      {uploadingCount + completedCount}/{totalRoots} {Languages.t('general.files')}...{' '}
+      {uploadingPercentage}%
     </p>
     <button className="ml-auto flex items-center" onClick={toggleModal}>
       {modalExpanded ? <ArrowDownIcon /> : <ArrowUpIcon />}
@@ -42,23 +46,27 @@ interface ModalFooterProps {
   pauseOrResumeUpload: () => void;
   cancelUpload: () => void;
   isPaused: () => boolean;
+  uploadingCount: number;
 }
 
 const ModalFooter: React.FC<ModalFooterProps> = ({
   pauseOrResumeUpload,
   cancelUpload,
   isPaused,
+  uploadingCount,
 }) => (
   <div className="w-full flex bg-[#F0F2F3] text-black p-4 items-center justify-between">
     <div className="flex space-x-4 ml-auto">
-      <button
-        className="text-blue-500 px-4 py-2 rounded hover:bg-blue-600"
-        onClick={pauseOrResumeUpload}
-      >
-        {isPaused() ? Languages.t('general.resume') : Languages.t('general.pause')}
-      </button>
+      {uploadingCount > 0 && (
+        <button
+          className="text-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+          onClick={pauseOrResumeUpload}
+        >
+          {isPaused() ? Languages.t('general.resume') : Languages.t('general.pause')}
+        </button>
+      )}
       <button className="text-blue-500 px-4 py-2 rounded hover:bg-blue-600" onClick={cancelUpload}>
-        {Languages.t('general.cancel')}
+        {uploadingCount ? Languages.t('general.cancel') : Languages.t('general.close')}
       </button>
     </div>
   </div>
@@ -77,7 +85,7 @@ const PendingRootList = ({
   const { pauseOrResumeUpload, cancelUpload } = useUpload();
   const keys = useMemo(() => Object.keys(roots || {}), [roots]);
 
-  const { inProgress: rootsInProgress } = useMemo(
+  const { inProgress: rootsInProgress, completed: rootsCompleted } = useMemo(
     () => getFilteredRoots(keys, roots),
     [keys, roots],
   );
@@ -86,6 +94,7 @@ const PendingRootList = ({
 
   const totalRoots = keys.length;
   const uploadingCount = rootsInProgress.length;
+  const completedCount = rootsCompleted.length;
   const uploadingPercentage = Math.floor((uploadingCount / totalRoots) * 100) || 100;
 
   const toggleModal = useCallback(() => setModalExpanded(prev => !prev), []);
@@ -96,6 +105,7 @@ const PendingRootList = ({
         <div className="fixed bottom-4 right-4 w-1/3 shadow-lg rounded-sm overflow-hidden">
           <ModalHeader
             uploadingCount={uploadingCount}
+            completedCount={completedCount}
             totalRoots={totalRoots}
             uploadingPercentage={uploadingPercentage}
             toggleModal={toggleModal}
@@ -105,14 +115,21 @@ const PendingRootList = ({
           {modalExpanded && (
             <div className="modal-body">
               <div className="bg-white px-4 py-2">
-                {keys.map(key => (
-                  <PendingRootRow key={key} rootKey={key} root={roots[key]} parentId={parentId} />
-                ))}
+                <PerfectScrollbar
+                  options={{ suppressScrollX: true, suppressScrollY: false }}
+                  component="div"
+                  style={{ width: '100%', maxHeight: 300 }}
+                >
+                  {keys.map(key => (
+                    <PendingRootRow key={key} rootKey={key} root={roots[key]} parentId={parentId} />
+                  ))}
+                </PerfectScrollbar>
               </div>
               <ModalFooter
                 pauseOrResumeUpload={pauseOrResumeUpload}
                 cancelUpload={cancelUpload}
                 isPaused={isPaused}
+                uploadingCount={uploadingCount}
               />
             </div>
           )}

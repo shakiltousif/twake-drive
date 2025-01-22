@@ -42,6 +42,6 @@ export const useUpload = () => {
     currentTask,
     deleteOneFile,
     retryUpload,
-    clearRoots
+    clearRoots,
   };
 };

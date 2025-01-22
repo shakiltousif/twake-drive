@@ -49,7 +49,6 @@ export const useDriveUpload = () => {
   ) => {
     logger.debug('Start creating directories and file upload ...');
     await FileUploadService.createDirectories(tree, context);
-
     await refresh(context.parentId, true);
   };
 

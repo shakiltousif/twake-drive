@@ -13,6 +13,7 @@ import {
 } from 'app/atoms/icons-colored';
 import { fileTypeIconsMap } from './file-type-icon-map';
 import { useDriveActions } from 'app/features/drive/hooks/use-drive-actions';
+import { useDriveItem } from 'app/features/drive/hooks/use-drive-item';
 
 const PendingRootRow = ({
   rootKey,
@@ -25,7 +26,9 @@ const PendingRootRow = ({
 }): JSX.Element => {
   const { pauseOrResumeRootUpload, cancelRootUpload, clearRoots } = useUpload();
   const [showFolder, setShowFolder] = useState(false);
+  const [restoredFolder, setRestoredFolder] = useState(false);
   const { restore } = useDriveActions();
+  const { refresh } = useDriveItem(parentId || '');
 
   const firstPendingFile = root.items[0];
   const uploadedFilesSize = root.uploadedSize;
@@ -61,9 +64,17 @@ const PendingRootRow = ({
     if (isUploadCompleted) {
       const timeout = setTimeout(async () => {
         setShowFolder(true);
-        await restore(root.id, parentId);
       }, 1500);
       return () => clearTimeout(timeout);
+    }
+  }, [isUploadCompleted]);
+
+  useEffect(() => {
+    if (isUploadCompleted && !restoredFolder) {
+      setRestoredFolder(true);
+      console.log('Restoring folder', root.id);
+      restore(root.id, parentId);
+      refresh(parentId, true);
     }
   }, [isUploadCompleted]);
 
