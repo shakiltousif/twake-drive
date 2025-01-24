@@ -5,6 +5,9 @@ export type BrowseQuery = {
     page_token: string;
     limitStr: string;
   };
+  nextPage?: {
+    page_token: string;
+  };
 }
 
 export type BrowseFilter = {
@@ -21,6 +24,9 @@ export type BrowsePaginate = {
   page: number;
   limit: number;
   lastPage?: boolean;
+  nextPage?: {
+    page_token: string;
+  };
 };
 
 export type DriveItemDetails = {
@@ -33,6 +39,9 @@ export type DriveItemDetails = {
     room: string;
     token?: string;
   }[];
+  nextPage?: {
+    page_token: string;
+  }
 };
 
 export type DriveItem = {
