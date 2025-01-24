@@ -1505,10 +1505,17 @@ export class DocumentsService {
       if (token) throw new CrudException("Invalid token", 401);
     }
   };
-
+  /**
+   *
+   * @param id DriveItemID to download. If it's a folder, a zip file will be returned
+   * @param versionId Optional specific version to download
+   * @param {Function} beginArchiveTransmit If a folder,
+   *   called when the zip file can begin streaming, otherwise not called at all.
+   */
   download = async (
     id: string,
     versionId: string | null,
+    beginArchiveTransmit: (readable: archiver.Archiver) => void,
     context: DriveExecutionContext,
   ): Promise<{
     archive?: archiver.Archiver;
@@ -1522,7 +1529,7 @@ export class DocumentsService {
     const item = await this.get(id, null, context);
 
     if (item.item.is_directory) {
-      return { archive: await this.createZip([id], context) };
+      return { archive: await this.createZip([id], beginArchiveTransmit, context) };
     }
 
     let version = item.item.last_version_cache;
@@ -1541,11 +1548,13 @@ export class DocumentsService {
    * Creates a zip archive containing the drive items.
    *
    * @param {string[]} ids - the drive item list
+   * @param {Function} beginArchiveTransmit - Called when the zip file can begin streaming
    * @param {DriveExecutionContext} context - the execution context
    * @returns {Promise<archiver.Archiver>} the created archive.
    */
   createZip = async (
     ids: string[] = [],
+    beginArchiveTransmit: (archive: archiver.Archiver) => void,
     context: DriveExecutionContext,
   ): Promise<archiver.Archiver> => {
     if (!context) {
@@ -1561,19 +1570,31 @@ export class DocumentsService {
       this.logger.error("error while creating ZIP file: ", error);
     });
 
+    let didBeginTransmission = false;
     for (const id of ids) {
       if (!(await checkAccess(id, null, "read", this.repository, context))) {
-        this.logger.warn(`not enough permissions to download ${id}, skipping`);
-        return;
+        this.logger.warn({ id }, `not enough permissions to download ${id}, skipping`);
+        continue;
       }
 
       try {
-        await addDriveItemToArchive(id, null, archive, this.repository, context);
-      } catch (error) {
-        console.error(error);
-        this.logger.warn("failed to add item to archive", error);
+        await addDriveItemToArchive(
+          id,
+          null,
+          archive,
+          archive => {
+            if (didBeginTransmission) return;
+            didBeginTransmission = true;
+            beginArchiveTransmit(archive);
+          },
+          this.repository,
+          context,
+        );
+      } catch (err) {
+        this.logger.warn({ err, id }, "failed to add item to archive");
       }
     }
+    if (!didBeginTransmission) beginArchiveTransmit(archive);
 
     //TODO[ASH] why do we need this call??
     archive.finalize();

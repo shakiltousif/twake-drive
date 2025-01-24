@@ -345,6 +345,9 @@ export const addDriveItemToArchive = async (
   id: string,
   entity: DriveFile | null,
   archive: archiver.Archiver,
+  beginArchiveTransmit:
+    | "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED"
+    | ((archive: archiver.Archiver) => void),
   repository: Repository<DriveFile>,
   context: CompanyExecutionContext,
   prefix?: string,
@@ -368,6 +371,10 @@ export const addDriveItemToArchive = async (
     }
 
     archive.append(file.file, { name: item.name, prefix: prefix ?? "" });
+    if (beginArchiveTransmit !== "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED") {
+      beginArchiveTransmit(archive);
+      beginArchiveTransmit = "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED";
+    }
     return;
   } else {
     let nextPage = "";
@@ -384,6 +391,7 @@ export const addDriveItemToArchive = async (
           child.id,
           child,
           archive,
+          beginArchiveTransmit,
           repository,
           context,
           `${prefix || ""}${item.name}/`,

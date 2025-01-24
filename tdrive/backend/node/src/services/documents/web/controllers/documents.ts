@@ -551,21 +551,21 @@ export class DocumentsController {
       const archiveOrFile = await globalResolver.services.documents.documents.download(
         id,
         versionId,
+        archive => {
+          archive.on("finish", () => {
+            response.status(200);
+          });
+
+          archive.on("error", () => {
+            response.internalServerError();
+          });
+
+          archive.pipe(response.raw);
+        },
         context,
       );
 
       if (archiveOrFile.archive) {
-        const archive = archiveOrFile.archive;
-
-        archive.on("finish", () => {
-          response.status(200);
-        });
-
-        archive.on("error", () => {
-          response.internalServerError();
-        });
-
-        archive.pipe(response.raw);
         return response;
       } else if (archiveOrFile.file) {
         const data = archiveOrFile.file;
@@ -623,21 +623,26 @@ export class DocumentsController {
     }
 
     try {
-      const archive = await globalResolver.services.documents.documents.createZip(ids, context);
-      reply.raw.setHeader(
-        "content-disposition",
-        formatAttachmentContentDispositionHeader("twake_drive.zip"),
+      await globalResolver.services.documents.documents.createZip(
+        ids,
+        archive => {
+          reply.raw.setHeader(
+            "content-disposition",
+            formatAttachmentContentDispositionHeader("twake_drive.zip"),
+          );
+
+          archive.on("finish", () => {
+            reply.status(200);
+          });
+
+          archive.on("error", () => {
+            reply.internalServerError();
+          });
+
+          archive.pipe(reply.raw);
+        },
+        context,
       );
-
-      archive.on("finish", () => {
-        reply.status(200);
-      });
-
-      archive.on("error", () => {
-        reply.internalServerError();
-      });
-
-      archive.pipe(reply.raw);
 
       return reply;
     } catch (error) {
