@@ -82,19 +82,23 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
     );
 
     // Log all errors and throw if all write operations fail
-    const errors = writeResults.filter(result => result.status === "rejected");
-    errors.forEach((error, index) => {
-      const storageId = this.storages[index].getId();
-      logger.error(
-        new OneOfStorageWriteOneFailedException(
-          storageId,
-          `Error writing to storage ${storageId}`,
-          (error as PromiseRejectedResult).reason,
-        ),
-      );
+    let errorsCount = 0;
+    writeResults.forEach((result, index) => {
+      if (result.status === "rejected") {
+        const storageId = this.storages[index].getId();
+        logger.error(
+          new OneOfStorageWriteOneFailedException(
+            storageId,
+            path,
+            `Error writing to storage ${storageId}`,
+            (result as PromiseRejectedResult).reason,
+          ),
+        );
+        errorsCount++;
+      }
     });
-    if (errors.length === this.storages.length) {
-      throw new WriteFileException(`Write ${path} failed for all storages`);
+    if (errorsCount === this.storages.length) {
+      throw new WriteFileException(path, `Write ${path} failed for all storages`);
     }
 
     const successResult = writeResults.filter(
@@ -120,13 +124,14 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
         logger.error(
           new OneOfStorageReadOneFailedException(
             storage.getId(),
+            path,
             `Reading ${path} from storage ${storage} failed.`,
             err,
           ),
         );
       }
     }
-    throw new FileNotFountException(`Error reading ${path}`);
+    throw new FileNotFountException(path, `Error reading ${path}`);
   };
 
   /**
@@ -137,8 +142,17 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
    */
   exists = async (path: string, options?: ReadOptions): Promise<boolean> => {
     for (const storage of this.storages) {
-      if (await storage.exists(path, options)) {
-        return true;
+      try {
+        if (await storage.exists(path, options)) {
+          return true;
+        }
+      } catch (e) {
+        throw new OneOfStorageReadOneFailedException(
+          storage.getId(),
+          path,
+          `Reading ${path} from storage ${storage} failed.`,
+          e,
+        );
       }
     }
     return false;
@@ -160,7 +174,7 @@ export class OneOfStorageStrategy implements StorageConnectorAPI {
  * Throw when read from one of the storages is filed.
  */
 class StorageException extends Error {
-  constructor(readonly storageId: string, details: string, error: Error) {
+  constructor(readonly storageId: string, readonly path: string, details: string, error: Error) {
     super(details, error);
   }
 }

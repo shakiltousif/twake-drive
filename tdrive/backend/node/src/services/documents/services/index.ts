@@ -400,7 +400,7 @@ export class DocumentsService {
               company_id: driveItem.company_id,
             },
             context,
-            { waitForThumbnail: true },
+            { waitForThumbnail: false },
           );
         }
 
