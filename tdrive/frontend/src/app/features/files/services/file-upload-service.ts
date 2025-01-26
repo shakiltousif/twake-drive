@@ -102,8 +102,18 @@ class FileUploadService {
     tree: FileTreeObject,
     context: { companyId: string; parentId: string },
   ) {
+    // init everything
+    // this.currentTaskId = '';
+    // this.pendingFiles = [];
+    // this.GroupedPendingFiles = {};
+    // this.GroupIds = {};
+    // this.pausedRoots = {};
+    // this.notify();
     const root = tree.tree;
-    this.RootSizes = tree.sizePerRoot || {};
+    this.RootSizes = this.RootSizes = {
+      ...this.RootSizes,
+      ...(tree.sizePerRoot || {}),
+    };
     // Create all directories
     const filesPerParentId: { [key: string]: { root: string; file: File }[] } = {};
     filesPerParentId[context.parentId] = [];
@@ -126,10 +136,11 @@ class FileUploadService {
         await this.checkCancellation();
         await this._waitWhilePaused(root);
         if (tree[directory].file instanceof File) {
-          logger.trace(`${directory} is a file, save it for future upload`);
+          const file = tree[directory].file as File;
+          console.log(`Adding file: ${file.name} under parentId: ${parentId}`);
           filesPerParentId[parentId].push({
             root: tree[directory].root as string,
-            file: tree[directory].file as File,
+            file,
           });
         } else {
           logger.debug(`Create directory ${directory}`);
@@ -139,6 +150,7 @@ class FileUploadService {
             parent_id: parentId,
             name: directory,
             is_directory: true,
+            is_in_trash: tmp,
           };
 
           if (!this.pendingFiles.some(f => isPendingFileStatusPending(f.status))) {
@@ -164,7 +176,6 @@ class FileUploadService {
             const driveItem = await DriveApiClient.create(context.companyId, {
               item: item,
               version: {},
-              tmp,
             });
             this.GroupIds[directory] = driveItem.id;
             this.logger.debug(`Directory ${directory} created`);
@@ -183,7 +194,10 @@ class FileUploadService {
         }
       }
       // uploading the files goes here
-      await this.upload(filesPerParentId[parentId], {
+      const files = _.cloneDeep(filesPerParentId[parentId]);
+      // reset the filesPerParentId
+      filesPerParentId[parentId] = [];
+      await this.upload(files, {
         context: {
           companyId: context.companyId,
           parentId: parentId,

@@ -70,11 +70,17 @@ const PendingRootRow = ({
   }, [isUploadCompleted]);
 
   useEffect(() => {
+    const postProcess = async () => {
+      if (isUploadCompleted && !restoredFolder) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await restore(root.id, parentId);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await refresh(parentId);
+      }
+    };
     if (isUploadCompleted && !restoredFolder) {
       setRestoredFolder(true);
-      console.log('Restoring folder', root.id);
-      restore(root.id, parentId);
-      refresh(parentId, true);
+      postProcess();
     }
   }, [isUploadCompleted]);
 

@@ -47,7 +47,6 @@ export class DocumentsController {
       Body: {
         item: Partial<DriveFile>;
         version: Partial<FileVersion>;
-        tmp?: boolean;
       };
     }>,
   ): Promise<DriveFile | any> => {
@@ -79,7 +78,6 @@ export class DocumentsController {
         item,
         version,
         context,
-        request.body.tmp,
       );
     } catch (error) {
       logger.error({ error: `${error}` }, "Failed to create Drive item");

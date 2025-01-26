@@ -371,7 +371,6 @@ export class DocumentsService {
     content: Partial<DriveFile>,
     version: Partial<FileVersion>,
     context: DriveExecutionContext,
-    tmp = false,
   ): Promise<DriveFile> => {
     try {
       const driveItem = getDefaultDriveItem(content, context);
@@ -471,8 +470,6 @@ export class DocumentsService {
       } catch (error) {
         logger.error(error, "🚀🚀 error:");
       }
-
-      if (tmp) driveItem.is_in_trash = true;
 
       await this.repository.save(driveItem);
       driveItemVersion.drive_item_id = driveItem.id;

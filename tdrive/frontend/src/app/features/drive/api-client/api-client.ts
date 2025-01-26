@@ -1,5 +1,13 @@
 import Api from '../../global/framework/api-service';
-import { BrowseFilter, BrowsePaginate, BrowseQuery, BrowseSort, DriveItem, DriveItemDetails, DriveItemVersion } from '../types';
+import {
+  BrowseFilter,
+  BrowsePaginate,
+  BrowseQuery,
+  BrowseSort,
+  DriveItem,
+  DriveItemDetails,
+  DriveItemVersion,
+} from '../types';
 import Workspace from '@deprecated/workspaces/workspaces';
 import Logger from 'features/global/framework/logger-service';
 import { JWTDataType } from 'app/features/auth/jwt-storage-service';
@@ -115,18 +123,15 @@ export class DriveApiClient {
 
   static async create(
     companyId: string,
-    data: { item: Partial<DriveItem>; version?: Partial<DriveItemVersion>; tmp?: boolean },
+    data: { item: Partial<DriveItem>; version?: Partial<DriveItemVersion> },
   ) {
     if (!data.version) data.version = {} as Partial<DriveItemVersion>;
 
     return new Promise<DriveItem>((resolve, reject) => {
-      Api.post<
-        { item: Partial<DriveItem>; version: Partial<DriveItemVersion>; tmp?: boolean },
-        DriveItem
-      >(
+      Api.post<{ item: Partial<DriveItem>; version: Partial<DriveItemVersion> }, DriveItem>(
         `/internal/services/documents/v1/companies/${companyId}/item${appendTdriveToken()}`,
-        data as { item: Partial<DriveItem>; version: Partial<DriveItemVersion>; tmp?: boolean },
-        (res) => {
+        data as { item: Partial<DriveItem>; version: Partial<DriveItemVersion> },
+        res => {
           if ((res as any)?.statusCode || (res as any)?.error) {
             reject(res);
           }

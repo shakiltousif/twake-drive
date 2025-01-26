@@ -33,8 +33,7 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({
   <div className="w-full flex bg-[#45454A] text-white p-4 items-center justify-between">
     <p>
       {uploadingCount ? Languages.t('general.uploading') : Languages.t('general.uploaded')}{' '}
-      {uploadingCount + completedCount}/{totalRoots} {Languages.t('general.files')}...{' '}
-      {uploadingPercentage}%
+      {uploadingCount + completedCount}/{totalRoots} {Languages.t('general.files')}
     </p>
     <button className="ml-auto flex items-center" onClick={toggleModal}>
       {modalExpanded ? <ArrowDownIcon /> : <ArrowUpIcon />}
