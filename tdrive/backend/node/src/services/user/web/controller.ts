@@ -38,6 +38,7 @@ import gr from "../../global-resolver";
 import config from "config";
 import { getLogger } from "../../../core/platform/framework";
 import { UpdateUser } from "../services/users/types";
+import { hasCompanyAdminLevel } from "../../../utils/company";
 
 export class UsersCrudController
   implements
@@ -372,9 +373,27 @@ export class UsersCrudController
     request: FastifyRequest<{ Body: UpdateUser; Params: UserParameters }>,
     reply: FastifyReply,
   ): Promise<ResourceCreateResponse<UserObject>> {
+    const id = request.params.id;
     const context = getExecutionContext(request);
 
-    const id = request.params.id;
+    const [currentUserCompanies, requestedUserCompanies] = await Promise.all(
+      [context.user.id, request.params.id].map(userId =>
+        gr.services.users.getUserCompanies({ id: userId }),
+      ),
+    );
+    const currentUserCompaniesIds = new Set(currentUserCompanies.map(a => a.group_id));
+    const sameCompanies = requestedUserCompanies.filter(a =>
+      currentUserCompaniesIds.has(a.group_id),
+    );
+    const roles = await Promise.all(
+      sameCompanies.map(a => gr.services.companies.getUserRole(a.group_id, context.user?.id)),
+    );
+
+    if (!roles.some(role => hasCompanyAdminLevel(role) === true)) {
+      reply.unauthorized(`User ${context.user?.id} is not allowed to update user ${id}`);
+      return;
+    }
+
     const user = await gr.services.users.get({ id });
     if (!user) {
       reply.notFound(`User ${id} not found`);
