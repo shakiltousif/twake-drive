@@ -37,6 +37,8 @@ import { formatUser } from "../../../utils/users";
 import gr from "../../global-resolver";
 import config from "config";
 import { getLogger } from "../../../core/platform/framework";
+import { UpdateUser } from "../services/users/types";
+import { hasCompanyAdminLevel } from "../../../utils/company";
 
 export class UsersCrudController
   implements
@@ -365,6 +367,53 @@ export class UsersCrudController
       remaining: isNaN(total) ? NaN : total - quota,
       used: quota,
     } as UserQuota;
+  }
+
+  async update(
+    request: FastifyRequest<{ Body: UpdateUser; Params: UserParameters }>,
+    reply: FastifyReply,
+  ): Promise<ResourceCreateResponse<UserObject>> {
+    const id = request.params.id;
+    const context = getExecutionContext(request);
+
+    const [currentUserCompanies, requestedUserCompanies] = await Promise.all(
+      [context.user.id, request.params.id].map(userId =>
+        gr.services.users.getUserCompanies({ id: userId }),
+      ),
+    );
+    const currentUserCompaniesIds = new Set(currentUserCompanies.map(a => a.group_id));
+    const sameCompanies = requestedUserCompanies.filter(a =>
+      currentUserCompaniesIds.has(a.group_id),
+    );
+    const roles = await Promise.all(
+      sameCompanies.map(a => gr.services.companies.getUserRole(a.group_id, context.user?.id)),
+    );
+
+    if (!roles.some(role => hasCompanyAdminLevel(role) === true)) {
+      reply.unauthorized(`User ${context.user?.id} is not allowed to update user ${id}`);
+      return;
+    }
+
+    const user = await gr.services.users.get({ id });
+    if (!user) {
+      reply.notFound(`User ${id} not found`);
+      return;
+    }
+
+    const body = { ...request.body };
+    if (user.email_canonical !== body.email) {
+      const userByEmail = await gr.services.users.getByEmail(body.email, context);
+      if (userByEmail) {
+        reply.conflict(`Email ${body.email} is existed`);
+        return;
+      }
+    }
+
+    await gr.services.users.update(user, body, context);
+
+    return {
+      resource: await formatUser(user),
+    };
   }
 }
 

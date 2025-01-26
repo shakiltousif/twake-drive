@@ -108,7 +108,7 @@ export default class StorageService extends TdriveService<StorageAPI> implements
 
   async read(path: string, options?: ReadOptions): Promise<Readable> {
     if (!(await this.exists(path, options))) {
-      throw new FileNotFountException();
+      throw new FileNotFountException(path, "File doesn't exist");
     }
     try {
       // eslint-disable-next-line @typescript-eslint/no-this-alias

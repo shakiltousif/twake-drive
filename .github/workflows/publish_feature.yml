@@ -8,41 +8,17 @@ on:
       - release/*
 
 jobs:
-  setup:
-    name: Setup jobs
-    runs-on: ubuntu-latest
-    outputs:
-      targets: ${{ steps.filter.outputs.changes }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - "tdrive/backend/node/**"
-              - "tdrive/docker/tdrive-node/Dockerfile"
-            frontend:
-              - "tdrive/frontend/**"
-              - "tdrive/docker/tdrive-frontend/**"
-            onlyoffice-connector:
-              - "tdrive/connectors/onlyoffice-connector/**"
-              - "tdrive/docker/onlyoffice-connector/Dockerfile"
-            ldap-sync:
-              - "tdrive/backend/utils/ldap-sync/**"
-              - "tdrive/docker/tdrive-ldap-sync/Dockerfile"
-            nextcloud-migration:
-              - "tdrive/backend/utils/nextcloud-migration/**"
-              - "tdrive/docker/tdrive-nextcloud-migration/Dockerfile"
-
   publish-feature:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        targets: ${{ fromJSON(needs.setup.outputs.targets) }}
+        targets:
+          - backend
+          - frontend
+          - onlyoffice-connector
+          - ldap-sync
+          - nextcloud-migration
       fail-fast: false
-    needs:
-      - setup
     steps:
       - name: Checkout
         uses: actions/checkout@v4
