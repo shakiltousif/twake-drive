@@ -1,5 +1,10 @@
 # Twake Drive v1.0.6
 
+## Features
+
+- Live multiple S3 backends with log-based reconciliation
+- User update API
+
 ## Fixes and Improvements
 
 - Update of quota is severely optimised
@@ -9,6 +14,7 @@
 - Tuning warnings for AV status of un-scanned files
 - Fix for preview breaking when switching too fast between files
 - Added E2E testing identifiers on key components for i18n and style resiliance
+- ZIP download time to first byte reduced to linear
 
 # Twake Drive v1.0.5
 

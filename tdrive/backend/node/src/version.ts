@@ -1,7 +1,7 @@
 export default {
-  current: /* @VERSION_DETAIL */ "1.0.6-rc1",
+  current: /* @VERSION_DETAIL */ "1.0.6-rc2",
   minimal: {
-    web: /* @MIN_VERSION_WEB */ "1.0.6-rc1",
-    mobile: /* @MIN_VERSION_MOBILE */ "1.0.6-rc1",
+    web: /* @MIN_VERSION_WEB */ "1.0.6-rc2",
+    mobile: /* @MIN_VERSION_MOBILE */ "1.0.6-rc2",
   },
 };
