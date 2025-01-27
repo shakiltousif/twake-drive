@@ -9,7 +9,7 @@ import {
   FileTypeSpreadsheetIcon,
   FileTypeUnknownIcon,
 } from '@atoms/icons-colored';
-import { FolderIcon } from '@heroicons/react/solid';
+import { FolderIcon } from 'app/atoms/icons-colored';
 import fileUploadApiClient from '@features/files/api/file-upload-api-client';
 import type { DriveItem, FileMetadata } from 'app/features/drive/types';
 import { ComponentProps } from 'react';

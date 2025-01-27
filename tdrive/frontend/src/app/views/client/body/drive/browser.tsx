@@ -333,10 +333,11 @@ export default memo(
             ref={uploadZoneRef}
             driveCollectionKey={uploadZone}
             onAddFiles={async (_, event) => {
+              setIsPreparingUpload(true);
               const tree = await getFilesTree(event);
               setIsPreparingUpload(false);
               setCreationModalState({ parent_id: '', open: false });
-              uploadTree(tree, {
+              await uploadTree(tree, {
                 companyId,
                 parentId,
               });

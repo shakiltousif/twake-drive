@@ -1,4 +1,5 @@
-import { DocumentIcon, FolderIcon } from '@heroicons/react/solid';
+import { DocumentIcon } from '@heroicons/react/solid';
+import { FolderIcon } from 'app/atoms/icons-colored';
 import { Button } from '@atoms/button/button';
 import { Checkbox } from '@atoms/input/input-checkbox';
 import { Modal, ModalContent } from '@atoms/modal';

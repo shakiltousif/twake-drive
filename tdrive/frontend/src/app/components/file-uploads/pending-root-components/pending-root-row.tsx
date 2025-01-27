@@ -72,6 +72,7 @@ const PendingRootRow = ({
   useEffect(() => {
     const postProcess = async () => {
       if (isUploadCompleted && !restoredFolder) {
+        console.log("THE UPLOAD FINISHED WILL REFRESH");
         await new Promise(resolve => setTimeout(resolve, 1000));
         await restore(root.id, parentId);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -88,7 +89,11 @@ const PendingRootRow = ({
     <div className="root-row">
       <div className="root-details mt-2">
         <div className="flex items-center">
-          {itemTypeIcon(firstPendingFile?.type)}
+          <div className="w-10 h-10 flex items-center justify-center bg-[#f3f3f7] rounded-md">
+            <div className="w-full h-full flex items-center justify-center">
+              {itemTypeIcon(firstPendingFile?.type)}
+            </div>
+          </div>
           <p className="ml-4">{rootKey}</p>
 
           <div className="progress-check flex items-center justify-center ml-auto">

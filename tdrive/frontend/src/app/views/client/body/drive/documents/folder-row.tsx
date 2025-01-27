@@ -1,5 +1,5 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline';
-import { FolderIcon } from '@heroicons/react/solid';
+import { FolderIcon } from 'app/atoms/icons-colored';
 import { Button } from '@atoms/button/button';
 import { Base, BaseSmall } from '@atoms/text';
 import Menu from '@components/menus/menu';
