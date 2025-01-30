@@ -18,7 +18,7 @@
     "lint": "eslint . --ext .ts --quiet --fix",
     "lint:no-fix": "eslint . --ext .ts",
     "lint:prettier": "prettier --check --config .prettierrc 'src/**/*.ts'",
-    "serve": "node --unhandled-rejections=warn --max-http-header-size=30000 --expose-gc dist/server.js",
+    "serve": "node --unhandled-rejections=warn --max-http-header-size=30000 --trace-gc --trace-gc-verbose dist/server.js",
     "serve:watch": "nodemon dist/server.js | pino-pretty",
     "serve:debug": "nodemon --inspect dist/server.js | pino-pretty",
     "start": "npm run serve",
