@@ -49,6 +49,7 @@ import {
   isVirtualFolder,
   updateItemSize,
   isInTrash,
+  ThrottledArchive,
 } from "../utils";
 import { getConfigOrDefault } from "../../../utils/get-config";
 import {
@@ -699,9 +700,8 @@ export class DocumentsService {
       }
 
       return item;
-    } catch (error) {
-      console.error(error);
-      this.logger.error({ error: `${error}` }, "Failed to update drive item");
+    } catch (err) {
+      this.logger.error({ err }, "Failed to update drive item");
       throw new CrudException("Failed to update item", 500);
     }
   };
@@ -1567,6 +1567,10 @@ export class DocumentsService {
       zlib: { level: 9 },
     });
 
+    const throttledArchive = new ThrottledArchive(archive, async ({ readable, name, prefix }) => {
+      archive.append(readable, { name, prefix });
+    });
+
     archive.on("error", error => {
       this.logger.error("error while creating ZIP file: ", error);
     });
@@ -1582,7 +1586,7 @@ export class DocumentsService {
         await addDriveItemToArchive(
           id,
           null,
-          archive,
+          throttledArchive,
           archive => {
             if (didBeginTransmission) return;
             didBeginTransmission = true;
@@ -1596,6 +1600,8 @@ export class DocumentsService {
       }
     }
     if (!didBeginTransmission) beginArchiveTransmit(archive);
+
+    await throttledArchive.waitUntilEmptied();
 
     //TODO[ASH] why do we need this call??
     archive.finalize();

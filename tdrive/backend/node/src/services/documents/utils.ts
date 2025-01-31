@@ -330,12 +330,89 @@ export const getPath = async (
   return isMatch ? [...parents, item] : parents;
 };
 
+// Polyfill for Promise.withResolvers
+const Promise_withResolvers = <T>() => {
+  let resolve: (value: T | PromiseLike<T>) => void;
+  let reject: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve: resolve!, reject: reject! };
+};
+
+// type ArchiverAppendArgs = Parameters<archiver.Archiver["append"]>;
+type ArchiverAppendArgs = { readable: Readable; name: string; prefix: string };
+/**
+ * The purpose of this class is to limit simultaneous open requests for readables.
+ * It supposes the list of file names and closures to get their readables fits in
+ * memory. Appending after being throttled is instantaneous.
+ */
+export class ThrottledArchive {
+  private readonly pendingAppends: (() => Promise<ArchiverAppendArgs>)[] = [];
+  private currentlyRunningAppends = 0;
+  private finalWaitingPromise?: PromiseWithResolvers<void>;
+  constructor(
+    public readonly actualArchive: archiver.Archiver,
+    private readonly appenderCb: (args: ArchiverAppendArgs) => Promise<void>,
+    private readonly maxConcurrentStorageReadsPerDownload: number = 4,
+  ) {
+    if (maxConcurrentStorageReadsPerDownload < 1)
+      throw new Error(
+        `Invalid maxConcurrentStorageReadsPerDownload: ${JSON.stringify(
+          maxConcurrentStorageReadsPerDownload,
+        )}`,
+      );
+  }
+  private checkIsFinished() {
+    if (this.currentlyRunningAppends + this.pendingAppends.length === 0)
+      return this.finalWaitingPromise?.resolve();
+  }
+  private isAvailable(): boolean {
+    return this.currentlyRunningAppends < this.maxConcurrentStorageReadsPerDownload;
+  }
+  private async beginAnAppend(args: ArchiverAppendArgs) {
+    this.currentlyRunningAppends++;
+    args.readable.on("close", () => {
+      this.currentlyRunningAppends--;
+      this.maybeStartNextPending();
+      this.checkIsFinished();
+    });
+    await this.appenderCb(args);
+  }
+  private async maybeStartNextPending() {
+    if (!this.isAvailable() || this.pendingAppends.length < 1) return;
+    let args;
+    try {
+      args = await this.pendingAppends.pop()();
+    } catch (err) {
+      logger.error({ err }, "Error adding file to zip");
+      return;
+    }
+    return await this.beginAnAppend(args);
+  }
+  async append(getStreamCb: () => Promise<ArchiverAppendArgs>) {
+    this.pendingAppends.push(getStreamCb);
+    return this.maybeStartNextPending();
+  }
+  async waitUntilEmptied() {
+    if (this.finalWaitingPromise) {
+      return this.finalWaitingPromise.promise;
+    }
+    if (this.currentlyRunningAppends + this.pendingAppends.length === 0) {
+      return;
+    }
+    this.finalWaitingPromise = Promise_withResolvers();
+    return this.finalWaitingPromise.promise;
+  }
+}
+
 /**
  * Adds drive items to an archive recursively
  *
  * @param {string} id - the drive item id
  * @param {DriveFile | null } entity - the drive item entity
- * @param {archiver.Archiver} archive - the archive
+ * @param {ThrottledArchive} throttledArchive - the archive to write to
  * @param {Repository<DriveFile>} repository - the repository
  * @param {CompanyExecutionContext} context - the execution context
  * @param {string} prefix - folder prefix
@@ -344,7 +421,7 @@ export const getPath = async (
 export const addDriveItemToArchive = async (
   id: string,
   entity: DriveFile | null,
-  archive: archiver.Archiver,
+  throttledArchive: ThrottledArchive,
   beginArchiveTransmit:
     | "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED"
     | ((archive: archiver.Archiver) => void),
@@ -362,20 +439,20 @@ export const addDriveItemToArchive = async (
   if (item.is_in_trash) return;
 
   if (!item.is_directory) {
-    // random comment
-    const file_id = item.last_version_cache.file_metadata.external_id;
-    const file = await gr.services.files.download(file_id, context);
+    await throttledArchive.append(async () => {
+      // random comment
+      const file_id = item.last_version_cache.file_metadata.external_id;
+      const file = await gr.services.files.download(file_id, context);
 
-    if (!file) {
-      throw Error("file not found");
-    }
-
-    archive.append(file.file, { name: item.name, prefix: prefix ?? "" });
+      if (!file) {
+        throw Error("file not found");
+      }
+      return { readable: file.file, name: item.name, prefix: prefix ?? "" };
+    });
     if (beginArchiveTransmit !== "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED") {
-      beginArchiveTransmit(archive);
+      beginArchiveTransmit(throttledArchive.actualArchive);
       beginArchiveTransmit = "ONLY_SET_THIS_VALUE_IF_ALREADY_CALLED";
     }
-    return;
   } else {
     let nextPage = "";
     do {
@@ -390,7 +467,7 @@ export const addDriveItemToArchive = async (
         await addDriveItemToArchive(
           child.id,
           child,
-          archive,
+          throttledArchive,
           beginArchiveTransmit,
           repository,
           context,
