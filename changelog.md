@@ -14,7 +14,7 @@
 - Tuning warnings for AV status of un-scanned files
 - Fix for preview breaking when switching too fast between files
 - Added E2E testing identifiers on key components for i18n and style resiliance
-- ZIP download time to first byte reduced to linear
+- ZIP download time to first byte reduced to linear, and S3 throttling
 - Fix to delete files created by applications
 
 # Twake Drive v1.0.5
