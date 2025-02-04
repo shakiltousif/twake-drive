@@ -1,16 +1,19 @@
-import React from 'react';
 import { useUpload } from '@features/files/hooks/use-upload';
-import PendingFilesList from './pending-file-components/pending-files-list';
+import PendingRootList from './pending-root-components/pending-root-list';
 
-const ChatUploadsViewer = (): JSX.Element => {
+const UploadsViewer = (): JSX.Element => {
   const { currentTask } = useUpload();
 
-  return (
-    <PendingFilesList
-      visible={!!currentTask && currentTask.files.length > 0 && !currentTask.completed}
-      pendingFilesState={currentTask.files}
-    />
-  );
+  // Destructure and provide default values for safety
+  const { roots = {}, status, parentId } = currentTask || {};
+  const rootKeys = Object.keys(roots);
+
+  // Early return for clarity
+  if (rootKeys.length === 0) {
+    return <></>;
+  }
+
+  return <PendingRootList roots={roots} status={status} parentId={parentId} />;
 };
 
-export default ChatUploadsViewer;
+export default UploadsViewer;

@@ -10,19 +10,46 @@ import RouterServices from '@features/router/services/router-service';
 import _ from 'lodash';
 import FileUploadAPIClient from '../api/file-upload-api-client';
 import { isPendingFileStatusPending } from '../utils/pending-files';
-import { FileTreeObject } from "components/uploads/file-tree-utils";
-import { DriveApiClient } from "features/drive/api-client/api-client";
+import { FileTreeObject } from 'components/uploads/file-tree-utils';
+import { DriveApiClient } from 'features/drive/api-client/api-client';
 import { ToasterService } from 'app/features/global/services/toaster-service';
 import Languages from 'app/features/global/services/languages-service';
+import { DriveItem, DriveItemVersion } from 'app/features/drive/types';
 
 export enum Events {
   ON_CHANGE = 'notify',
 }
 
+export enum UploadStateEnum {
+  Progress = 'progress',
+  Completed = 'completed',
+  Paused = 'paused',
+  Cancelled = 'cancelled',
+  Failed = 'failed',
+}
+
+type RootState = { [key: string]: boolean };
+
 const logger = Logger.getLogger('Services/FileUploadService');
 class FileUploadService {
   private pendingFiles: PendingFileType[] = [];
+  private groupedPendingFiles: { [key: string]: PendingFileType[] } = {};
+  private rootSizes: { [key: string]: number } = {};
+  private groupIds: { [key: string]: string } = {};
+  private rootStates: {
+    paused: RootState;
+    cancelled: RootState;
+    completed: RootState;
+    failed: RootState;
+  } = {
+    paused: {},
+    cancelled: {},
+    completed: {},
+    failed: {},
+  };
   public currentTaskId = '';
+  public parentId = '';
+  public uploadStatus = UploadStateEnum.Progress;
   private recoilHandler: Function = () => undefined;
   private logger: Logger.Logger = Logger.getLogger('FileUploadService');
 
@@ -30,28 +57,114 @@ class FileUploadService {
     this.recoilHandler = handler;
   }
 
+  /**
+   * Helper method to pause execution when `isPaused` is true.
+   * @private
+   */
+  async _waitWhilePaused(id?: string) {
+    while (this.uploadStatus === UploadStateEnum.Paused || (id && this.rootStates.paused[id])) {
+      if (this.uploadStatus === UploadStateEnum.Cancelled || (id && this.rootStates.cancelled[id]))
+        return;
+      await new Promise(resolve => setTimeout(resolve, 100)); // Check every 100ms
+    }
+  }
+
+  /**
+   * Helper method to cancel execution when `isCancelled` is true.
+   * @private
+   */
+  private async checkCancellation(id?: string) {
+    if (this.uploadStatus === UploadStateEnum.Cancelled || (id && this.rootStates.cancelled[id])) {
+      logger.warn('Operation cancelled.');
+      throw new Error('Upload process cancelled.');
+    }
+  }
+
   notify() {
-    const updatedState = this.pendingFiles.map((f: PendingFileType) => {
-      return {
-        id: f.id,
-        status: f.status,
-        progress: f.progress,
-        file: f.backendFile,
+    const updatedState = Object.keys(this.groupedPendingFiles).reduce((acc: any, key: string) => {
+      // Calculate the uploaded size
+      const uploadedSize = this.groupedPendingFiles[key]
+        .map((f: PendingFileType) =>
+          f.status === 'success' && f.originalFile?.size ? f.originalFile.size : 0,
+        )
+        .reduce((acc: number, size: number) => acc + size, 0);
+
+      // Check for failed files
+      const failedFiles = this.groupedPendingFiles[key].filter(f => f.status === 'error');
+      if (failedFiles.length > 0) {
+        this.rootStates.failed[key] = true;
+      }
+
+      // Determine the upload status based on failed, cancelled, paused, completed, or uploading states
+      const status = this.rootStates.failed[key]
+        ? 'failed'
+        : this.rootStates.cancelled[key]
+        ? 'cancelled'
+        : this.rootStates.paused[key]
+        ? 'paused'
+        : uploadedSize === this.rootSizes[key]
+        ? 'completed'
+        : 'uploading';
+
+      if (status === 'completed') {
+        this.rootStates.completed[key] = true;
+      }
+
+      // Add to the accumulator object
+      acc[key] = {
+        id: this.groupIds[key],
+        items: [],
+        size: this.rootSizes[key],
+        uploadedSize,
+        status,
       };
-    });
+
+      return acc;
+    }, {});
+
     this.recoilHandler(_.cloneDeep(updatedState));
   }
 
-  public async createDirectories(root: FileTreeObject['tree'], context: { companyId: string; parentId: string }) {
-    // Create all directories
-    const filesPerParentId: { [key: string]: File[] } = {};
-    filesPerParentId[context.parentId] = []
+  public async createDirectories(
+    tree: FileTreeObject,
+    context: { companyId: string; parentId: string },
+  ) {
+    // reset the upload status
+    this.uploadStatus = UploadStateEnum.Progress;
 
-    const traverserTreeLevel = async (tree: FileTreeObject['tree'], parentId: string) => {
+    const root = tree.tree;
+    this.rootSizes = this.rootSizes = {
+      ...this.rootSizes,
+      ...(tree.sizePerRoot || {}),
+    };
+    // Create all directories
+    const filesPerParentId: { [key: string]: { root: string; file: File }[] } = {};
+    filesPerParentId[context.parentId] = [];
+    const idsToBeRestored: string[] = [];
+
+    const traverserTreeLevel = async (
+      tree: FileTreeObject['tree'],
+      parentId: string,
+      tmp = false,
+    ) => {
+      // cancel upload
+      if (this.uploadStatus === UploadStateEnum.Cancelled) return;
+
+      // check if upload is paused
+      await this._waitWhilePaused();
+
+      // start descending the tree
       for (const directory of Object.keys(tree)) {
-        if (tree[directory] instanceof File) {
-          logger.trace(`${directory} is a file, save it for future upload`);
-          filesPerParentId[parentId].push(tree[directory] as File);
+        const root = tree[directory].root as string;
+        await this.checkCancellation(root);
+        await this._waitWhilePaused(root);
+        if (tree[directory].file instanceof File) {
+          const file = tree[directory].file as File;
+          console.log(`Adding file: ${file.name} under parentId: ${parentId}`);
+          filesPerParentId[parentId].push({
+            root: tree[directory].root as string,
+            file,
+          });
         } else {
           logger.debug(`Create directory ${directory}`);
 
@@ -60,6 +173,7 @@ class FileUploadService {
             parent_id: parentId,
             name: directory,
             is_directory: true,
+            is_in_trash: tmp,
           };
 
           if (!this.pendingFiles.some(f => isPendingFileStatusPending(f.status))) {
@@ -77,39 +191,104 @@ class FileUploadService {
             backendFile: null,
             resumable: null,
             label: directory,
-            type: "file",
+            type: 'file',
             pausable: false,
           };
 
-          this.pendingFiles.push(pendingFile);
-          this.notify();
-
           try {
-            const driveItem = await DriveApiClient.create(context.companyId, { item: item, version: {}});
+            const driveItem = await DriveApiClient.create(context.companyId, {
+              item: item,
+              version: {},
+            });
+            this.groupIds[directory] = driveItem.id;
             this.logger.debug(`Directory ${directory} created`);
             pendingFile.status = 'success';
             this.notify();
             if (driveItem?.id) {
-              filesPerParentId[driveItem.id] = []
+              filesPerParentId[driveItem.id] = [];
+              if (tmp && !idsToBeRestored.includes(driveItem.id))
+                idsToBeRestored.push(driveItem.id);
               await traverserTreeLevel(tree[directory] as FileTreeObject['tree'], driveItem.id);
             }
           } catch (e) {
             this.logger.error(e);
-            throw new Error('Could not create directory');
           }
         }
       }
+      // uploading the files goes here
+      const files = _.cloneDeep(filesPerParentId[parentId]);
+      // reset the filesPerParentId
+      filesPerParentId[parentId] = [];
+      await this.upload(files, {
+        context: {
+          companyId: context.companyId,
+          parentId: parentId,
+        },
+        callback: async (filePayload, context) => {
+          const isFileRoot = filePayload.root.includes('.');
+          const root = filePayload.root;
+          const file = filePayload.file;
+          if (file) {
+            const item = {
+              company_id: context.companyId,
+              workspace_id: 'drive', //We don't set workspace ID for now
+              parent_id: context.parentId,
+              name: file.metadata?.name,
+              size: file.upload_data?.size,
+            } as Partial<DriveItem>;
+            const version = {
+              provider: 'internal',
+              application_id: '',
+              file_metadata: {
+                name: file.metadata?.name,
+                size: file.upload_data?.size,
+                mime: file.metadata?.mime,
+                thumbnails: file?.thumbnails,
+                source: 'internal',
+                external_id: file.id,
+              },
+            } as Partial<DriveItemVersion>;
+
+            // create the document
+            const documentId = await DriveApiClient.create(context.companyId, { item, version });
+            // assign the group id with the document id
+            if (isFileRoot) {
+              this.groupIds[root] = documentId.id;
+              // set the id for the root
+              this.notify();
+            }
+          }
+        },
+      });
+    };
+
+    // split the tree per root
+    const rootKeys = Object.keys(root);
+    const rootTrees = rootKeys.map(key => {
+      return { [key]: root[key] };
+    });
+
+    // tree promises
+    const treePromises = rootTrees.map(tree => {
+      return traverserTreeLevel(tree, context.parentId, true);
+    });
+
+    try {
+      await Promise.all(treePromises);
+    } catch (error) {
+      logger.error('Error while processing tree', error);
     }
 
-    await traverserTreeLevel(root, context.parentId);
-    return filesPerParentId;
+    // await traverserTreeLevel(root, context.parentId, true);
+
+    return { filesPerParentId, idsToBeRestored };
   }
 
   public async upload(
-    fileList: File[],
+    fileList: { root: string; file: File }[],
     options?: {
       context?: any;
-      callback?: (file: FileType | null, context: any) => void;
+      callback?: (file: { root: string; file: FileType | null }, context: any) => void;
     },
   ): Promise<PendingFileType[]> {
     const { companyId } = RouterServices.getStateFromRoute();
@@ -125,7 +304,11 @@ class FileUploadService {
     }
 
     for (const file of fileList) {
-      if (!file) continue;
+      // cancel upload
+      await this.checkCancellation(file.root);
+      // wait here if the upload is paused
+      await this._waitWhilePaused(file.root);
+      if (!file.file) continue;
 
       const pendingFile: PendingFileType = {
         id: uuid(),
@@ -134,21 +317,24 @@ class FileUploadService {
         lastProgress: new Date().getTime(),
         speed: 0,
         uploadTaskId: this.currentTaskId,
-        originalFile: file,
+        originalFile: file.file,
         backendFile: null,
         resumable: null,
-        type: "file",
+        type: 'file',
         label: null,
-        pausable: true
+        pausable: true,
       };
 
       this.pendingFiles.push(pendingFile);
-
+      if (!this.groupedPendingFiles[file.root]) {
+        this.groupedPendingFiles[file.root] = [];
+      }
+      this.groupedPendingFiles[file.root].push(pendingFile);
       this.notify();
 
       // First we create the file object
       const resource = (
-        await FileUploadAPIClient.upload(file, { companyId, ...(options?.context || {}) })
+        await FileUploadAPIClient.upload(file.file, { companyId, ...(options?.context || {}) })
       )?.resource;
 
       if (!resource) {
@@ -173,7 +359,7 @@ class FileUploadService {
         },
       });
 
-      pendingFile.resumable.addFile(file);
+      pendingFile.resumable.addFile(file.file);
 
       pendingFile.resumable.on('fileAdded', () => pendingFile.resumable.upload());
 
@@ -197,8 +383,10 @@ class FileUploadService {
         try {
           pendingFile.backendFile = JSON.parse(message).resource;
           pendingFile.status = 'success';
-          console.log('fileSuccess', options?.callback);
-          options?.callback?.(pendingFile.backendFile, options?.context || {});
+          options?.callback?.(
+            { root: file.root, file: pendingFile.backendFile },
+            options?.context || {},
+          );
           this.notify();
         } catch (e) {
           logger.error(`Error on fileSuccess Event`, e);
@@ -208,10 +396,10 @@ class FileUploadService {
       pendingFile.resumable.on('fileError', () => {
         pendingFile.status = 'error';
         pendingFile.resumable.cancel();
-        const intendedFilename = (pendingFile.originalFile || {}).name || (pendingFile.backendFile || { metadata: {}}).metadata.name;
-        ToasterService.error(Languages.t('services.file_upload_service.toaster.upload_file_error', [intendedFilename],
-                                         'Error uploading file ' + intendedFilename));
-        options?.callback?.(null, options?.context || {});
+        const intendedFilename =
+          (pendingFile.originalFile || {}).name ||
+          (pendingFile.backendFile || { metadata: {} }).metadata.name;
+        options?.callback?.({ root: file.root, file: null }, options?.context || {});
         this.notify();
       });
     }
@@ -237,26 +425,89 @@ class FileUploadService {
     return this.pendingFiles.filter(f => f.backendFile?.id && f.backendFile.id === id)[0];
   }
 
-  public cancel(id: string, timeout = 1000) {
-    const fileToCancel = this.pendingFiles.filter(f => f.id === id)[0];
+  public cancelUpload() {
+    this.uploadStatus = UploadStateEnum.Cancelled;
 
-    fileToCancel.status = 'cancel';
+    // pause or resume the resumable tasks
+    const fileToCancel = this.pendingFiles;
 
-    if (fileToCancel.resumable) {
-      fileToCancel.resumable.cancel();
-      this.notify();
-
-      if (fileToCancel.backendFile)
-        this.deleteOneFile({
-          companyId: fileToCancel.backendFile.company_id,
-          fileId: fileToCancel.backendFile.id,
-        });
+    if (!fileToCancel) {
+      console.error(`No files found for id`);
+      return;
     }
 
-    setTimeout(() => {
-      this.pendingFiles = this.pendingFiles.filter(f => f.id !== id);
+    for (const file of fileToCancel) {
+      if (file.status === 'success') continue;
+
+      try {
+        if (file.resumable) {
+          file.resumable.cancel();
+          if (file.backendFile)
+            this.deleteOneFile({
+              companyId: file.backendFile.company_id,
+              fileId: file.backendFile.id,
+            });
+        } else {
+          console.warn('Resumable object is not available for file', file);
+        }
+      } catch (error) {
+        console.error('Error while pausing or resuming file', file, error);
+      }
+    }
+
+    // clean everything
+    this.pendingFiles = [];
+    this.groupedPendingFiles = {};
+    this.rootSizes = {};
+    this.groupIds = {};
+
+    this.notify();
+  }
+
+  public cancelRootUpload(id: string) {
+    this.rootStates.cancelled[id] = true;
+    // if it's 1 root, cancel the upload
+    if (Object.keys(this.groupedPendingFiles).length === 1) {
+      this.cancelUpload();
+      return;
+    } else {
+      // pause or resume the resumable tasks
+      const filesToProcess = this.groupedPendingFiles[id];
+
+      if (!filesToProcess || filesToProcess.length === 0) {
+        console.error(`No files found for id: ${id}`);
+        return;
+      }
+
+      for (const file of filesToProcess) {
+        if (file.status === 'success') continue;
+
+        try {
+          if (file.resumable) {
+            file.resumable.cancel();
+            if (file.backendFile)
+              this.deleteOneFile({
+                companyId: file.backendFile.company_id,
+                fileId: file.backendFile.id,
+              });
+          } else {
+            console.warn('Resumable object is not available for file', file);
+          }
+        } catch (error) {
+          console.error('Error while pausing or resuming file', file, error);
+        }
+      }
+
+      // clean everything
+      this.pendingFiles = this.pendingFiles.filter(f => f.uploadTaskId !== id);
+      // remove the root key
+      this.groupedPendingFiles[id] = [];
+      // remove the root size
+      delete this.rootSizes[id];
+      // remove the root id
+      delete this.groupIds[id];
       this.notify();
-    }, timeout);
+    }
   }
 
   public retry(id: string) {
@@ -270,15 +521,101 @@ class FileUploadService {
     }
   }
 
-  public pauseOrResume(id: string) {
-    const fileToCancel = this.pendingFiles.filter(f => f.id === id)[0];
+  private pauseOrResumeFile(file: PendingFileType) {
+    try {
+      if (file.resumable) {
+        if (file.status !== 'pause') {
+          file.status = 'pause';
+          file.resumable.pause();
+        } else {
+          file.status = 'pending';
+          file.resumable.upload();
+        }
+      } else {
+        console.warn('Resumable object is not available for file', file);
+      }
+    } catch (error) {
+      console.error('Error while pausing or resuming file', file, error);
+    }
+  }
 
-    fileToCancel.status !== 'pause'
-      ? (fileToCancel.status = 'pause')
-      : (fileToCancel.status = 'pending');
-    fileToCancel.status === 'pause'
-      ? fileToCancel.resumable.pause()
-      : fileToCancel.resumable.upload();
+  public pauseOrResume() {
+    // pause or resume the curent upload task
+    switch (this.uploadStatus) {
+      case UploadStateEnum.Progress:
+        this.uploadStatus = UploadStateEnum.Paused;
+        break;
+      case UploadStateEnum.Paused:
+        this.uploadStatus = UploadStateEnum.Progress;
+        break;
+      case UploadStateEnum.Cancelled:
+        throw new Error('Cannot toggle upload status: Upload is cancelled.');
+      default:
+        throw new Error(`Unexpected upload status: ${this.uploadStatus}`);
+    }
+
+    // pause or resume the resumable tasks
+    const filesToProcess = this.pendingFiles;
+
+    if (!filesToProcess || filesToProcess.length === 0) {
+      console.error(`No files found for id`);
+      return;
+    }
+
+    for (const file of filesToProcess) {
+      if (file.status === 'success') continue;
+      this.pauseOrResumeFile(file);
+    }
+
+    // update the status of the roots
+    const roots = Object.keys(this.groupedPendingFiles);
+    for (const root of roots) {
+      // check if the root has completed skip it
+      if (this.rootStates.completed[root]) continue;
+      if (this.uploadStatus === UploadStateEnum.Paused) {
+        this.rootStates.paused[root] = true;
+      } else {
+        this.rootStates.paused[root] = false;
+      }
+    }
+
+    this.notify();
+  }
+
+  public pauseOrResumeRoot(id: string) {
+    const completedRoots = Object.keys(this.rootStates.completed);
+    const roots = Object.keys(this.rootSizes);
+    const isOnlyRootInProgress = roots.length - completedRoots.length === 1;
+
+    // Check if this is the only root in progress
+    if (!this.rootStates.completed[id] && isOnlyRootInProgress) {
+      this.uploadStatus =
+        this.uploadStatus === UploadStateEnum.Progress
+          ? UploadStateEnum.Paused
+          : UploadStateEnum.Progress;
+    }
+
+    // set the pause status for the root
+    if (Object.keys(this.rootStates.paused).includes(id)) {
+      this.rootStates.paused[id] = !this.rootStates.paused[id];
+    } else {
+      this.rootStates.paused[id] = true;
+    }
+
+    // pause or resume the resumable tasks
+    const filesToProcess = this.groupedPendingFiles[id];
+
+    if (!filesToProcess || filesToProcess.length === 0) {
+      console.error(`No files found for id: ${id}`);
+      return;
+    }
+
+    for (const file of filesToProcess) {
+      if (file.status === 'success') continue;
+
+      // pause or resume the file
+      this.pauseOrResumeFile(file);
+    }
 
     this.notify();
   }
@@ -307,6 +644,7 @@ class FileUploadService {
       testChunks: testChunks || false,
       simultaneousUploads: simultaneousUploads || 5,
       maxChunkRetries: maxChunkRetries || 2,
+      xhrTimeout: 60000,
       query,
     });
   }
@@ -335,12 +673,17 @@ class FileUploadService {
     });
   }
 
-
   public getDownloadRoute({ companyId, fileId }: { companyId: string; fileId: string }): string {
     return FileUploadAPIClient.getDownloadRoute({
       companyId: companyId,
       fileId: fileId,
     });
+  }
+
+  public clearRoots() {
+    this.groupedPendingFiles = {};
+    this.groupIds = {};
+    this.notify();
   }
 }
 

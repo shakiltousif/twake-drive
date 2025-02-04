@@ -1,10 +1,13 @@
+import { number } from 'prop-types';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type TreeItem = { [key: string]: File | TreeItem };
+type TreeItem = { [key: string]: { root: string; file: File } | TreeItem };
 
 export type FileTreeObject = {
   tree: TreeItem;
   documentsCount: number;
   totalSize: number;
+  sizePerRoot: { [key: string]: number };
 };
 
 export const getFilesTree = (
@@ -119,6 +122,7 @@ export const getFilesTree = (
         });
       }
 
+      let timeBegin = Date.now();
       [].slice.call(items).forEach(function (entry: any) {
         entry = entry.webkitGetAsEntry();
         if (entry) {
@@ -134,6 +138,7 @@ export const getFilesTree = (
                   resolve(true);
                 }, resolve.bind(null, true));
               } else if (entry.isDirectory) {
+                const timeToRead = Date.now();
                 readDirectory(entry, null, resolve);
               }
             }),
@@ -145,6 +150,7 @@ export const getFilesTree = (
         return false;
       }
 
+      timeBegin = Date.now();
       Promise.all(rootPromises).then(cb.bind(null, fd, files));
     }
 
@@ -152,6 +158,7 @@ export const getFilesTree = (
       const documents_number = paths ? paths.length : 0;
       let total_size = 0;
       const tree: any = {};
+      const size_per_root: { [key: string]: number } = {};
       (paths || []).forEach(function (path, file_index) {
         let dirs = tree;
         const real_file = files[file_index];
@@ -163,7 +170,17 @@ export const getFilesTree = (
             return;
           }
           if (dir_index === path.split('/').length - 1) {
-            dirs[dir] = real_file;
+            const root = path.split('/')[0];
+            dirs[dir] = {
+              file: real_file,
+              root,
+            };
+            // Calculate the total size of each root
+            if (!size_per_root[root]) {
+              size_per_root[root] = real_file.size;
+            } else {
+              size_per_root[root] += real_file.size;
+            }
           } else {
             if (!dirs[dir]) {
               dirs[dir] = {};
@@ -172,35 +189,76 @@ export const getFilesTree = (
           }
         });
       });
-
-      fcb && fcb(tree, documents_number, total_size);
-      resolve({ tree, documentsCount: documents_number, totalSize: total_size });
+      resolve({
+        tree,
+        documentsCount: documents_number,
+        totalSize: total_size,
+        sizePerRoot: size_per_root,
+      });
     };
 
+    // Handle file input based on the event type, starting with `dataTransfer` for drag-and-drop events
     if (event.dataTransfer) {
       const dt = event.dataTransfer;
+
+      // When dragging files into the browser, `dataTransfer.items` contains a list of the dragged items.
+      // `webkitGetAsEntry` allows access to a directory-like API, letting us explore folders and subfolders.
+      // This means we can recursively scan for files in folders without relying on manual user input.
       if (dt.items && dt.items.length && 'webkitGetAsEntry' in dt.items[0]) {
+        // Use `entriesApi` to iterate through items, handling directories and files.
+        // This is ideal for cases where users drag entire folder structures into the app.
         entriesApi(dt.items, (files, paths) => cb(event, files || [], paths));
-      } else if ('getFilesAndDirectories' in dt) {
+      }
+      // If `getFilesAndDirectories` is available on `dataTransfer`, it indicates a newer API is supported.
+      // This API directly provides both files and directories, making it easier to process structured uploads.
+      else if ('getFilesAndDirectories' in dt) {
+        // Use `newDirectoryApi` to process files and directories in a standardized way.
         newDirectoryApi(dt, (files, paths) => cb(event, files || [], paths));
-      } else if (dt.files) {
+      }
+      // If neither of the advanced APIs (`webkitGetAsEntry` or `getFilesAndDirectories`) is available,
+      // fall back to using the basic `dataTransfer.files` property.
+      // This works only for files, meaning directories won’t be detected or handled.
+      else if (dt.files) {
+        // Use `arrayApi` to process the flat list of files.
         arrayApi(dt, (files, paths) => cb(event, files || [], paths));
-      } else cb(event, [], []);
-    } else if (event.target) {
+      }
+      // If no files or directories can be detected (e.g., if the user drops something invalid),
+      // return an empty response to ensure the application doesn’t break.
+      else cb(event, [], []);
+    }
+    // If the event comes from a file input field rather than drag-and-drop (`event.target` exists):
+    else if (event.target) {
       const t = event.target as any;
+
+      // When a file input element (`<input type="file">`) is used, it stores the selected files in `target.files`.
+      // This is the standard way for users to upload files through a file picker dialog.
       if (t.files && t.files.length) {
+        // Process the selected files as a flat array using `arrayApi`.
         arrayApi(t, (files, paths) => cb(event, files || [], paths));
-      } else if ('getFilesAndDirectories' in t) {
+      }
+      // If the input element supports `getFilesAndDirectories`, handle structured uploads.
+      // This could occur in custom or enhanced file inputs that allow folder selection.
+      else if ('getFilesAndDirectories' in t) {
         newDirectoryApi(t, (files, paths) => cb(event, files || [], paths));
-      } else {
+      }
+      // If no valid files or directories can be detected, return an empty response.
+      else {
         cb(event, [], []);
       }
-    } else {
+    }
+    // Fallback for cases where neither `dataTransfer` nor `target` is available:
+    // This typically occurs in unusual scenarios, such as handling a manually triggered upload.
+    else {
+      // If a callback (`fcb`) is provided, call it with the first file found (if any).
+      // This is a last-resort assumption that `event.target.files` has at least one valid file.
       fcb && fcb([(event.target as any).files[0]], 1, (event.target as any).files[0].size);
+
+      // Resolve the promise with a default response, treating the single file as the entire tree.
       resolve({
         tree: (event.target as any).files[0],
         documentsCount: 1,
         totalSize: (event.target as any).files[0].size,
+        sizePerRoot: { [(event.target as any).files[0].name]: (event.target as any).files[0].size },
       });
     }
   });

@@ -1,5 +1,13 @@
 import Api from '../../global/framework/api-service';
-import { BrowseFilter, BrowsePaginate, BrowseQuery, BrowseSort, DriveItem, DriveItemDetails, DriveItemVersion } from '../types';
+import {
+  BrowseFilter,
+  BrowsePaginate,
+  BrowseQuery,
+  BrowseSort,
+  DriveItem,
+  DriveItemDetails,
+  DriveItemVersion,
+} from '../types';
 import Workspace from '@deprecated/workspaces/workspaces';
 import Logger from 'features/global/framework/logger-service';
 import { JWTDataType } from 'app/features/auth/jwt-storage-service';

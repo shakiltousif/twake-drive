@@ -10,18 +10,19 @@ import Logger from '@features/global/framework/logger-service';
  * @returns
  */
 export const useDriveUpload = () => {
-  const { create, refresh } = useDriveActions();
+  const { create, refresh, restore } = useDriveActions();
 
-  const logger = Logger.getLogger('useDriveUpload')
+  const logger = Logger.getLogger('useDriveUpload');
 
   const uploadVersion = async (file: File, context: { companyId: string; id: string }) => {
     return new Promise(r => {
-      FileUploadService.upload([file], {
+      FileUploadService.upload([{ root: file.name, file }], {
         context: {
           companyId: context.companyId,
           id: context.id,
         },
-        callback: async (file, context) => {
+        callback: async (filePayload, context) => {
+          const file = filePayload.file;
           if (file) {
             const version = {
               drive_item_id: context.id,
@@ -47,58 +48,9 @@ export const useDriveUpload = () => {
     tree: FileTreeObject,
     context: { companyId: string; parentId: string },
   ) => {
-    // Create all directories
-    logger.debug("Start creating directories ...");
-    const filesPerParentId = await FileUploadService.createDirectories(tree.tree, context);
+    logger.debug('Start creating directories and file upload ...');
+    await FileUploadService.createDirectories(tree, context);
     await refresh(context.parentId, true);
-    logger.debug("All directories created");
-
-    // Upload files into directories
-    logger.debug("Start file uploading")
-    //create counter to calculate number of uploaded files, and refresh browsing window only when all the files were uploaded
-    let expectedUploadsCount = 0;
-    const parentFolder = context.parentId;
-    let uploadedFilesCount = 0;
-    for (const parentId of Object.keys(filesPerParentId)) {
-      logger.debug(`Upload files for directory ${parentId}`);
-      expectedUploadsCount += filesPerParentId[parentId].length;
-      await FileUploadService.upload(filesPerParentId[parentId], {
-        context: {
-          companyId: context.companyId,
-          parentId: parentId,
-        },
-        callback: (file, context) => {
-          logger.debug('created file: ', file);
-          uploadedFilesCount++;
-          if (file) {
-            create(
-              {
-                company_id: context.companyId,
-                workspace_id: 'drive', //We don't set workspace ID for now
-                parent_id: context.parentId,
-                name: file.metadata?.name,
-                size: file.upload_data?.size,
-              },
-              {
-                provider: 'internal',
-                application_id: '',
-                file_metadata: {
-                  name: file.metadata?.name,
-                  size: file.upload_data?.size,
-                  mime: file.metadata?.mime,
-                  thumbnails: file?.thumbnails,
-                  source: 'internal',
-                  external_id: file.id,
-                },
-              },
-            );
-          }
-          if (uploadedFilesCount == expectedUploadsCount) {
-            refresh(parentFolder, true);
-          }
-        },
-      });
-    }
   };
 
   const uploadFromUrl = (
@@ -112,14 +64,17 @@ export const useDriveUpload = () => {
     request.onload = function () {
       try {
         if (request.status != 200)
-          throw new Error(`Unexpected response status code: ${request.status} from ${JSON.stringify(url)}`);
+          throw new Error(
+            `Unexpected response status code: ${request.status} from ${JSON.stringify(url)}`,
+          );
         const file = new File([request.response], name);
-        FileUploadService.upload([file], {
+        FileUploadService.upload([{ root: file.name, file }], {
           context: {
             companyId: context.companyId,
             parentId: context.parentId,
           },
-          callback: (file, context) => {
+          callback: (filePayload, context) => {
+            const file = filePayload.file;
             if (file) {
               create(
                 {

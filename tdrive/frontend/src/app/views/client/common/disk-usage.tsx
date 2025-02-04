@@ -10,7 +10,7 @@ import { useDriveItem } from "features/drive/hooks/use-drive-item";
 
 const DiskUsage = () => {
   const { viewId } = RouterServices.getStateFromRoute();
-  console.log("VIEW-iD::" + viewId);
+  // console.log("VIEW-iD::" + viewId);
 
   const [used, setUsed] = useState(0);
   const [usedBytes, setUsedBytes] = useState(0);

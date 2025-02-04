@@ -1,4 +1,4 @@
-import { FolderIcon } from '@heroicons/react/solid';
+import { FolderIcon } from 'app/atoms/icons-colored';
 import Highlighter from 'react-highlight-words';
 import { useRecoilValue } from 'recoil';
 import { onDriveItemDownloadClick } from '../common';
@@ -20,7 +20,7 @@ import RouterServices from '@features/router/services/router-service';
 import useRouterCompany from 'app/features/router/hooks/use-router-company';
 import { DocumentIcon } from '@views/client/body/drive/documents/document-icon';
 
-export default (props: { driveItem: DriveItem & { user?: UserType }}) => {
+export default (props: { driveItem: DriveItem & { user?: UserType } }) => {
   const history = useHistory();
   const input = useRecoilValue(SearchInputState);
   const file = props.driveItem;
@@ -31,7 +31,7 @@ export default (props: { driveItem: DriveItem & { user?: UserType }}) => {
   const { open } = useDrivePreview();
   const company = useRouterCompany();
 
-  function openDoc(file: DriveItem){
+  function openDoc(file: DriveItem) {
     open(file);
     if (file.is_directory) setOpen(false);
   }
@@ -39,7 +39,12 @@ export default (props: { driveItem: DriveItem & { user?: UserType }}) => {
   return (
     <div
       className="flex items-center p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md cursor-pointer testid:drive-item-result"
-      onClick={() => {history.push(RouterServices.generateRouteFromState({companyId: company, itemId: file.id})); openDoc(file)}}
+      onClick={() => {
+        history.push(
+          RouterServices.generateRouteFromState({ companyId: company, itemId: file.id }),
+        );
+        openDoc(file);
+      }}
     >
       <FileResultMedia file={file} className="w-16 h-16 mr-3" />
       <div className="grow mr-3 overflow-hidden">
@@ -96,14 +101,26 @@ export const FileResultMedia = (props: {
 
   if (file.is_directory) {
     return (
-      <div className={'relative flex bg-blue-100 rounded-md ' + (props.className || '') + ' testid:folder-result-media'}>
+      <div
+        className={
+          'relative flex bg-blue-100 rounded-md ' +
+          (props.className || '') +
+          ' testid:folder-result-media'
+        }
+      >
         <FolderIcon className="w-10 h-10 m-auto text-blue-500 testid:folder-icon" />
       </div>
     );
   }
 
   return (
-    <div className={'relative flex bg-zinc-200 rounded-md ' + (props.className || '') + ' testid:file-result-media'}>
+    <div
+      className={
+        'relative flex bg-zinc-200 rounded-md ' +
+        (props.className || '') +
+        ' testid:file-result-media'
+      }
+    >
       <Media
         size={props.size || 'md'}
         url={url}

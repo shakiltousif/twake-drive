@@ -57,6 +57,7 @@ export type FileType = {
   upload_data: FileUploadDataObjectType;
   user_id: string;
   user?: UserType;
+  parent_id?: string;
 };
 
 export type PendingFileRecoilType = {
@@ -64,13 +65,16 @@ export type PendingFileRecoilType = {
   status: 'pending' | 'error' | 'success' | 'pause' | 'cancel';
   progress: number; //Between 0 and 1
   file: FileType | null;
+  type: string;
+  parentId: string | null;
+  size: number;
 };
 
 /**
  * It could be not only a file, but also a task with creating folders
  */
 export type PendingFileType = {
-  type: "file" | "folder"
+  type: 'file' | 'folder';
   resumable: typeof Resumable | null; //Contain the resumable instance in charge of this file
   uploadTaskId: string;
   id: string;
@@ -82,4 +86,16 @@ export type PendingFileType = {
   speed: number;
   label: string | null;
   pausable: boolean;
+};
+
+export type UploadRootType = {
+  id: string;
+  size: number;
+  uploadedSize: number;
+  status: string;
+  items: PendingFileRecoilType[];
+};
+
+export type UploadRootListType = {
+  [key: string]: UploadRootType;
 };
