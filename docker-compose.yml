@@ -34,7 +34,8 @@ services:
       #
       # Or generate a self signed certificate, for host `$SSL_SUBJ_CN` (default: `localhost`)
       # unless one exists in `/etc/nginx/ssl/selfsigned.crt`
-      - SSL_CERTS=selfsigned
+      # - SSL_CERTS=selfsigned
+      SSL_CERTS=off
       #
       #   Tip: To accept invalid certificate on localhost:
       #        - Chrome: enable chrome://flags/#allow-insecure-localhost
@@ -49,7 +50,7 @@ services:
       # Debug certificate generation script:
       # - DEBUG=yes
     ports:
-      - 8080:8080
+      - 8080:80
     depends_on:
       - tdrive_node
     volumes:
