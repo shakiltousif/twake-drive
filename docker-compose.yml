@@ -50,7 +50,6 @@ services:
       # - DEBUG=yes
     ports:
       - 8081:80
-      - 444:443
     depends_on:
       - tdrive_node
     volumes:
