@@ -49,8 +49,7 @@ services:
       # Debug certificate generation script:
       # - DEBUG=yes
     ports:
-      - 8080:8081
-      - 443:444
+      - 8080:8080
     depends_on:
       - tdrive_node
     volumes:
