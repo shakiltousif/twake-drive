@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.4"
 
 services:
   postgres:
@@ -18,15 +18,13 @@ services:
     build: &backend_docker_build
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
+      # target: development
       target: production
-    restart: on-failure
-    depends_on:
-      - postgres # Ensure PostgreSQL starts first
     environment: &backend_env_vars
-      - DEV=production
+       - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
-      - DB_POSTGRES_HOST=localhost
+      - DB_POSTGRES_HOST=postgres
       - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_USERNAME=tdrive
       - DB_POSTGRES_PASSWORD=secret
@@ -35,41 +33,47 @@ services:
       - PUBSUB_TYPE=local
       - SEARCH_DRIVER=postgres
       - STORAGE_DRIVER=local
-      - STORAGE_LOCAL_PATH=/tmp/tdrive
+      - STORAGE_LOCAL_PATH=/tmp/td  
       - ENABLE_FEATURE_ANTIVIRUS=false
       - DIAG_PROBE_SECRET=diag-secret
-    command: sh -c "sleep 10 && /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa"
+      
+    
+    command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
     volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
-
+    depends_on: &backend_dependencies
+      mongo:
+        condition: service_healthy
+  
   node:
     build: *backend_docker_build
-    restart: always
-    depends_on:
-      - postgres
-      - node_create_user
     ports:
       - 4000:4000
       - 9229:9229
     environment: *backend_env_vars
-    command: sh -c "sleep 10 && node /usr/src/app/dist/tdrive.js"
+    healthcheck:
+      test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
     volumes: *backend_volumes
-
+    depends_on:
+      <<: *backend_dependencies
+      node_create_user:
+        condition: service_completed_successfully
+  
   frontend:
     build:
       context: .
       dockerfile: docker/tdrive-frontend/Dockerfile
     container_name: tdrive-frontend
-    restart: always
-    depends_on:
-      - node
     environment:
       - DEV=production
       - SSL_CERTS=off
       - NODE_HOST=http://node:4000
     ports:
       - "8080:80"
+    depends_on:
+      node:
+        condition: service_healthy
     volumes:
       - ./docker-data/logs/nginx/:/var/log/nginx
       - ./docker-data/letsencrypt/:/etc/letsencrypt/
