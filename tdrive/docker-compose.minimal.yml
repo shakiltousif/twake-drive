@@ -1,9 +1,10 @@
-version: "3.4"
+version: "3.8"
 
 services:
   postgres:
     container_name: postgres
     image: postgres:latest
+    restart: always
     environment:
       - POSTGRES_DB=tdrive
       - POSTGRES_USER=tdrive
@@ -23,6 +24,7 @@ services:
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
       target: production
+    restart: on-failure
     environment: &backend_env_vars
       - DEV=dev
       - ACCOUNTS_TYPE=internal
@@ -39,7 +41,6 @@ services:
       - STORAGE_LOCAL_PATH=/tmp/tdrive
       - ENABLE_FEATURE_ANTIVIRUS=false
       - DIAG_PROBE_SECRET=diag-secret
-
     command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
     volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
@@ -50,12 +51,15 @@ services:
 
   node:
     build: *backend_docker_build
+    restart: always
     ports:
       - 4000:4000
       - 9229:9229
     environment: *backend_env_vars
     healthcheck:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
+      interval: 10s
+      retries: 5
     volumes: *backend_volumes
     depends_on:
       postgres:
@@ -68,6 +72,7 @@ services:
       context: .
       dockerfile: docker/tdrive-frontend/Dockerfile
     container_name: tdrive-frontend
+    restart: always
     environment:
       - DEV=production
       - SSL_CERTS=off
