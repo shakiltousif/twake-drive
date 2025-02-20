@@ -21,7 +21,7 @@ services:
       # target: development
       target: production
     environment: &backend_env_vars
-       - DEV=dev
+      - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
       - DB_POSTGRES_HOST=postgres
