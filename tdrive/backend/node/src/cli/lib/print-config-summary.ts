@@ -73,14 +73,16 @@ export default function printConfigSummary(useIcons: boolean = !!process.env.HAV
     (a, b) => Math.max(a, icons[b] ? 1 : b.length + ":".length),
     0,
   );
-  const makeSectionTemplate = (type, conf, sectionName) =>
-    sectionTemplates[type]
-      ? sectionTemplates[type](conf[type], conf, sectionName)
-          .map((x, i) => (i % 2 ? j(x) : asIcon(x)))
-          .join(" ")
-      : conf[type]
-      ? j(conf[type])
-      : `WARNING invalid ${sectionName} type ${j(type)} !`;
+  const makeSectionTemplate = (type, conf, sectionName) =>{
+    console.log(type, conf, sectionName, 'makeSectionTemplate');
+    return sectionTemplates[type]
+    ? sectionTemplates[type](conf[type], conf, sectionName)
+        .map((x, i) => (i % 2 ? j(x) : asIcon(x)))
+        .join(" ")
+    : conf[type]
+    ? j(conf[type])
+    : `WARNING invalid ${sectionName} type ${j(type)} !`;
+  };
   const sectionTypeWidth = sections.reduce(
     (a, b) => Math.max(a, sectionTitleAlias((config.get(b) as { type: string }).type).length),
     0,
@@ -91,13 +93,6 @@ export default function printConfigSummary(useIcons: boolean = !!process.env.HAV
       section.length ? ": " + section : ""
     }`;
   };
-
-  console.log(sections.map(
-    x =>
-      `${
-        icons[x] ? repeatStr(sectionWidth - 1) + icons[x] : rightPad(x + ":", sectionWidth)
-      } ${configType(config.get(x), x)}`,
-  ), 'sections');
   return sections.map(
     x =>
       `${
