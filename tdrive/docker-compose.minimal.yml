@@ -23,10 +23,10 @@ services:
     depends_on:
       - postgres # Ensure PostgreSQL starts first
     environment: &backend_env_vars
-      - DEV=dev
+      - DEV=production
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
-      - DB_POSTGRES_HOST=postgres
+      - DB_POSTGRES_HOST=localhost
       - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_USERNAME=tdrive
       - DB_POSTGRES_PASSWORD=secret
