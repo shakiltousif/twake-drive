@@ -91,6 +91,13 @@ export default function printConfigSummary(useIcons: boolean = !!process.env.HAV
       section.length ? ": " + section : ""
     }`;
   };
+
+  console.log(sections.map(
+    x =>
+      `${
+        icons[x] ? repeatStr(sectionWidth - 1) + icons[x] : rightPad(x + ":", sectionWidth)
+      } ${configType(config.get(x), x)}`,
+  ), 'sections');
   return sections.map(
     x =>
       `${
