@@ -16,12 +16,11 @@ services:
       - 27017:27017
 
   node_create_user:
-    build: &backend_docker_build
+    build:
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
-      # target: development
       target: production
-    environment: &backend_env_vars
+    environment:
       - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=mongodb
@@ -34,24 +33,41 @@ services:
       - DIAG_PROBE_SECRET=diag-secret
 
     command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
-    volumes: &backend_volumes
+    volumes:
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
-    depends_on: &backend_dependencies
+    depends_on:
       mongo:
         condition: service_healthy
 
   node:
-    build: *backend_docker_build
+    build:
+      context: .
+      dockerfile: docker/tdrive-node/Dockerfile
+      target: production
     ports:
       - 4000:4000
       - 9229:9229
-    environment: *backend_env_vars
+    environment:
+      - DEV=dev
+      - ACCOUNTS_TYPE=internal
+      - DB_DRIVER=mongodb
+      - DB_MONGO_URI=mongodb://mongo:27017
+      - PUBSUB_TYPE=local
+      - SEARCH_DRIVER=mongodb
+      - STORAGE_DRIVER=local
+      - STORAGE_LOCAL_PATH=/tmp/td
+      - ENABLE_FEATURE_ANTIVIRUS=false
+      - DIAG_PROBE_SECRET=diag-secret
+
     healthcheck:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
-    volumes: *backend_volumes
+    volumes:
+      - ./backend/node/profiles:/usr/src/app/profiles
+      - ./backend/node/src:/usr/src/app/src
     depends_on:
-      <<: *backend_dependencies
+      mongo:
+        condition: service_healthy
       node_create_user:
         condition: service_completed_successfully
 
@@ -75,3 +91,4 @@ services:
       - ./docker-data/drive-preview/:/tdrive-core/web/medias/
       - ./docker-data/uploads/:/tdrive-core/web/upload/
       - ./docker-data/ssl:/etc/nginx/ssl
+
