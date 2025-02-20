@@ -1,23 +1,19 @@
 version: "3.4"
 
 services:
-  postgres:
-    container_name: postgres
-    image: postgres:latest
-    restart: always
-    environment:
-      - POSTGRES_DB=tdrive
-      - POSTGRES_USER=tdrive
-      - POSTGRES_PASSWORD=secret
-    volumes:
-      - ./docker-data/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+  mongo:
+    container_name: mongo
+    image: mongo
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "tdrive"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 2m
+      retries: 30
+      start_period: 10s
+    volumes:
+      - ./docker-data/mongo:/data/db
+    ports:
+      - 27017:27017
 
   node_create_user:
     build: &backend_docker_build
@@ -28,28 +24,23 @@ services:
     environment: &backend_env_vars
       - DEV=dev
       - ACCOUNTS_TYPE=internal
-      - DB_DRIVER=postgres
-      - DB_POSTGRES_HOST=postgres
-      - DB_POSTGRES_DBNAME=tdrive
-      - DB_POSTGRES_USERNAME=tdrive
-      - DB_POSTGRES_PASSWORD=secret
-      - DB_POSTGRES_PORT=5432
-      - DB_POSTGRES_USE_SSL=false
+      - DB_DRIVER=mongodb
+      - DB_MONGO_URI=mongodb://mongo:27017
       - PUBSUB_TYPE=local
+      - SEARCH_DRIVER=mongodb
       - STORAGE_DRIVER=local
       - STORAGE_LOCAL_PATH=/tmp/td
       - ENABLE_FEATURE_ANTIVIRUS=false
       - DIAG_PROBE_SECRET=diag-secret
-      
-    
+
     command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
     volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
     depends_on: &backend_dependencies
-      postgres:
+      mongo:
         condition: service_healthy
-  
+
   node:
     build: *backend_docker_build
     ports:
@@ -63,7 +54,7 @@ services:
       <<: *backend_dependencies
       node_create_user:
         condition: service_completed_successfully
-  
+
   frontend:
     build:
       context: .
