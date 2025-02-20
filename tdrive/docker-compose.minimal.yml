@@ -28,7 +28,7 @@ services:
     environment: &backend_env_vars
       - DEV=dev
       - ACCOUNTS_TYPE=internal
-      - DB_DRIVER=postgres
+      - DB_DRIVER=pg
       - DB_POSTGRES_HOST=postgres
       - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_USERNAME=tdrive
@@ -36,7 +36,7 @@ services:
       - DB_POSTGRES_PORT=5432
       - DB_POSTGRES_USE_SSL=false
       - PUBSUB_TYPE=local
-      - SEARCH_DRIVER=pg
+      - SEARCH_DRIVER=postgres
       - STORAGE_DRIVER=local
       - STORAGE_LOCAL_PATH=/tmp/td  
       - ENABLE_FEATURE_ANTIVIRUS=false
