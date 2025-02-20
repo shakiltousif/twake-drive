@@ -1,6 +1,7 @@
 import config from "../../core/config";
 
 export default function printConfigSummary(useIcons: boolean = !!process.env.HAVE_NERDFONT) {
+  console.log("\nConfig summary", config.get("database"));
   const j = (x: any) => JSON.stringify(x);
   const icons = useIcons
     ? {
