@@ -3,7 +3,7 @@ version: "3.4"
 services:
   postgres:
     container_name: postgres
-    image: postgres:latest
+    image: postgres
     restart: always
     environment:
       - POSTGRES_DB=tdrive
@@ -13,11 +13,11 @@ services:
       - ./docker-data/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    # healthcheck:
-    #   test: ["CMD", "pg_isready", "-U", "tdrive"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "tdrive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   node_create_user:
     build: &backend_docker_build
@@ -46,9 +46,9 @@ services:
     volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
-    # depends_on: &backend_dependencies
-    #   postgres:
-    #     condition: service_healthy
+    depends_on: &backend_dependencies
+      postgres:
+        condition: service_healthy
   
   node:
     build: *backend_docker_build
@@ -59,10 +59,10 @@ services:
     healthcheck:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
     volumes: *backend_volumes
-    # depends_on:
-    #   <<: *backend_dependencies
-    #   node_create_user:
-    #     condition: service_completed_successfully
+    depends_on:
+      <<: *backend_dependencies
+      node_create_user:
+        condition: service_completed_successfully
   
   frontend:
     build:
