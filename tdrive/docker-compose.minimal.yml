@@ -29,7 +29,7 @@ services:
       - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
-      - DB_POSTGRES_HOST=postgres
+      - DB_POSTGRES_HOST=localhost
       - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_USERNAME=tdrive
       - DB_POSTGRES_PASSWORD=secret
@@ -37,7 +37,7 @@ services:
       - DB_POSTGRES_USE_SSL=false
       - PUBSUB_TYPE=local
       - STORAGE_DRIVER=local
-      - STORAGE_LOCAL_PATH=/tmp/td  
+      - STORAGE_LOCAL_PATH=/tmp/td
       - ENABLE_FEATURE_ANTIVIRUS=false
       - DIAG_PROBE_SECRET=diag-secret
       
