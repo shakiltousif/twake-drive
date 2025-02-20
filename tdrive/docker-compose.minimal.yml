@@ -43,7 +43,7 @@ services:
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
     depends_on: &backend_dependencies
-      mongo:
+      postgres:
         condition: service_healthy
   
   node:
