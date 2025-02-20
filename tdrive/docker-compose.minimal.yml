@@ -36,7 +36,7 @@ services:
       - DB_POSTGRES_PORT=5432
       - DB_POSTGRES_USE_SSL=false
       - PUBSUB_TYPE=local
-      - SEARCH_DRIVER=postgres
+      - SEARCH_DRIVER=elasticsearch
       - STORAGE_DRIVER=local
       - STORAGE_LOCAL_PATH=/tmp/td  
       - ENABLE_FEATURE_ANTIVIRUS=false
