@@ -59,10 +59,10 @@ services:
     healthcheck:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
     volumes: *backend_volumes
-    depends_on:
-      <<: *backend_dependencies
-      node_create_user:
-        condition: service_completed_successfully
+    # depends_on:
+    #   <<: *backend_dependencies
+    #   node_create_user:
+    #     condition: service_completed_successfully
   
   frontend:
     build:
