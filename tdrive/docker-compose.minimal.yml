@@ -29,7 +29,7 @@ services:
       - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
-      - DB_POSTGRES_HOST=localhost
+      - DB_POSTGRES_HOST=postgres
       - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_USERNAME=tdrive
       - DB_POSTGRES_PASSWORD=secret
