@@ -3,52 +3,51 @@ version: "3.4"
 services:
   postgres:
     container_name: postgres
-    image: postgres
-    healthcheck:
-      test: pg_isready -U postgres
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    image: postgres:latest
     environment:
-      POSTGRES_DB: tdrive
-      POSTGRES_PASSWORD: tdrive_secret
-      POSTGRES_USER: tdrive_user
+      - POSTGRES_DB=tdrive
+      - POSTGRES_USER=tdrive
+      - POSTGRES_PASSWORD=secret
     volumes:
       - ./docker-data/postgres:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tdrive"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
 
   node_create_user:
     build: &backend_docker_build
       context: .
       dockerfile: docker/tdrive-node/Dockerfile
-      # target: development
       target: production
     environment: &backend_env_vars
-      - DEV=production
+      - DEV=dev
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=postgres
-      - DB_POSTGRES_DBNAME=tdrive
       - DB_POSTGRES_HOST=postgres
-      - DB_POSTGRES_PASSWORD=tdrive_secret
+      - DB_POSTGRES_DBNAME=tdrive
+      - DB_POSTGRES_USERNAME=tdrive
+      - DB_POSTGRES_PASSWORD=secret
       - DB_POSTGRES_PORT=5432
-      - DB_POSTGRES_USERNAME=tdrive_user
+      - DB_POSTGRES_USE_SSL=false
       - PUBSUB_TYPE=local
       - SEARCH_DRIVER=mongodb
       - STORAGE_DRIVER=local
-      - STORAGE_LOCAL_PATH=/tmp/td  
+      - STORAGE_LOCAL_PATH=/tmp/tdrive
       - ENABLE_FEATURE_ANTIVIRUS=false
       - DIAG_PROBE_SECRET=diag-secret
-      
-    
+
     command: /usr/src/app/bin/twake-cli dev set_local_user a@b.com aaaaaaaa
     volumes: &backend_volumes
       - ./backend/node/profiles:/usr/src/app/profiles
       - ./backend/node/src:/usr/src/app/src
-    depends_on: &backend_dependencies
+    depends_on:
       postgres:
         condition: service_healthy
-  
+
   node:
     build: *backend_docker_build
     ports:
@@ -59,10 +58,11 @@ services:
       test: curl --fail 'http://localhost:4000/diagnostics/t/ready?secret=diag-secret'
     volumes: *backend_volumes
     depends_on:
-      <<: *backend_dependencies
+      postgres:
+        condition: service_healthy
       node_create_user:
         condition: service_completed_successfully
-  
+
   frontend:
     build:
       context: .
@@ -83,4 +83,3 @@ services:
       - ./docker-data/drive-preview/:/tdrive-core/web/medias/
       - ./docker-data/uploads/:/tdrive-core/web/upload/
       - ./docker-data/ssl:/etc/nginx/ssl
-
