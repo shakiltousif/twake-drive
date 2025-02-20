@@ -34,7 +34,7 @@ services:
       - DB_POSTGRES_USERNAME=tdrive
       - DB_POSTGRES_PASSWORD=secret
       - DB_POSTGRES_PORT=5432
-      - DB_POSTGRES_USE_SSL=false
+      - DB_POSTGRES_USE_SSL=true
       - PUBSUB_TYPE=local
       - STORAGE_DRIVER=local
       - STORAGE_LOCAL_PATH=/tmp/td
