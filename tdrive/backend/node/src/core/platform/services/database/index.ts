@@ -23,6 +23,7 @@ export default class Database extends TdriveService<DatabaseServiceAPI> {
     this.service = new DatabaseService(driver, configuration, secret);
     const dbConnector = this.service.getConnector();
 
+    console.log(dbConnector, configuration, 'database');
     try {
       logger.info("Connecting to database %o", configuration);
       await dbConnector.connect();
