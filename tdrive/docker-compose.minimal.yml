@@ -4,6 +4,8 @@ services:
   mongo:
     container_name: mongo
     image: mongo
+    networks:
+      - mongo_network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -38,6 +40,8 @@ services:
     depends_on: &backend_dependencies
       mongo:
         condition: service_healthy
+    networks:
+      - mongo_network
 
   node:
     build: *backend_docker_build
@@ -53,6 +57,8 @@ services:
         condition: service_healthy
       node_create_user:
         condition: service_completed_successfully
+    networks:
+      - mongo_network
 
   frontend:
     build:
@@ -74,3 +80,9 @@ services:
       - ./docker-data/drive-preview/:/tdrive-core/web/medias/
       - ./docker-data/uploads/:/tdrive-core/web/upload/
       - ./docker-data/ssl:/etc/nginx/ssl
+    networks:
+      - mongo_network
+
+networks:
+  mongo_network:
+    external: true
