@@ -27,6 +27,7 @@ services:
       - ACCOUNTS_TYPE=internal
       - DB_DRIVER=mongodb
       - DB_MONGO_URI=mongodb://mongo:27017
+      - DB_MONGO_DATABASE=tdrive
       - PUBSUB_TYPE=local
       - SEARCH_DRIVER=mongodb
       - STORAGE_DRIVER=local
